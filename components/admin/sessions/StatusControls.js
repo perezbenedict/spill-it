@@ -1,0 +1,129 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useActionState } from "react";
+import { useFormStatus } from "react-dom";
+import { Pause, Play, XCircle } from "lucide-react";
+import { setSessionStatus } from "@/lib/actions/sessions";
+import Button from "@/components/ui/Button";
+import Card from "@/components/ui/Card";
+import Dialog from "@/components/ui/Dialog";
+import StatusBadge from "@/components/admin/sessions/StatusBadge";
+
+// Only transitions valid for the current status are offered; everything else
+// is validated again server-side.
+const ACTIONS = {
+  draft: [{ next: "live", label: "Publish", icon: Play, variant: "primary" }],
+  live: [
+    { next: "paused", label: "Pause", icon: Pause, variant: "secondary" },
+    { next: "closed", label: "Close", icon: XCircle, variant: "danger" },
+  ],
+  paused: [
+    { next: "live", label: "Resume", icon: Play, variant: "primary" },
+    { next: "closed", label: "Close", icon: XCircle, variant: "danger" },
+  ],
+  closed: [],
+};
+
+function StatusActionForm({ next, label, icon: Icon, variant, disabled, onSubmitted }) {
+  const { pending } = useFormStatus();
+  return (
+    <form action={onSubmitted} className="inline-flex">
+      <input type="hidden" name="next" value={next} />
+      <Button type="submit" variant={variant} loading={pending} disabled={disabled}>
+        <Icon className="h-4 w-4" aria-hidden="true" />
+        {label}
+      </Button>
+    </form>
+  );
+}
+
+export default function StatusControls({ sessionId, status }) {
+  const [state, formAction, pending] = useActionState(
+    async (prevState, formData) => {
+      const next = formData.get("next");
+      return setSessionStatus(sessionId, next);
+    },
+    { error: null }
+  );
+
+  const [confirmClose, setConfirmClose] = useState(false);
+
+  // Dismiss the close dialog once the change lands.
+  useEffect(() => {
+    if (state?.ok) setConfirmClose(false);
+  }, [state]);
+
+  const actions = ACTIONS[status] ?? [];
+  const isClosed = status === "closed";
+
+  return (
+    <Card className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="font-display text-lg font-semibold text-ink">Status</h2>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted">Currently</span>
+          <StatusBadge status={status} />
+        </div>
+      </div>
+
+      {isClosed ? (
+        <p className="rounded-control bg-neutral-100 px-4 py-3 text-sm text-ink">
+          This discussion is closed. Submissions are closed but everything already
+          contributed is kept.
+        </p>
+      ) : (
+        <div className="flex flex-wrap gap-3">
+          {actions.map((action) =>
+            action.next === "closed" ? (
+              <Button
+                key={action.next}
+                variant={action.variant}
+                disabled={pending}
+                onClick={() => setConfirmClose(true)}
+              >
+                <action.icon className="h-4 w-4" aria-hidden="true" />
+                {action.label}
+              </Button>
+            ) : (
+              <StatusActionForm
+                key={action.next}
+                {...action}
+                disabled={pending}
+                onSubmitted={formAction}
+              />
+            )
+          )}
+        </div>
+      )}
+
+      {state?.error ? (
+        <p role="alert" className="text-sm font-medium text-danger">
+          {state.error}
+        </p>
+      ) : null}
+      {state?.ok ? (
+        <p role="status" className="text-sm font-medium text-success">
+          Status updated to {state.status}.
+        </p>
+      ) : null}
+
+      <Dialog
+        open={confirmClose}
+        onClose={() => setConfirmClose(false)}
+        title="Close this discussion?"
+        description="Participants will no longer be able to submit. Everything already contributed is kept - closing never deletes submissions."
+      >
+        <form action={formAction} className="flex flex-wrap gap-3">
+          <input type="hidden" name="next" value="closed" />
+          <Button type="submit" variant="danger" loading={pending}>
+            Close discussion
+          </Button>
+          <Button type="button" variant="secondary" onClick={() => setConfirmClose(false)}>
+            Keep it open
+          </Button>
+        </form>
+      </Dialog>
+    </Card>
+  );
+}

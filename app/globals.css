@@ -1,0 +1,108 @@
+@import "tailwindcss";
+
+@theme {
+  /* Brand colors */
+  --color-purple: #7c3aed;
+  --color-purple-deep: #5b21b6;
+  --color-purple-light: #a78bfa;
+  --color-lime: #bef264;
+  --color-coral: #fb7185;
+  --color-cream: #fdf6e9;
+  --color-ink: #16121f;
+
+  /* Neutral scale */
+  --color-neutral-50: #faf9f7;
+  --color-neutral-100: #f1efe9;
+  --color-neutral-200: #e3dfd6;
+  --color-neutral-300: #c8c2b6;
+  --color-neutral-400: #9b9386;
+  --color-neutral-500: #6e6659;
+  --color-neutral-600: #4e4739;
+  --color-neutral-700: #363026;
+  --color-neutral-800: #24201a;
+  --color-neutral-900: #16121f;
+
+  /* Semantic tokens */
+  --color-surface: #fffdf7;
+  --color-muted: #6e6659;
+  --color-danger: #e11d48;
+  --color-success: #4d7c0f;
+  --color-warning: #b45309;
+
+  /* Typography */
+  --font-display: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
+  --font-body: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+
+  /* Radii */
+  --radius-card: 1rem;
+  --radius-control: 0.75rem;
+  --radius-pill: 9999px;
+
+  /* Spacing */
+  --spacing-gutter: 1.25rem;
+  --spacing-section: 5rem;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-cream);
+    color: var(--color-ink);
+    font-family: var(--font-body);
+    position: relative;
+  }
+
+  /* Static low-contrast decorative blobs behind content */
+  body::before,
+  body::after {
+    content: "";
+    position: fixed;
+    z-index: -1;
+    border-radius: var(--radius-pill);
+    pointer-events: none;
+  }
+
+  body::before {
+    top: -10rem;
+    right: -8rem;
+    width: 28rem;
+    height: 28rem;
+    background: radial-gradient(
+      circle,
+      color-mix(in srgb, var(--color-purple) 12%, transparent) 0%,
+      transparent 70%
+    );
+  }
+
+  body::after {
+    bottom: -12rem;
+    left: -10rem;
+    width: 32rem;
+    height: 32rem;
+    background: radial-gradient(
+      circle,
+      color-mix(in srgb, var(--color-lime) 16%, transparent) 0%,
+      transparent 70%
+    );
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-purple);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background-color: var(--color-lime);
+    color: var(--color-ink);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
