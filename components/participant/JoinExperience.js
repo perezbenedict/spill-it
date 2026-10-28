@@ -96,8 +96,7 @@ export default function JoinExperience({ session }) {
                   {...revealProps(0.24)}
                   className="rounded-card border border-gold/20 bg-gold/10 px-4 py-3 text-sm leading-relaxed text-gold"
                 >
-                  Say your mind kindly.
-                  Pick a nickname and say what you actually think.
+                  No pressure. Just be real with us.
                 </motion.p>
               ) : null}
               {status === "live" ? (
@@ -106,7 +105,7 @@ export default function JoinExperience({ session }) {
                     size="lg"
                     variant="primary"
                     className="w-full"
-                    onClick={() => setStep("nickname")}
+                    onClick={() => setStep("introduce")}
                   >
                     Let&apos;s get into it
                   </Button>
@@ -133,6 +132,29 @@ export default function JoinExperience({ session }) {
                   </Link>
                 </motion.div>
               )}
+            </div>
+          ) : null}
+
+          {step === "introduce" ? (
+            <div className="flex flex-col gap-4">
+              <motion.div {...revealProps(0)}>
+                <h1 className="font-display text-2xl font-bold text-ink">
+                  Say your mind kindly.
+                </h1>
+                <p className="mt-1 text-sm text-muted">
+                  Pick a nickname and say what you actually think.
+                </p>
+              </motion.div>
+              <motion.div {...revealProps(0.1)}>
+                <Button
+                  size="lg"
+                  variant="primary"
+                  className="w-full"
+                  onClick={() => setStep("nickname")}
+                >
+                  Let&apos;s get into it
+                </Button>
+              </motion.div>
             </div>
           ) : null}
 
