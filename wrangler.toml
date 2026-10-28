@@ -19,7 +19,3 @@ service = "spill"
 
 [images]
 binding = "IMAGES"
-
-[pages]
-build_command = "npm install && npm run cf-build"
-destination_dir = ".open-next"
