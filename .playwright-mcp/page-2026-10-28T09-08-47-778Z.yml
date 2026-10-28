@@ -1,0 +1,6 @@
+- main [ref=f2e2]:
+  - alert [ref=f2e3]:
+    - heading "We could not load this discussion" [level=3] [ref=f2e7]
+    - paragraph [ref=f2e8]: That is on us, not you. Try reloading the page.
+    - link "Try again" [ref=f2e10] [cursor=pointer]:
+      - /url: /join/BEJSNP9F

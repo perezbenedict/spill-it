@@ -13,7 +13,6 @@ async function copyText(text) {
     await navigator.clipboard.writeText(text);
     return;
   }
-  // Fallback for browsers/contexts without the async clipboard API.
   const textarea = document.createElement("textarea");
   textarea.value = text;
   textarea.setAttribute("readonly", "");
@@ -30,7 +29,7 @@ async function copyText(text) {
 
 export default function QRCodeCard({ url, fileName }) {
   const [dataUrl, setDataUrl] = useState(null);
-  const [status, setStatus] = useState("loading"); // loading | ready | error
+  const [status, setStatus] = useState("loading");
   const [copied, setCopied] = useState(false);
   const copyTimer = useRef(null);
 
@@ -80,7 +79,7 @@ export default function QRCodeCard({ url, fileName }) {
     <Card className="flex flex-col items-center gap-4 text-center">
       <div className="flex min-h-48 items-center justify-center">
         {status === "loading" || !dataUrl ? (
-          <Spinner className="h-8 w-8 text-purple" label="Generating QR code" />
+          <Spinner className="h-8 w-8 text-gold" label="Generating QR code" />
         ) : (
           // eslint-disable-next-line @next/next/no-img-element -- data URL, no server round-trip
           <img
@@ -102,7 +101,7 @@ export default function QRCodeCard({ url, fileName }) {
           <a
             href={dataUrl}
             download={fileName}
-            className="inline-flex items-center justify-center gap-2 rounded-control bg-ink px-5 py-2.5 text-sm font-medium text-cream transition-colors hover:bg-neutral-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple"
+            className="inline-flex items-center justify-center gap-2 rounded-control bg-gold px-5 py-2.5 text-sm font-medium text-midnight transition-colors hover:bg-gold-light focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
           >
             <Download className="h-4 w-4" aria-hidden="true" />
             Download PNG
@@ -122,14 +121,14 @@ export default function QRCodeCard({ url, fileName }) {
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center justify-center gap-2 rounded-control bg-transparent px-5 py-2.5 text-sm font-medium text-ink transition-colors hover:bg-neutral-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple"
+          className="inline-flex items-center justify-center gap-2 rounded-control bg-transparent px-5 py-2.5 text-sm font-medium text-ink transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
         >
           <ExternalLink className="h-4 w-4" aria-hidden="true" />
           Open
         </a>
       </div>
 
-      <p aria-live="polite" className="min-h-5 text-sm text-success">
+      <p aria-live="polite" className="min-h-5 text-sm text-gold">
         {copied ? "Copied!" : ""}
       </p>
     </Card>

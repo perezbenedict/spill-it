@@ -1,13 +1,15 @@
 import Link from "next/link";
 import { CalendarDays, Plus } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { MotionConfig, motion } from "framer-motion";
+import { getAdminToken } from "@/lib/auth";
+import { listAdminSessions } from "@/lib/spill-api";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import EmptyState from "@/components/ui/EmptyState";
 import StatusBadge from "@/components/admin/sessions/StatusBadge";
 
 const linkClass =
-  "inline-flex items-center justify-center rounded-control px-3 py-2 text-sm font-medium underline-offset-4 transition-colors hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple";
+  "inline-flex items-center justify-center rounded-control px-3 py-2 text-sm font-medium underline-offset-4 transition-colors hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold";
 
 function formatDate(value) {
   if (!value) return null;
@@ -20,24 +22,20 @@ function formatDate(value) {
 }
 
 export default async function SessionsListPage() {
-  const supabase = await createClient();
+  const adminToken = await getAdminToken();
 
-  const { data: sessions, error } = await supabase
-    .from("discussion_sessions")
-    .select("*")
-    .order("updated_at", { ascending: false })
-    .limit(50);
-
-  if (error) {
-    console.error("sessions list failed:", error.code, error.message);
+  const result = await listAdminSessions(adminToken, { limit: 50 });
+  if (!result.ok) {
+    console.error("sessions list failed:", result.status);
   }
+  const sessions = result.body?.items ?? null;
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-display text-2xl font-bold text-ink sm:text-3xl">Sessions</h1>
         <Link href="/admin/sessions/new">
-          <Button>
+          <Button variant="primary">
             <Plus className="h-4 w-4" aria-hidden="true" />
             New discussion
           </Button>
@@ -50,71 +48,89 @@ export default async function SessionsListPage() {
           description="Create a discussion, share the join code and watch the room spill in real time."
         >
           <Link href="/admin/sessions/new">
-            <Button>Create your first discussion</Button>
+            <Button variant="primary">Create your first discussion</Button>
           </Link>
         </EmptyState>
       ) : (
-        <ul className="flex flex-col gap-3">
-          {sessions.map((session) => {
-            const opensAt = formatDate(session.opens_at);
-            const closesAt = formatDate(session.closes_at);
-            return (
-              <li key={session.id}>
-                <Card className="flex flex-col gap-4">
-                  <div className="flex flex-wrap items-center gap-3">
-                    <h2 className="font-display text-lg font-semibold text-ink">
-                      {session.title}
-                    </h2>
-                    <StatusBadge status={session.status} />
-                    <span className="font-mono text-sm text-muted">{session.public_code}</span>
-                  </div>
-
-                  <dl className="flex flex-wrap gap-x-6 gap-y-1 text-xs text-muted">
-                    <div className="flex items-center gap-1.5">
-                      <CalendarDays className="h-3.5 w-3.5" aria-hidden="true" />
-                      <dt className="sr-only">Created</dt>
-                      <dd>Created {new Date(session.created_at).toLocaleDateString()}</dd>
+        <MotionConfig reducedMotion="user">
+          <ul className="flex flex-col gap-3">
+            {sessions.map((session, index) => {
+              const opensAt = formatDate(session.opens_at);
+              const closesAt = formatDate(session.closes_at);
+              const lastActivity = formatDate(session.updated_at) ?? formatDate(session.created_at);
+              return (
+                <motion.li
+                  key={session.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{
+                    duration: 0.3,
+                    delay: Math.min(index * 0.05, 0.4),
+                    ease: "easeOut",
+                  }}
+                >
+                  <Card className="flex flex-col gap-4">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                      <h2 className="font-display text-lg font-semibold text-ink">
+                        {session.title}
+                      </h2>
+                      <StatusBadge status={session.status} />
+                      <span className="rounded-pill border border-white/10 bg-white/5 px-2.5 py-0.5 font-mono text-xs font-medium text-ink">
+                        {session.public_code}
+                      </span>
                     </div>
-                    {opensAt ? (
-                      <div>
-                        <dt className="sr-only">Opens</dt>
-                        <dd>Opens {opensAt}</dd>
-                      </div>
-                    ) : null}
-                    {closesAt ? (
-                      <div>
-                        <dt className="sr-only">Closes</dt>
-                        <dd>Closes {closesAt}</dd>
-                      </div>
-                    ) : null}
-                  </dl>
 
-                  <nav
-                    aria-label={`Actions for ${session.title}`}
-                    className="flex flex-wrap gap-2 border-t border-neutral-200 pt-3"
-                  >
-                    <Link
-                      href={`/admin/sessions/${session.id}`}
-                      className={`${linkClass} bg-purple text-white hover:bg-purple-deep`}
+                    <dl className="flex flex-wrap gap-x-6 gap-y-1 text-xs text-muted">
+                      <div className="flex items-center gap-1.5">
+                        <CalendarDays className="h-3.5 w-3.5" aria-hidden="true" />
+                        <dt className="sr-only">Last activity</dt>
+                        <dd>Last activity {lastActivity ?? "unknown"}</dd>
+                      </div>
+                      <div>
+                        <dt className="sr-only">Created</dt>
+                        <dd>Created {new Date(session.created_at).toLocaleDateString()}</dd>
+                      </div>
+                      {opensAt ? (
+                        <div>
+                          <dt className="sr-only">Opens</dt>
+                          <dd>Opens {opensAt}</dd>
+                        </div>
+                      ) : null}
+                      {closesAt ? (
+                        <div>
+                          <dt className="sr-only">Closes</dt>
+                          <dd>Closes {closesAt}</dd>
+                        </div>
+                      ) : null}
+                    </dl>
+
+                    <nav
+                      aria-label={`Actions for ${session.title}`}
+                      className="flex flex-wrap gap-2 border-t border-white/10 pt-3"
                     >
-                      Manage
-                    </Link>
-                    {session.status !== "draft" ? (
-                      <>
-                        <Link href={`/admin/sessions/${session.id}/live`} className={linkClass}>
-                          Live moderation
-                        </Link>
-                        <Link href={`/room/${session.public_code}`} className={linkClass}>
-                          Presentation room
-                        </Link>
-                      </>
-                    ) : null}
-                  </nav>
-                </Card>
-              </li>
-            );
-          })}
-        </ul>
+                      <Link
+                        href={`/admin/sessions/${session.id}`}
+                        className={`${linkClass} bg-gold text-midnight hover:bg-gold-light`}
+                      >
+                        Manage
+                      </Link>
+                      {session.status !== "draft" ? (
+                        <>
+                          <Link href={`/admin/sessions/${session.id}/live`} className={linkClass}>
+                            Live moderation
+                          </Link>
+                          <Link href={`/room/${session.public_code}`} className={linkClass}>
+                            Presentation room
+                          </Link>
+                        </>
+                      ) : null}
+                    </nav>
+                  </Card>
+                </motion.li>
+              );
+            })}
+          </ul>
+        </MotionConfig>
       )}
     </div>
   );

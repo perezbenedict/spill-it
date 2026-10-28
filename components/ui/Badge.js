@@ -1,19 +1,18 @@
 import { cn } from "@/lib/cn";
 
 const variants = {
-  neutral: "bg-neutral-100 text-neutral-700",
-  info: "bg-purple/10 text-purple-deep",
-  success: "bg-lime/40 text-success",
-  warning: "bg-warning/10 text-warning",
-  danger: "bg-danger/10 text-danger",
+  neutral: "border-white/10 bg-white/10 text-muted",
+  info: "border-gold/25 bg-gold/15 text-gold",
+  success: "border-gold/40 bg-gold/25 text-gold",
+  warning: "border-gold-deep/60 bg-gold-deep/25 text-gold-light",
+  danger: "border-crimson/40 bg-crimson/20 text-crimson-bright",
 };
 
-// Status is conveyed by the text label, not color alone.
 export default function Badge({ variant = "neutral", className, children }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-pill px-2.5 py-0.5 text-xs font-medium",
+        "inline-flex items-center gap-1.5 rounded-pill border px-2.5 py-0.5 text-xs font-medium",
         variants[variant],
         className
       )}

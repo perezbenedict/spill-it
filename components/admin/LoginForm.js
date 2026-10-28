@@ -26,16 +26,13 @@ export default function LoginForm() {
       {/* Light card keeps Field's ink labels readable against the dark panel. */}
       <Card className="p-5">
         <form action={formAction} className="flex flex-col gap-4">
-          <Field label="Email" required>
+          <Field label="Admin Password" required>
             <Input
-              type="email"
-              name="email"
-              autoComplete="email"
-              placeholder="you@example.com"
+              type="password"
+              name="password"
+              autoComplete="current-password"
+              required
             />
-          </Field>
-          <Field label="Password" required>
-            <Input type="password" name="password" autoComplete="current-password" />
           </Field>
           {state.error ? (
             <p role="alert" className="text-sm font-medium text-danger">
@@ -47,9 +44,9 @@ export default function LoginForm() {
       </Card>
       <Link
         href="/"
-        className="text-center text-sm text-neutral-300 underline-offset-4 transition-colors hover:text-cream hover:underline"
+        className="text-center text-sm text-muted underline-offset-4 transition-colors hover:text-ink hover:underline"
       >
-        Back to SPILL
+        Back to Spill It
       </Link>
     </div>
   );

@@ -1,30 +1,27 @@
 import { notFound } from "next/navigation";
 import ErrorState from "@/components/ui/ErrorState";
+import PrintButton from "@/components/qr/PrintButton";
 import { buildJoinUrl, generateQrDataUrl } from "@/lib/qr";
 import { isValidPublicCode } from "@/lib/session-code";
-import { createClient } from "@/lib/supabase/server";
+import { getPublicSession } from "@/lib/spill-api";
 
 async function getSession(sessionCode) {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("published_sessions_by_code")
-    .select("public_code, title, status")
-    .eq("public_code", sessionCode.toUpperCase())
-    .maybeSingle();
-  if (error) throw error;
-  // RLS hides drafts; the extra check keeps the guarantee explicit.
-  if (!data || data.status === "draft") return null;
-  return data;
+  const result = await getPublicSession(sessionCode.toUpperCase());
+  if (result.status === 0 || !result.ok) {
+    if (result.status === 404) return null;
+    throw new Error("session lookup failed");
+  }
+  return result.body.session ?? null;
 }
 
 export async function generateMetadata({ params }) {
   const { sessionCode } = await params;
-  if (!isValidPublicCode(sessionCode)) return { title: "SPILL" };
+  if (!isValidPublicCode(sessionCode)) return { title: "Spill It" };
   try {
     const session = await getSession(sessionCode);
-    return { title: session ? `${session.title} - SPILL` : "SPILL" };
+    return { title: session ? `${session.title} - Spill It` : "Spill It" };
   } catch {
-    return { title: "SPILL" };
+    return { title: "Spill It" };
   }
 }
 
@@ -40,11 +37,10 @@ export default async function QrProjectorPage({ params }) {
     joinUrl = buildJoinUrl(sessionCode.toUpperCase());
     qrDataUrl = await generateQrDataUrl(joinUrl);
   } catch (error) {
-    // Config errors from lib/config start with the variable name but never echo values.
     const isConfigError = /^NEXT_PUBLIC_[A-Z_]+ /.test(error?.message ?? "");
     if (!isConfigError) throw error;
     return (
-      <main className="flex min-h-screen items-center justify-center bg-cream px-gutter">
+      <main className="flex min-h-screen items-center justify-center bg-midnight px-gutter">
         <div className="w-full max-w-md">
           <ErrorState
             title="Site URL not configured"
@@ -66,17 +62,17 @@ export default async function QrProjectorPage({ params }) {
         : null;
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-8 bg-ink px-gutter py-12 text-center">
+    <main className="flex min-h-screen flex-col items-center justify-center gap-8 bg-midnight px-gutter py-12 text-center">
       <header className="flex flex-col items-center gap-2">
-        <p className="font-display text-3xl font-bold tracking-tight text-lime sm:text-4xl">
-          SPILL
+        <p className="font-display text-3xl font-bold tracking-tight text-gold sm:text-4xl">
+          Spill It
         </p>
-        <h1 className="text-balance font-display text-2xl font-semibold text-cream sm:text-4xl">
+        <h1 className="text-balance font-display text-2xl font-semibold text-ink sm:text-4xl">
           {session.title}
         </h1>
       </header>
 
-      <div className="rounded-card bg-white p-4 shadow-lg sm:p-6">
+      <div className="rounded-card bg-surface p-4 shadow-lg sm:p-6">
         {/* eslint-disable-next-line @next/next/no-img-element -- data URL, no server round-trip */}
         <img
           src={qrDataUrl}
@@ -85,20 +81,28 @@ export default async function QrProjectorPage({ params }) {
         />
       </div>
 
-      <p className="font-display text-lg font-medium text-cream sm:text-2xl">
+      <p className="text-lg font-medium text-ink sm:text-2xl">
         Scan to join the conversation
       </p>
 
       {statusLine ? (
         <p
           role="status"
-          className="rounded-pill bg-coral/15 px-4 py-1.5 text-sm font-medium text-coral sm:text-base"
+          className={`rounded-pill px-4 py-1.5 text-sm font-medium sm:text-base ${
+            session.status === "paused"
+              ? "bg-gold/15 text-gold"
+              : "bg-crimson/15 text-crimson-bright"
+          }`}
         >
           {statusLine}
         </p>
       ) : null}
 
-      <p className="select-all break-all text-xs text-neutral-400 sm:text-sm">
+      <div className="print:hidden">
+        <PrintButton />
+      </div>
+
+      <p className="select-all break-all text-xs text-muted sm:text-sm">
         {joinUrl}
       </p>
     </main>

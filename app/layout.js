@@ -1,27 +1,32 @@
-import { Inter, Space_Grotesk } from "next/font/google";
+import { Playfair_Display, Instrument_Sans } from "next/font/google";
 import "./globals.css";
 
-const spaceGrotesk = Space_Grotesk({
+const playfair = Playfair_Display({
   subsets: ["latin"],
-  variable: "--font-space-grotesk",
+  variable: "--font-playfair",
   display: "swap",
 });
 
-const inter = Inter({
+const instrument = Instrument_Sans({
   subsets: ["latin"],
-  variable: "--font-inter",
+  variable: "--font-instrument",
   display: "swap",
 });
 
 export const metadata = {
-  title: "SPILL",
+  title: "Spill It",
   description: "Say what you really think.",
 };
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={`${spaceGrotesk.variable} ${inter.variable}`}>
-      <body className="font-body bg-cream text-ink antialiased">{children}</body>
+    <html
+      lang="en"
+      className={`${playfair.variable} ${instrument.variable}`}
+    >
+      <body className="font-body bg-midnight text-ink antialiased">
+        {children}
+      </body>
     </html>
   );
 }

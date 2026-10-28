@@ -10,11 +10,11 @@ export default function ErrorState({
     <div
       role="alert"
       className={cn(
-        "flex flex-col items-center justify-center gap-3 rounded-card border border-danger/30 bg-danger/5 px-6 py-12 text-center",
+        "flex flex-col items-center justify-center gap-3 rounded-card border border-crimson/30 bg-crimson/10 px-6 py-12 text-center",
         className
       )}
     >
-      <div aria-hidden="true" className="text-danger">
+      <div aria-hidden="true" className="text-crimson">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 24 24"

@@ -14,7 +14,13 @@ const LABELS = {
   closed: "Closed",
 };
 
-// Status is always conveyed by the text label, never color alone.
 export default function StatusBadge({ status }) {
-  return <Badge variant={VARIANTS[status] ?? "neutral"}>{LABELS[status] ?? status}</Badge>;
+  return (
+    <Badge
+      variant={VARIANTS[status] ?? "neutral"}
+      className="font-semibold uppercase tracking-[0.14em]"
+    >
+      {LABELS[status] ?? status}
+    </Badge>
+  );
 }

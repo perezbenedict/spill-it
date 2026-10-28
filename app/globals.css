@@ -2,98 +2,135 @@
 
 @theme {
   /* Brand colors */
-  --color-purple: #7c3aed;
-  --color-purple-deep: #5b21b6;
-  --color-purple-light: #a78bfa;
-  --color-lime: #bef264;
-  --color-coral: #fb7185;
-  --color-cream: #fdf6e9;
-  --color-ink: #16121f;
-
-  /* Neutral scale */
-  --color-neutral-50: #faf9f7;
-  --color-neutral-100: #f1efe9;
-  --color-neutral-200: #e3dfd6;
-  --color-neutral-300: #c8c2b6;
-  --color-neutral-400: #9b9386;
-  --color-neutral-500: #6e6659;
-  --color-neutral-600: #4e4739;
-  --color-neutral-700: #363026;
-  --color-neutral-800: #24201a;
-  --color-neutral-900: #16121f;
+  --color-midnight: #160D2B;
+  --color-surface: #24113F;
+  --color-gold: #A78BFA;
+  --color-gold-light: #C4B5FD;
+  --color-gold-deep: #6D4AB8;
+  --color-crimson: #B3223A;
+  --color-crimson-bright: #D8324C;
+  --color-ink: #F5F3FF;
+  --color-muted: #B7ADC9;
+  --color-elevated: #301A50;
 
   /* Semantic tokens */
-  --color-surface: #fffdf7;
-  --color-muted: #6e6659;
-  --color-danger: #e11d48;
-  --color-success: #4d7c0f;
-  --color-warning: #b45309;
+  --color-danger: #D8324C;
+  --color-success: #A78BFA;
+  --color-warning: #6D4AB8;
 
   /* Typography */
-  --font-display: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
-  --font-body: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-
-  /* Radii */
-  --radius-card: 1rem;
-  --radius-control: 0.75rem;
-  --radius-pill: 9999px;
+  --font-display: var(--font-playfair), "Playfair Display", Georgia, serif;
+  --font-body: var(--font-instrument), "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
 
   /* Spacing */
-  --spacing-gutter: 1.25rem;
-  --spacing-section: 5rem;
+  --spacing-gutter: 1.5rem;
+  --spacing-section: 3rem;
+
+  /* Radii */
+  --radius-card: 2rem;
+  --radius-control: 0.75rem;
+  --radius-pill: 9999px;
 }
 
 @layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
   body {
-    background-color: var(--color-cream);
+    background-color: var(--color-midnight);
     color: var(--color-ink);
     font-family: var(--font-body);
+    font-optical-sizing: auto;
+    text-rendering: optimizeLegibility;
     position: relative;
   }
 
-  /* Static low-contrast decorative blobs behind content */
-  body::before,
+  /* Mouse focus stays clean, but keyboard focus must always be visible */
+  *:focus {
+    @apply outline-none;
+  }
+
+  *:focus-visible {
+    outline: 2px solid var(--color-gold);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px rgba(167, 139, 250, 0.25);
+  }
+
+  /* Atmospheric background — very low opacity, kept off components */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      radial-gradient(1200px 600px at 50% -10%, rgba(167, 139, 250, 0.14), transparent 80%),
+      radial-gradient(800px 500px at 85% 15%, rgba(124, 92, 200, 0.10), transparent 80%),
+      radial-gradient(600px 400px at 15% 85%, rgba(196, 181, 253, 0.07), transparent 80%);
+  }
+
   body::after {
     content: "";
     position: fixed;
+    inset: 0;
     z-index: -1;
-    border-radius: var(--radius-pill);
     pointer-events: none;
-  }
-
-  body::before {
-    top: -10rem;
-    right: -8rem;
-    width: 28rem;
-    height: 28rem;
-    background: radial-gradient(
-      circle,
-      color-mix(in srgb, var(--color-purple) 12%, transparent) 0%,
-      transparent 70%
-    );
-  }
-
-  body::after {
-    bottom: -12rem;
-    left: -10rem;
-    width: 32rem;
-    height: 32rem;
-    background: radial-gradient(
-      circle,
-      color-mix(in srgb, var(--color-lime) 16%, transparent) 0%,
-      transparent 70%
-    );
-  }
-
-  :focus-visible {
-    outline: 2px solid var(--color-purple);
-    outline-offset: 2px;
+    opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
   }
 
   ::selection {
-    background-color: var(--color-lime);
-    color: var(--color-ink);
+    @apply bg-gold/30 text-midnight;
   }
+}
+
+/* Prevent the grey/black tap highlight on mobile devices */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* One-shot gold sheen sweep */
+@keyframes sheen {
+  from {
+    transform: translateX(-120%) skewX(-18deg);
+  }
+  to {
+    transform: translateX(320%) skewX(-18deg);
+  }
+}
+
+/* Slow gold shimmer loop */
+@keyframes shimmer {
+  from {
+    background-position: -150% 0;
+  }
+  to {
+    background-position: 250% 0;
+  }
+}
+
+/* Floating emblem drift — vertical only; the emblem must never rotate */
+@keyframes emblem-drift {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-14px);
+  }
+}
+
+.animate-sheen {
+  animation: sheen 0.9s ease-out 0.4s 1;
+}
+
+.animate-shimmer {
+  animation: shimmer 2.5s linear infinite;
+}
+
+.animate-emblem-drift {
+  animation: emblem-drift 11s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
