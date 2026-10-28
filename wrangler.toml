@@ -1,0 +1,4 @@
+name = "spill-app"
+compatibility_date = "2024-07-08"
+pages_build_output_dir = ".next"
+
