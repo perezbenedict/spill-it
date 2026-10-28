@@ -1,22 +1,45 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import Button from '@/components/ui/Button';
-import Field from '@/components/ui/Field';
-import Textarea from '@/components/ui/Textarea';
+import { useState } from "react";
+import { Flame, HelpCircle, Lightbulb, MessagesSquare } from "lucide-react";
+import Button from "@/components/ui/Button";
+import Field from "@/components/ui/Field";
+import Textarea from "@/components/ui/Textarea";
 import {
   CATEGORIES,
   DEFAULT_MAX_CONTENT_LENGTH,
   DEFAULT_MIN_CONTENT_LENGTH,
-} from '@/lib/constants';
-import { submissionSchemaFactory } from '@/lib/validation';
-import { cn } from '@/lib/cn';
+} from "@/lib/constants";
+import { submissionSchemaFactory } from "@/lib/validation";
+import { cn } from "@/lib/cn";
+
+const CATEGORY_HEADINGS = {
+  question: "What are you wondering?",
+  opinion: "State your take.",
+  challenge: "Bring something worth arguing about.",
+  twocents: "Join the conversation.",
+};
 
 const CATEGORY_PROMPTS = {
-  question: 'What do you want to ask the room?',
-  opinion: 'What is your take? Say it with your whole chest.',
-  challenge: 'What are you challenging the room with?',
-  twocents: 'Got two cents? Drop them here.',
+  question: "What do you want to ask the room?",
+  opinion: "What is your take? Say it with your whole chest.",
+  challenge: "What are you challenging the room with?",
+  twocents: "Got two cents? Drop them here.",
+};
+
+const CATEGORY_PLACEHOLDERS = {
+  question:
+    "Ask anything - what's something you genuinely want to know?",
+  opinion: "Say where you stand and why you feel that way.",
+  challenge: "Bring an idea or viewpoint that gets people talking.",
+  twocents: "Jump in and share your perspective.",
+};
+
+const CATEGORY_ACCENTS = {
+  question: "bg-gold/20 text-gold",
+  opinion: "bg-gold/25 text-gold-deep",
+  challenge: "bg-crimson/20 text-crimson-bright",
+  twocents: "bg-gold/15 text-gold-light",
 };
 
 function clampLength(value, fallback) {
@@ -25,15 +48,14 @@ function clampLength(value, fallback) {
   return Math.min(Math.max(parsed, 1), 1000);
 }
 
-// Fixed friendly copy - never surface zod issues or server internals.
 function messageForIssue(issue, minLength, maxLength) {
-  if (issue?.path?.includes('content')) {
-    return issue.code === 'too_big'
+  if (issue?.path?.includes("content")) {
+    return issue.code === "too_big"
       ? `Keep it under ${maxLength} characters.`
       : `Say a little more - at least ${minLength} characters.`;
   }
-  if (issue?.path?.includes('nickname')) return 'Pick a nickname before sending.';
-  return 'Check your submission and try again.';
+  if (issue?.path?.includes("nickname")) return "Pick a nickname before sending.";
+  return "Check your submission and try again.";
 }
 
 export default function SubmissionForm({ session, nickname, category, onBack, onSuccess }) {
@@ -47,7 +69,7 @@ export default function SubmissionForm({ session, nickname, category, onBack, on
     DEFAULT_MAX_CONTENT_LENGTH
   );
 
-  const [content, setContent] = useState('');
+  const [content, setContent] = useState("");
   const [error, setError] = useState(null);
   const [pending, setPending] = useState(false);
 
@@ -71,23 +93,23 @@ export default function SubmissionForm({ session, nickname, category, onBack, on
     setPending(true);
     setError(null);
     try {
-      const response = await fetch('/api/submissions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/submissions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(parsed.data),
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
         setError(
-          typeof data.error === 'string' && data.error
+          typeof data.error === "string" && data.error
             ? data.error
-            : 'Something went wrong and your thought was not saved. Please try again.'
+            : "Something went wrong and your thought was not saved. Please try again."
         );
         return;
       }
       onSuccess();
     } catch {
-      setError('We could not reach the server. Check your connection and try again.');
+      setError("We could not reach the server. Check your connection and try again.");
     } finally {
       setPending(false);
     }
@@ -95,23 +117,41 @@ export default function SubmissionForm({ session, nickname, category, onBack, on
 
   return (
     <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-widest text-purple">
-          {CATEGORIES.find((entry) => entry.key === category)?.label || 'Contribution'}
-        </p>
-        <h1 className="mt-1 font-display text-2xl font-bold text-ink">
-          What&apos;s on your mind?
-        </h1>
+      <div className="flex items-start gap-3">
+        <span
+          aria-hidden="true"
+          className={cn(
+            "flex h-10 w-10 shrink-0 items-center justify-center rounded-control",
+            CATEGORY_ACCENTS[category] || "bg-gold/20 text-gold"
+          )}
+        >
+          {category === "challenge" ? (
+            <Flame className="h-5 w-5" />
+          ) : category === "opinion" ? (
+            <Lightbulb className="h-5 w-5" />
+          ) : category === "twocents" ? (
+            <MessagesSquare className="h-5 w-5" />
+          ) : (
+            <HelpCircle className="h-5 w-5" />
+          )}
+        </span>
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-widest text-gold">
+            {CATEGORIES.find((entry) => entry.key === category)?.label || "Contribution"}
+          </p>
+          <h1 className="mt-1 font-display text-2xl font-bold text-ink">
+            {CATEGORY_HEADINGS[category] || "What's on your mind?"}
+          </h1>
+        </div>
       </div>
 
       <div>
-        <Field label={CATEGORY_PROMPTS[category] || 'What do you want to say?'} required>
-          {/* text-base (16px) stops iOS from zooming the viewport on focus */}
+        <Field label={CATEGORY_PROMPTS[category] || "What do you want to say?"} required>
           <Textarea
             value={content}
             onChange={(event) => setContent(event.target.value)}
             rows={6}
-            placeholder="Type it out - nobody here knows who you are."
+            placeholder={CATEGORY_PLACEHOLDERS[category] || "Type it out - nobody here knows who you are."}
             disabled={pending}
             className="text-base"
           />
@@ -119,8 +159,8 @@ export default function SubmissionForm({ session, nickname, category, onBack, on
         <p
           aria-live="polite"
           className={cn(
-            'mt-1.5 text-right text-xs tabular-nums',
-            nearLimit ? 'font-semibold text-coral' : 'text-muted'
+            "mt-1.5 text-right text-xs tabular-nums transition-colors",
+            nearLimit ? "font-semibold text-gold-deep" : "text-muted"
           )}
         >
           {content.length} / {maxLength}
@@ -130,7 +170,7 @@ export default function SubmissionForm({ session, nickname, category, onBack, on
       {error ? (
         <p
           role="alert"
-          className="rounded-control border border-danger/30 bg-danger/5 px-3 py-2 text-sm font-medium text-danger"
+          className="rounded-control border border-crimson/30 bg-crimson/10 px-3 py-2 text-sm font-medium text-crimson"
         >
           {error}
         </p>
@@ -143,10 +183,15 @@ export default function SubmissionForm({ session, nickname, category, onBack, on
         <Button
           type="submit"
           size="lg"
+          variant="primary"
           loading={pending}
           className="w-full sm:w-auto"
         >
-          Send it in
+          <span
+            aria-hidden="true"
+            className="animate-sheen pointer-events-none absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-transparent via-white/25 to-transparent"
+          />
+          <span className="relative">{pending ? "Sending..." : "Spill It Now!"}</span>
         </Button>
       </div>
     </form>

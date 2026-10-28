@@ -6,7 +6,7 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/cn";
 
 const FOCUSABLE =
-  'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+  "a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex='-1'])";
 
 export default function Dialog({ open, onClose, title, description, className, children }) {
   const reduceMotion = useReducedMotion();
@@ -67,7 +67,7 @@ export default function Dialog({ open, onClose, title, description, className, c
       {open ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <motion.div
-            className="fixed inset-0 bg-ink/50"
+            className="fixed inset-0 bg-midnight/60"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -82,8 +82,8 @@ export default function Dialog({ open, onClose, title, description, className, c
             aria-describedby={description ? descriptionId : undefined}
             tabIndex={-1}
             className={cn(
-              "relative w-full max-w-md rounded-card border border-neutral-200 bg-surface p-6 shadow-lg",
-              "focus:outline-none",
+              "relative w-full max-w-md rounded-card border border-white/10 bg-surface p-6 shadow-lg",
+              "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold",
               className
             )}
             initial={{ opacity: 0, y: reduceMotion ? 0 : 12 }}

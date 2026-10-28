@@ -2,9 +2,11 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { Search } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { CATEGORIES } from '@/lib/constants';
+import { cn } from '@/lib/cn';
 
 const STATUS_OPTIONS = [
   ['all', 'All'],
@@ -22,7 +24,19 @@ const SORT_OPTIONS = [
 const DEBOUNCE_MS = 300;
 
 const selectClassName =
-  'rounded-control border border-neutral-300 bg-surface px-3 py-2.5 text-sm text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple';
+  'rounded-control border bg-surface px-3 py-2.5 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold';
+
+const labelClassName = 'flex flex-col gap-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted';
+
+function selectTone(active) {
+  return active ? 'border-gold/50 text-gold' : 'border-white/15 text-ink';
+}
+
+function chipTone(active) {
+  return active
+    ? 'border-gold/50 bg-gold/15 text-gold'
+    : 'border-white/15 text-muted hover:text-ink';
+}
 
 export default function FilterBar({ status, category, sort, q }) {
   const router = useRouter();
@@ -107,29 +121,72 @@ export default function FilterBar({ status, category, sort, q }) {
   return (
     <section
       aria-label="Filter contributions"
-      className="flex flex-col gap-4 rounded-card border border-neutral-200 bg-surface p-4 sm:flex-row sm:flex-wrap sm:items-end"
+      className="flex flex-col gap-3 rounded-card border border-white/10 bg-surface p-3 sm:flex-row sm:flex-wrap sm:items-end"
     >
-      <label className="flex flex-col gap-1 text-xs font-medium text-muted">
-        Status
-        <select
-          value={status}
-          onChange={(event) => navigate({ status: event.target.value })}
-          className={selectClassName}
+      <form
+        role="search"
+        onSubmit={submitSearch}
+        className="flex min-w-0 flex-1 flex-col gap-1 sm:min-w-56"
+      >
+        <label htmlFor="feed-search" className={labelClassName}>
+          Search
+        </label>
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <Search
+              aria-hidden="true"
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
+            />
+            <Input
+              id="feed-search"
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search content or nickname"
+              autoComplete="off"
+              className="pl-9"
+            />
+          </div>
+          {query ? (
+            <Button type="button" variant="secondary" onClick={clearSearch}>
+              Clear
+            </Button>
+          ) : null}
+        </div>
+      </form>
+
+      <div className="flex flex-col gap-1">
+        <span id="feed-status-label" className={labelClassName}>
+          Status
+        </span>
+        <div
+          role="group"
+          aria-labelledby="feed-status-label"
+          className="flex flex-wrap gap-2"
         >
           {STATUS_OPTIONS.map(([value, label]) => (
-            <option key={value} value={value}>
+            <button
+              key={value}
+              type="button"
+              aria-pressed={status === value}
+              onClick={() => navigate({ status: value })}
+              className={cn(
+                'rounded-pill border px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold',
+                chipTone(status === value)
+              )}
+            >
               {label}
-            </option>
+            </button>
           ))}
-        </select>
-      </label>
+        </div>
+      </div>
 
-      <label className="flex flex-col gap-1 text-xs font-medium text-muted">
+      <label className={labelClassName}>
         Type
         <select
           value={category}
           onChange={(event) => navigate({ category: event.target.value })}
-          className={selectClassName}
+          className={cn(selectClassName, selectTone(category !== 'all'))}
         >
           <option value="all">All</option>
           {CATEGORIES.map((entry) => (
@@ -140,37 +197,12 @@ export default function FilterBar({ status, category, sort, q }) {
         </select>
       </label>
 
-      <form
-        role="search"
-        onSubmit={submitSearch}
-        className="flex min-w-0 flex-1 flex-col gap-1"
-      >
-        <label htmlFor="feed-search" className="text-xs font-medium text-muted">
-          Search
-        </label>
-        <div className="flex gap-2">
-          <Input
-            id="feed-search"
-            type="search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search content or nickname"
-            autoComplete="off"
-          />
-          {query ? (
-            <Button type="button" variant="secondary" onClick={clearSearch}>
-              Clear
-            </Button>
-          ) : null}
-        </div>
-      </form>
-
-      <label className="flex flex-col gap-1 text-xs font-medium text-muted">
+      <label className={labelClassName}>
         Sort
         <select
           value={sort}
           onChange={(event) => navigate({ sort: event.target.value })}
-          className={selectClassName}
+          className={cn(selectClassName, selectTone(sort !== 'newest'))}
         >
           {SORT_OPTIONS.map(([value, label]) => (
             <option key={value} value={value}>

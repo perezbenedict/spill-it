@@ -1,0 +1,8 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - alert [ref=e3]:
+      - heading "We could not load this discussion" [level=3] [ref=e7]
+      - paragraph [ref=e8]: That is on us, not you. Try reloading the page.
+      - link "Try again" [ref=e10] [cursor=pointer]:
+        - /url: /join/BEJSNP9F
+  - alert [ref=e11]

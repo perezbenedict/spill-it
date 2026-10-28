@@ -4,29 +4,25 @@ import PosterSheet from "@/components/qr/PosterSheet";
 import PrintButton from "@/components/qr/PrintButton";
 import { buildJoinUrl, generateQrDataUrl } from "@/lib/qr";
 import { isValidPublicCode } from "@/lib/session-code";
-import { createClient } from "@/lib/supabase/server";
+import { getPublicSession } from "@/lib/spill-api";
 
 async function getSession(sessionCode) {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("published_sessions_by_code")
-    .select("public_code, title, status")
-    .eq("public_code", sessionCode.toUpperCase())
-    .maybeSingle();
-  if (error) throw error;
-  // RLS hides drafts; the extra check keeps the guarantee explicit.
-  if (!data || data.status === "draft") return null;
-  return data;
+  const result = await getPublicSession(sessionCode.toUpperCase());
+  if (result.status === 0 || !result.ok) {
+    if (result.status === 404) return null;
+    throw new Error("session lookup failed");
+  }
+  return result.body.session ?? null;
 }
 
 export async function generateMetadata({ params }) {
   const { sessionCode } = await params;
-  if (!isValidPublicCode(sessionCode)) return { title: "SPILL poster" };
+  if (!isValidPublicCode(sessionCode)) return { title: "Spill It poster" };
   try {
     const session = await getSession(sessionCode);
-    return { title: session ? `${session.title} - SPILL poster` : "SPILL poster" };
+    return { title: session ? `${session.title} - Spill It poster` : "Spill It poster" };
   } catch {
-    return { title: "SPILL poster" };
+    return { title: "Spill It poster" };
   }
 }
 
@@ -42,11 +38,10 @@ export default async function PosterPage({ params }) {
     joinUrl = buildJoinUrl(sessionCode.toUpperCase());
     qrDataUrl = await generateQrDataUrl(joinUrl);
   } catch (error) {
-    // Config errors from lib/config start with the variable name but never echo values.
     const isConfigError = /^NEXT_PUBLIC_[A-Z_]+ /.test(error?.message ?? "");
     if (!isConfigError) throw error;
     return (
-      <main className="flex min-h-screen items-center justify-center bg-cream px-gutter print:bg-white">
+      <main className="flex min-h-screen items-center justify-center bg-midnight px-gutter print:bg-white">
         <div className="w-full max-w-md print:hidden">
           <ErrorState
             title="Site URL not configured"
@@ -61,9 +56,12 @@ export default async function PosterPage({ params }) {
   if (!session) notFound();
 
   return (
-    <div className="min-h-screen bg-cream print:bg-white">
+    <div className="min-h-screen bg-midnight print:bg-white">
       <div className="mx-auto flex w-full max-w-xl items-center justify-between px-gutter py-6 print:hidden">
-        <p className="text-sm text-muted">Printable poster for {session.title}</p>
+        <p className="min-w-0 text-sm text-muted">
+          Printable poster for{" "}
+          <span className="font-display font-semibold text-ink">{session.title}</span>
+        </p>
         <PrintButton />
       </div>
       <div className="px-gutter pb-16 print:px-0 print:pb-0">

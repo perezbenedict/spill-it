@@ -10,8 +10,6 @@ import Card from "@/components/ui/Card";
 import Dialog from "@/components/ui/Dialog";
 import StatusBadge from "@/components/admin/sessions/StatusBadge";
 
-// Only transitions valid for the current status are offered; everything else
-// is validated again server-side.
 const ACTIONS = {
   draft: [{ next: "live", label: "Publish", icon: Play, variant: "primary" }],
   live: [
@@ -49,7 +47,6 @@ export default function StatusControls({ sessionId, status }) {
 
   const [confirmClose, setConfirmClose] = useState(false);
 
-  // Dismiss the close dialog once the change lands.
   useEffect(() => {
     if (state?.ok) setConfirmClose(false);
   }, [state]);
@@ -60,15 +57,17 @@ export default function StatusControls({ sessionId, status }) {
   return (
     <Card className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="font-display text-lg font-semibold text-ink">Status</h2>
+        <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">Status</h2>
         <div className="flex items-center gap-2">
-          <span className="text-sm text-muted">Currently</span>
+          <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
+            Currently
+          </span>
           <StatusBadge status={status} />
         </div>
       </div>
 
       {isClosed ? (
-        <p className="rounded-control bg-neutral-100 px-4 py-3 text-sm text-ink">
+        <p className="rounded-control bg-white/5 px-4 py-3 text-sm text-ink">
           This discussion is closed. Submissions are closed but everything already
           contributed is kept.
         </p>
@@ -98,12 +97,12 @@ export default function StatusControls({ sessionId, status }) {
       )}
 
       {state?.error ? (
-        <p role="alert" className="text-sm font-medium text-danger">
+        <p role="alert" className="text-sm font-medium text-crimson">
           {state.error}
         </p>
       ) : null}
       {state?.ok ? (
-        <p role="status" className="text-sm font-medium text-success">
+        <p role="status" className="text-sm font-medium text-gold">
           Status updated to {state.status}.
         </p>
       ) : null}

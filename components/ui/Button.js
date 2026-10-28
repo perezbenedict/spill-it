@@ -1,11 +1,20 @@
 import { cn } from "@/lib/cn";
 import Spinner from "@/components/ui/Spinner";
 
+const base =
+  "inline-flex items-center justify-center gap-2 rounded-control font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold disabled:cursor-not-allowed disabled:opacity-50";
+
 const variants = {
-  primary: "bg-purple text-white hover:bg-purple-deep active:bg-purple-deep",
-  secondary: "bg-ink text-cream hover:bg-neutral-800 active:bg-neutral-800",
-  ghost: "bg-transparent text-ink hover:bg-neutral-100 active:bg-neutral-200",
-  danger: "bg-danger text-white hover:opacity-90 active:opacity-80",
+  primary:
+    "relative overflow-hidden bg-[linear-gradient(135deg,#C4B5FD,#A78BFA_55%,#6D4AB8)] text-[#1B1030] shadow-[0_0_14px_rgba(167,139,250,0.2)] hover:shadow-[0_0_22px_rgba(167,139,250,0.4)] hover:opacity-90 active:opacity-80 focus-visible:shadow-[0_0_24px_rgba(167,139,250,0.5)]",
+  gold:
+    "relative overflow-hidden bg-[linear-gradient(135deg,#C4B5FD,#A78BFA_55%,#6D4AB8)] text-[#1B1030] shadow-[0_0_14px_rgba(167,139,250,0.2)] hover:shadow-[0_0_22px_rgba(167,139,250,0.4)] hover:opacity-90 active:opacity-80 focus-visible:shadow-[0_0_24px_rgba(167,139,250,0.5)]",
+  secondary:
+    "border border-white/15 bg-midnight text-ink hover:bg-white/10 active:bg-white/5",
+  ghost:
+    "bg-transparent text-ink hover:bg-white/10 active:bg-white/5",
+  danger:
+    "bg-crimson text-white hover:opacity-90 active:opacity-80",
 };
 
 const sizes = {
@@ -29,14 +38,7 @@ export default function Button({
       type={type}
       disabled={disabled || loading}
       aria-busy={loading || undefined}
-      className={cn(
-        "inline-flex items-center justify-center gap-2 rounded-control font-medium transition-colors",
-        "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple",
-        "disabled:cursor-not-allowed disabled:opacity-50",
-        variants[variant],
-        sizes[size],
-        className
-      )}
+      className={cn(base, variants[variant], sizes[size], className)}
       {...props}
     >
       {loading ? <Spinner className="h-4 w-4" /> : null}

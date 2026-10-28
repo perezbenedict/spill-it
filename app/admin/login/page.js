@@ -1,27 +1,31 @@
-import Image from "next/image";
 import { redirect } from "next/navigation";
 import { getAdminContext } from "@/lib/auth";
+import Emblem from "@/components/Emblem";
 import LoginForm from "@/components/admin/LoginForm";
 
 export default async function AdminLoginPage() {
   if (await getAdminContext()) redirect("/admin");
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-cream px-gutter py-12">
-      <div className="w-full max-w-md rounded-card bg-ink p-8 shadow-lg">
-        <div className="flex flex-col items-center gap-2 text-center">
-          <Image
-            src="/gnwy-logo.png"
-            alt="GNWY - Grace Nation Wealthy Youths"
-            width={928}
-            height={1146}
-            priority
-            className="h-auto w-28"
-          />
-          <h1 className="font-display text-4xl font-bold tracking-tight text-cream">SPILL</h1>
-          <p className="text-sm text-neutral-300">Say what you really think.</p>
+    <main className="flex min-h-screen items-center justify-center bg-midnight px-gutter py-12">
+      <div className="w-full max-w-md space-y-8 text-center">
+        <div className="flex flex-col items-center gap-4">
+          <span
+            className="inline-flex h-28 w-28 animate-emblem-drift drop-shadow-[0_0_18px_rgba(167,139,250,0.25)] sm:h-32 sm:w-32"
+            aria-label="Spill It"
+          >
+            <Emblem className="h-full w-full" />
+          </span>
+          <div>
+            <h1 className="font-display text-4xl font-bold tracking-tight text-ink">
+              Spill It
+            </h1>
+            <p className="mt-1 text-sm text-muted">
+              Admin
+            </p>
+          </div>
         </div>
-        <div className="mt-8">
+        <div className="rounded-card border border-white/10 bg-surface p-6 shadow-lg sm:p-8">
           <LoginForm />
         </div>
       </div>

@@ -4,7 +4,7 @@ import ErrorState from "@/components/ui/ErrorState";
 import QRCodeCard from "@/components/qr/QRCodeCard";
 
 const linkClass =
-  "inline-flex items-center rounded-control px-3 py-2 text-sm font-medium text-ink underline-offset-4 transition-colors hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple";
+  "inline-flex items-center rounded-control px-3 py-2 text-sm font-medium text-ink underline-offset-4 transition-colors hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold";
 
 export default function QrPanel({ publicCode }) {
   let joinUrl;
@@ -21,7 +21,7 @@ export default function QrPanel({ publicCode }) {
 
   return (
     <section aria-labelledby="qr-panel-heading" className="flex flex-col gap-3">
-      <h2 id="qr-panel-heading" className="font-display text-lg font-semibold text-ink">
+      <h2 id="qr-panel-heading" className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
         Share &amp; project
       </h2>
       <QRCodeCard url={joinUrl} fileName={`spill-${publicCode}.png`} />

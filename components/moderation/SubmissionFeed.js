@@ -1,15 +1,16 @@
-'use client';
+"use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Check, EyeOff, Monitor, Pin, Radio } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
-import { CATEGORIES } from '@/lib/constants';
-import { cn } from '@/lib/cn';
-import Badge from '@/components/ui/Badge';
-import Button from '@/components/ui/Button';
-import Dialog from '@/components/ui/Dialog';
-import EmptyState from '@/components/ui/EmptyState';
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { Check, EyeOff, Monitor, Pin, Radio } from "lucide-react";
+import { CATEGORIES } from "@/lib/constants";
+import { cn } from "@/lib/cn";
+import Badge from "@/components/ui/Badge";
+import Button from "@/components/ui/Button";
+import Dialog from "@/components/ui/Dialog";
+import EmptyState from "@/components/ui/EmptyState";
+import ErrorState from "@/components/ui/ErrorState";
 import {
   approve,
   hide,
@@ -17,24 +18,39 @@ import {
   toggleDiscussed,
   togglePin,
   togglePresentationHidden,
-} from '@/lib/actions/moderation';
+} from "@/lib/actions/moderation";
 
 const CATEGORY_LABELS = Object.fromEntries(CATEGORIES.map((entry) => [entry.key, entry.label]));
 const STATUS_LABELS = {
-  pending: 'Awaiting review',
-  approved: 'Approved',
-  hidden: 'Hidden',
+  pending: "Awaiting review",
+  approved: "Approved",
+  hidden: "Hidden",
 };
 const STATUS_VARIANTS = {
-  pending: 'warning',
-  approved: 'success',
-  hidden: 'danger',
+  pending: "warning",
+  approved: "success",
+  hidden: "danger",
 };
-const FALLBACK_ERROR = 'Something went wrong. Please try again.';
+const FALLBACK_ERROR = "Something went wrong. Please try again.";
 
-const cardActionClassName = 'min-h-10';
+const POLL_INTERVAL_MS = 3500;
+
+// Rough 4-line threshold: content at least this long clamps in the feed and
+// gets a Show more toggle, so long posts stay scannable without hiding review.
+const CLAMP_THRESHOLD = 220;
+
+function shortTimestamp(iso) {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso ?? "";
+  return `${date.toLocaleDateString(undefined, { day: "numeric", month: "short" })}, ${date.toLocaleTimeString(
+    undefined,
+    { hour: "2-digit", minute: "2-digit" }
+  )}`;
+}
+
+const cardActionClassName = "min-h-10";
 const indicatorClassName =
-  'inline-flex items-center gap-1 text-xs font-medium text-muted';
+  "inline-flex items-center gap-1 text-xs font-medium text-muted";
 
 function seedRows(submissions) {
   const map = new Map();
@@ -57,22 +73,20 @@ function byOldest(a, b) {
 }
 
 function compareFor(sort) {
-  if (sort === 'oldest') return byOldest;
-  if (sort === 'pinned') {
+  if (sort === "oldest") return byOldest;
+  if (sort === "pinned") {
     return (a, b) => Number(b.is_pinned) - Number(a.is_pinned) || byNewest(a, b);
   }
   return byNewest;
 }
 
-// Mirrors the server query's literal (de-wildcarded) case-insensitive match so
-// realtime rows obey the filters the page was fetched with.
 function matchesFilters(row, filters) {
-  if (filters.status !== 'all' && row.moderation_status !== filters.status) return false;
-  if (filters.category !== 'all' && row.category !== filters.category) return false;
+  if (filters.status !== "all" && row.moderation_status !== filters.status) return false;
+  if (filters.category !== "all" && row.category !== filters.category) return false;
   if (filters.q) {
     const needle = filters.q.toLowerCase();
-    const inContent = String(row.content ?? '').toLowerCase().includes(needle);
-    const inNickname = String(row.nickname ?? '').toLowerCase().includes(needle);
+    const inContent = String(row.content ?? "").toLowerCase().includes(needle);
+    const inNickname = String(row.nickname ?? "").toLowerCase().includes(needle);
     if (!inContent && !inNickname) return false;
   }
   return true;
@@ -92,6 +106,7 @@ export default function SubmissionFeed({
   hasFilters,
 }) {
   const router = useRouter();
+  const reduceMotion = useReducedMotion();
 
   const [rows, setRowsState] = useState(() => seedRows(submissions));
   const rowsRef = useRef(rows);
@@ -100,15 +115,28 @@ export default function SubmissionFeed({
     setRowsState(rowsRef.current);
   }, []);
 
-  // Re-seed whenever the server sends a fresh page (filter or page change).
+  // Pagination total, kept fresh from successful polls.
+  const [liveTotal, setLiveTotal] = useState(total);
+
   useEffect(() => {
     rowsRef.current = seedRows(submissions);
     setRowsState(rowsRef.current);
-  }, [submissions]);
+    setLiveTotal(total);
+  }, [submissions, total]);
 
-  const [connection, setConnection] = useState('reconnecting');
+  const [connection, setConnection] = useState("reconnecting");
   const [error, setError] = useState(null);
   const [confirmId, setConfirmId] = useState(null);
+  const [expandedIds, setExpandedIds] = useState(() => new Set());
+
+  function toggleExpanded(id) {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
 
   const currentIdRef = useRef(null);
   const [currentId, setCurrentIdState] = useState(null);
@@ -117,8 +145,6 @@ export default function SubmissionFeed({
     setCurrentIdState(value);
   }, []);
 
-  // Ref is the source of truth so a second click before re-render cannot start
-  // a duplicate request; state copy exists to trigger the render.
   const busyRef = useRef(new Set());
   const [, setBusyTick] = useState(0);
   function beginBusy(key) {
@@ -138,80 +164,77 @@ export default function SubmissionFeed({
     return false;
   };
 
-  // --- realtime -----------------------------------------------------------
+  // Polling replaces Supabase realtime: fetch the current filter/page window
+  // every few seconds, pause while the tab is hidden, and only report a live
+  // connection after a poll actually succeeds.
   useEffect(() => {
-    const supabase = createClient();
-    let channel = null;
     let disposed = false;
-    let generation = 0;
+    let timeoutId = null;
+    let inFlight = false;
 
-    const onInsert = (payload) => {
-      const row = payload?.new;
-      if (!row?.id) return;
-      updateRows((prev) => (prev.has(row.id) ? prev : new Map(prev).set(row.id, row)));
-    };
-    const onUpdate = (payload) => {
-      const row = payload?.new;
-      if (!row?.id) return;
-      updateRows((prev) => new Map(prev).set(row.id, row));
-    };
-    const onDelete = (payload) => {
-      const id = payload?.old?.id;
-      if (!id) return;
-      updateRows((prev) => {
-        if (!prev.has(id)) return prev;
-        const next = new Map(prev);
-        next.delete(id);
-        return next;
-      });
-    };
+    const query = new URLSearchParams({ session_id: sessionId });
+    if (filters.status !== "all") query.set("status", filters.status);
+    if (filters.category !== "all") query.set("category", filters.category);
+    if (filters.q) query.set("q", filters.q);
+    query.set("sort", sort);
+    query.set("page", String(page));
+    query.set("limit", String(pageSize));
+    const pollUrl = `/api/admin/submissions?${query.toString()}`;
 
-    function attach() {
-      generation += 1;
-      const expected = generation;
-      if (channel) supabase.removeChannel(channel);
-      channel = supabase
-        .channel(`moderation-feed-${sessionId}`)
-        .on(
-          'postgres_changes',
-          { event: 'INSERT', schema: 'public', table: 'submissions', filter: `session_id=eq.${sessionId}` },
-          onInsert
-        )
-        .on(
-          'postgres_changes',
-          { event: 'UPDATE', schema: 'public', table: 'submissions', filter: `session_id=eq.${sessionId}` },
-          onUpdate
-        )
-        .on(
-          'postgres_changes',
-          { event: 'DELETE', schema: 'public', table: 'submissions', filter: `session_id=eq.${sessionId}` },
-          onDelete
-        )
-        .subscribe((status) => {
-          // Ignore callbacks from a channel that has been replaced.
-          if (disposed || expected !== generation) return;
-          setConnection(status === 'SUBSCRIBED' ? 'live' : 'reconnecting');
-        });
+    function schedule() {
+      if (disposed || timeoutId !== null) return;
+      timeoutId = setTimeout(() => {
+        timeoutId = null;
+        poll();
+      }, POLL_INTERVAL_MS);
     }
 
-    attach();
+    async function poll() {
+      if (disposed) return;
+      if (document.hidden) {
+        schedule();
+        return;
+      }
+      inFlight = true;
+      try {
+        const response = await fetch(pollUrl, { cache: "no-store" });
+        const data = await response.json().catch(() => null);
+        if (disposed) return;
+        if (!response.ok || !Array.isArray(data?.items)) throw new Error("poll failed");
+        setConnection("live");
+        setLiveTotal(data.total ?? 0);
+        // The fetched window is authoritative for the current filters/page:
+        // new and changed rows merge in, rows that left the window drop out.
+        const next = new Map();
+        for (const row of data.items) next.set(row.id, row);
+        updateRows(() => next);
+      } catch {
+        if (!disposed) setConnection("reconnecting");
+      } finally {
+        inFlight = false;
+        schedule();
+      }
+    }
 
-    const onOnline = () => attach();
-    const onVisibility = () => {
-      if (document.visibilityState === 'visible') attach();
+    poll();
+
+    const onOnline = () => {
+      if (!disposed && !inFlight) poll();
     };
-    window.addEventListener('online', onOnline);
-    document.addEventListener('visibilitychange', onVisibility);
+    const onVisibility = () => {
+      if (!disposed && !inFlight && document.visibilityState === "visible") poll();
+    };
+    window.addEventListener("online", onOnline);
+    document.addEventListener("visibilitychange", onVisibility);
 
     return () => {
       disposed = true;
-      window.removeEventListener('online', onOnline);
-      document.removeEventListener('visibilitychange', onVisibility);
-      if (channel) supabase.removeChannel(channel);
+      window.removeEventListener("online", onOnline);
+      document.removeEventListener("visibilitychange", onVisibility);
+      if (timeoutId !== null) clearTimeout(timeoutId);
     };
-  }, [sessionId, updateRows]);
+  }, [sessionId, filters, sort, page, pageSize, updateRows]);
 
-  // --- actions ------------------------------------------------------------
   async function perform({ id, actionKey, patch, remove = false, clearCurrent = false, action }) {
     if (cardBusy(id)) return;
     const before = rowsRef.current.get(id) ?? null;
@@ -247,7 +270,6 @@ export default function SubmissionFeed({
       return;
     }
 
-    // Revert the optimistic change and show the failure inline (never alert).
     updateRows((prev) => {
       const next = new Map(prev);
       if (before) next.set(id, before);
@@ -259,13 +281,13 @@ export default function SubmissionFeed({
   }
 
   const handleApprove = (id) =>
-    perform({ id, actionKey: 'approve', patch: { moderation_status: 'approved' }, action: approve });
+    perform({ id, actionKey: "approve", patch: { moderation_status: "approved" }, action: approve });
 
   const handleHide = (id) =>
     perform({
       id,
-      actionKey: 'hide',
-      patch: { moderation_status: 'hidden' },
+      actionKey: "hide",
+      patch: { moderation_status: "hidden" },
       clearCurrent: currentIdRef.current === id,
       action: hide,
     });
@@ -273,7 +295,7 @@ export default function SubmissionFeed({
   const handleDelete = (id) =>
     perform({
       id,
-      actionKey: 'delete',
+      actionKey: "delete",
       remove: true,
       clearCurrent: currentIdRef.current === id,
       action: removeSubmission,
@@ -282,7 +304,7 @@ export default function SubmissionFeed({
   const handlePin = (row) =>
     perform({
       id: row.id,
-      actionKey: 'pin',
+      actionKey: "pin",
       patch: { is_pinned: !row.is_pinned },
       action: togglePin,
     });
@@ -290,7 +312,7 @@ export default function SubmissionFeed({
   const handleDiscussed = (row) =>
     perform({
       id: row.id,
-      actionKey: 'discussed',
+      actionKey: "discussed",
       patch: { discussed_at: row.discussed_at ? null : new Date().toISOString() },
       action: toggleDiscussed,
     });
@@ -299,7 +321,7 @@ export default function SubmissionFeed({
     const nextHidden = !row.hidden_from_presentation;
     perform({
       id: row.id,
-      actionKey: 'presentation',
+      actionKey: "presentation",
       patch: { hidden_from_presentation: nextHidden },
       clearCurrent: nextHidden && currentIdRef.current === row.id,
       action: togglePresentationHidden,
@@ -312,21 +334,21 @@ export default function SubmissionFeed({
     beginBusy(`${id}|screen`);
     setError(null);
     try {
-      const response = await fetch('/api/presentation', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionCode, action: 'set', submissionId: id }),
+      const response = await fetch("/api/presentation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionCode, action: "set", submissionId: id }),
       });
       const data = await response.json().catch(() => null);
       if (!response.ok || !data?.ok) {
         setCurrentId(beforeCurrent);
-        setError(data?.error || 'Could not send that to the screen. Please try again.');
+        setError(data?.error || "Could not send that to the screen. Please try again.");
         return;
       }
       setCurrentId(data.currentId ?? null);
     } catch {
       setCurrentId(beforeCurrent);
-      setError('Could not send that to the screen. Please try again.');
+      setError("Could not send that to the screen. Please try again.");
     } finally {
       endBusy(`${id}|screen`);
     }
@@ -339,7 +361,6 @@ export default function SubmissionFeed({
     setConfirmId(null);
   }
 
-  // --- derived view -------------------------------------------------------
   const visible = useMemo(() => {
     const list = [];
     rows.forEach((row) => {
@@ -349,7 +370,7 @@ export default function SubmissionFeed({
     return list;
   }, [rows, filters, sort]);
 
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const totalPages = Math.max(1, Math.ceil(liveTotal / pageSize));
 
   function goPage(target) {
     const qs =
@@ -365,16 +386,24 @@ export default function SubmissionFeed({
     const busy = cardBusy(row.id);
     const onScreen = currentId === row.id;
     const statusLabel = STATUS_LABELS[row.moderation_status] ?? row.moderation_status;
-    const statusVariant = STATUS_VARIANTS[row.moderation_status] ?? 'neutral';
+    const statusVariant = STATUS_VARIANTS[row.moderation_status] ?? "neutral";
     const categoryLabel = CATEGORY_LABELS[row.category] ?? row.category;
-    const mayHide = row.moderation_status === 'pending' || row.moderation_status === 'approved';
+    const mayHide = row.moderation_status === "pending" || row.moderation_status === "approved";
+    const clampable = String(row.content ?? "").length > CLAMP_THRESHOLD;
+    const expanded = expandedIds.has(row.id);
 
     return (
-      <li key={row.id}>
+      <motion.li
+        key={row.id}
+        initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -6 }}
+        transition={{ duration: reduceMotion ? 0 : 0.2, ease: "easeOut" }}
+      >
         <article
           aria-labelledby={`submission-${row.id}-author`}
           aria-busy={busy || undefined}
-          className="rounded-card border border-neutral-200 bg-surface p-4 shadow-sm sm:p-5"
+          className="rounded-card border border-white/10 bg-surface p-4 shadow-sm transition hover:border-gold/30 sm:p-5"
         >
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
             <h3
@@ -384,7 +413,17 @@ export default function SubmissionFeed({
               {row.nickname}
             </h3>
             <Badge variant="info">{categoryLabel}</Badge>
-            <Badge variant={statusVariant}>{statusLabel}</Badge>
+            <Badge variant={statusVariant} className="font-semibold uppercase tracking-[0.12em]">
+              {statusLabel}
+            </Badge>
+            <time
+              dateTime={row.created_at}
+              title={new Date(row.created_at).toLocaleString()}
+              suppressHydrationWarning
+              className="shrink-0 whitespace-nowrap text-xs text-muted"
+            >
+              {shortTimestamp(row.created_at)}
+            </time>
             {row.is_pinned ? (
               <span className={indicatorClassName}>
                 <Pin className="h-3.5 w-3.5" aria-hidden="true" />
@@ -404,28 +443,37 @@ export default function SubmissionFeed({
               </span>
             ) : null}
             {onScreen ? (
-              <span className={cn(indicatorClassName, 'text-purple-deep')}>
+              <span className={cn(indicatorClassName, "text-gold")}>
                 <Monitor className="h-3.5 w-3.5" aria-hidden="true" />
                 On screen
               </span>
             ) : null}
           </div>
 
-          <p className="mt-3 whitespace-pre-wrap break-words text-sm text-ink">{row.content}</p>
-          <time
-            dateTime={row.created_at}
-            suppressHydrationWarning
-            className="mt-2 block text-xs text-muted"
+          <p
+            className={cn(
+              "mt-3 whitespace-pre-wrap break-words text-sm text-ink",
+              clampable && !expanded ? "line-clamp-4" : null
+            )}
           >
-            {new Date(row.created_at).toLocaleString()}
-          </time>
+            {row.content}
+          </p>
+          {clampable ? (
+            <button
+              type="button"
+              onClick={() => toggleExpanded(row.id)}
+              className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-muted underline-offset-4 transition-colors hover:text-ink hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+            >
+              {expanded ? "Show less" : "Show more"}
+            </button>
+          ) : null}
 
           <div className="mt-4 flex flex-wrap gap-2">
-            {row.moderation_status === 'pending' ? (
+            {row.moderation_status === "pending" ? (
               <Button
                 size="sm"
                 className={cardActionClassName}
-                loading={isBusy(row.id, 'approve')}
+                loading={isBusy(row.id, "approve")}
                 disabled={busy}
                 onClick={() => handleApprove(row.id)}
               >
@@ -437,7 +485,7 @@ export default function SubmissionFeed({
                 size="sm"
                 variant="secondary"
                 className={cardActionClassName}
-                loading={isBusy(row.id, 'hide')}
+                loading={isBusy(row.id, "hide")}
                 disabled={busy}
                 onClick={() => handleHide(row.id)}
               >
@@ -446,45 +494,48 @@ export default function SubmissionFeed({
             ) : null}
             <Button
               size="sm"
-              variant="secondary"
+              variant={row.is_pinned ? "primary" : "secondary"}
               className={cardActionClassName}
-              loading={isBusy(row.id, 'pin')}
+              loading={isBusy(row.id, "pin")}
               disabled={busy}
+              aria-pressed={Boolean(row.is_pinned)}
               onClick={() => handlePin(row)}
             >
-              {row.is_pinned ? 'Unpin' : 'Pin'}
+              {row.is_pinned ? "Unpin" : "Pin"}
             </Button>
             <Button
               size="sm"
-              variant="secondary"
+              variant={row.discussed_at ? "primary" : "secondary"}
               className={cardActionClassName}
-              loading={isBusy(row.id, 'discussed')}
+              loading={isBusy(row.id, "discussed")}
               disabled={busy}
+              aria-pressed={Boolean(row.discussed_at)}
               onClick={() => handleDiscussed(row)}
             >
-              {row.discussed_at ? 'Mark not discussed' : 'Mark discussed'}
+              {row.discussed_at ? "Mark not discussed" : "Mark discussed"}
             </Button>
-            {row.moderation_status === 'approved' && !row.hidden_from_presentation ? (
+            {row.moderation_status === "approved" && !row.hidden_from_presentation ? (
               <Button
                 size="sm"
                 className={cardActionClassName}
-                loading={isBusy(row.id, 'screen')}
+                loading={isBusy(row.id, "screen")}
                 disabled={busy}
                 onClick={() => sendToScreen(row.id)}
               >
                 Send to screen
               </Button>
             ) : null}
-            {row.moderation_status === 'approved' ? (
+            {row.moderation_status === "approved" ? (
               <Button
                 size="sm"
-                variant="ghost"
+                variant={row.hidden_from_presentation ? "primary" : "secondary"}
                 className={cardActionClassName}
-                loading={isBusy(row.id, 'presentation')}
+                loading={isBusy(row.id, "presentation")}
                 disabled={busy}
+                aria-pressed={Boolean(row.hidden_from_presentation)}
                 onClick={() => handlePresentationHidden(row)}
               >
-                {row.hidden_from_presentation ? 'Show on screen' : 'Hide from screen'}
+                {row.hidden_from_presentation ? "Show on screen" : "Hide from screen"}
               </Button>
             ) : null}
             <Button
@@ -498,12 +549,12 @@ export default function SubmissionFeed({
             </Button>
           </div>
         </article>
-      </li>
+      </motion.li>
     );
   }
 
   function renderEmpty() {
-    if (total === 0 && !hasFilters) {
+    if (liveTotal === 0 && !hasFilters) {
       return (
         <EmptyState
           title="No contributions yet"
@@ -511,7 +562,7 @@ export default function SubmissionFeed({
         />
       );
     }
-    if (total === 0) {
+    if (liveTotal === 0) {
       return (
         <EmptyState
           title="No matches"
@@ -549,47 +600,50 @@ export default function SubmissionFeed({
   return (
     <section aria-labelledby="feed-heading" className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 id="feed-heading" className="font-display text-lg font-semibold text-ink">
+        <h2 id="feed-heading" className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
           Contributions
         </h2>
         <span
           role="status"
           aria-live="polite"
           className={cn(
-            'inline-flex items-center gap-1.5 rounded-pill px-2.5 py-0.5 text-xs font-medium',
-            connection === 'live' ? 'bg-lime/40 text-success' : 'bg-warning/10 text-warning'
+            "inline-flex items-center gap-1.5 rounded-pill px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.14em]",
+            connection === "live" ? "bg-gold/40 text-gold-deep" : "bg-crimson/10 text-crimson-bright"
           )}
         >
           <Radio className="h-3.5 w-3.5" aria-hidden="true" />
-          {connection === 'live' ? 'Live' : 'Reconnecting'}
+          {connection === "live" ? "Live" : "Reconnecting"}
         </span>
       </div>
 
       {error ? (
-        <div
-          role="alert"
-          className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-danger/30 bg-danger/5 px-4 py-3"
-        >
-          <p className="text-sm text-danger">{error}</p>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className={cardActionClassName}
-            onClick={() => setError(null)}
-          >
-            Dismiss
-          </Button>
-        </div>
+        <ErrorState
+          className="gap-2 py-6"
+          title="That action did not go through"
+          description={error}
+          retry={
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              className={cardActionClassName}
+              onClick={() => setError(null)}
+            >
+              Dismiss
+            </Button>
+          }
+        />
       ) : null}
 
       {visible.length === 0 ? (
         renderEmpty()
       ) : (
-        <ul className="flex flex-col gap-3">{visible.map((row) => renderCard(row))}</ul>
+        <ul className="flex flex-col gap-3">
+          <AnimatePresence initial={false}>{visible.map((row) => renderCard(row))}</AnimatePresence>
+        </ul>
       )}
 
-      {total > 0 ? (
+      {liveTotal > 0 ? (
         <nav aria-label="Feed pagination" className="flex flex-wrap items-center justify-between gap-3">
           <Button
             type="button"
@@ -601,7 +655,7 @@ export default function SubmissionFeed({
             Previous
           </Button>
           <p aria-live="polite" className="text-sm text-muted">
-            Page {page} of {totalPages} · {total} contribution{total === 1 ? '' : 's'}
+            Page {page} of {totalPages} · {liveTotal} contribution{liveTotal === 1 ? "" : "s"}
           </p>
           <Button
             type="button"
@@ -629,7 +683,7 @@ export default function SubmissionFeed({
             type="button"
             variant="danger"
             className={cardActionClassName}
-            loading={confirmId ? isBusy(confirmId, 'delete') : false}
+            loading={confirmId ? isBusy(confirmId, "delete") : false}
             onClick={confirmDelete}
           >
             Delete

@@ -17,8 +17,6 @@ import Input from "@/components/ui/Input";
 import Textarea from "@/components/ui/Textarea";
 import { cn } from "@/lib/cn";
 
-// Mirrors lib/validation.js sessionSchema (a ZodEffects, so not extendable)
-// with friendlier messages, plus the configuration fields.
 const CATEGORY_KEYS = CATEGORIES.map((category) => category.key);
 
 const emptyToUndefined = (value) => (value === "" || value == null ? undefined : value);
@@ -145,7 +143,6 @@ export default function SessionForm({ mode, session }) {
     },
   });
 
-  // Surface server-side validation failures on the matching fields.
   useEffect(() => {
     if (!state?.fieldErrors) return;
     for (const [name, message] of Object.entries(state.fieldErrors)) {
@@ -161,7 +158,9 @@ export default function SessionForm({ mode, session }) {
   return (
     <form onSubmit={onSubmit} noValidate className="flex flex-col gap-6">
       <Card className="flex flex-col gap-4">
-        <h2 className="font-display text-lg font-semibold text-ink">Discussion</h2>
+        <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
+          Discussion
+        </h2>
 
         <Field label="Title" required error={errors.title?.message}>
           <Input {...register("title")} placeholder="Friday product retro" />
@@ -186,7 +185,7 @@ export default function SessionForm({ mode, session }) {
         <fieldset className="flex flex-col gap-2">
           <legend className="text-sm font-medium text-ink">
             Categories
-            <span aria-hidden="true" className="ml-0.5 text-coral">
+            <span aria-hidden="true" className="ml-0.5 text-crimson">
               *
             </span>
           </legend>
@@ -198,19 +197,19 @@ export default function SessionForm({ mode, session }) {
                 <label
                   key={category.key}
                   className={cn(
-                    "flex cursor-pointer items-start gap-3 rounded-control border border-neutral-300 bg-surface p-3",
-                    "has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-purple"
+                    "flex cursor-pointer items-start gap-3 rounded-control border border-white/10 bg-surface p-3",
+                    "has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-gold"
                   )}
                 >
                   <input
                     type="checkbox"
                     value={category.key}
-                    className="mt-1 h-5 w-5 shrink-0 accent-purple"
+                    className="mt-1 h-5 w-5 shrink-0 accent-gold"
                     {...register("available_categories")}
                   />
                   <span className="flex flex-col gap-0.5">
                     <span className="flex items-center gap-1.5 text-sm font-medium text-ink">
-                      <Icon className="h-4 w-4 text-purple" aria-hidden="true" />
+                      <Icon className="h-4 w-4 text-gold" aria-hidden="true" />
                       {category.label}
                     </span>
                     <span className="text-xs text-muted">{category.hint}</span>
@@ -220,7 +219,7 @@ export default function SessionForm({ mode, session }) {
             })}
           </div>
           {errors.available_categories ? (
-            <p role="alert" className="text-xs font-medium text-danger">
+            <p role="alert" className="text-xs font-medium text-crimson">
               {errors.available_categories.message}
             </p>
           ) : null}
@@ -251,7 +250,7 @@ export default function SessionForm({ mode, session }) {
           >
             <select
               {...register("status")}
-              className="w-full rounded-control border border-neutral-300 bg-surface px-3.5 py-2.5 text-sm text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple"
+              className="w-full rounded-control border border-white/10 bg-surface px-3.5 py-2.5 text-sm text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
             >
               <option value="draft">Save as draft</option>
               <option value="live">Publish now</option>
@@ -261,7 +260,9 @@ export default function SessionForm({ mode, session }) {
       </Card>
 
       <Card className="flex flex-col gap-4">
-        <h2 className="font-display text-lg font-semibold text-ink">Session settings</h2>
+        <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
+          Session settings
+        </h2>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field
@@ -280,10 +281,10 @@ export default function SessionForm({ mode, session }) {
           </Field>
         </div>
 
-        <label className="flex cursor-pointer items-center gap-3 rounded-control border border-neutral-300 bg-surface p-3 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-purple">
+        <label className="flex cursor-pointer items-center gap-3 rounded-control border border-white/10 bg-surface p-3 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-gold">
           <input
             type="checkbox"
-            className="h-5 w-5 shrink-0 accent-purple"
+            className="h-5 w-5 shrink-0 accent-gold"
             {...register("allow_manual_nickname")}
           />
           <span className="text-sm font-medium text-ink">
@@ -301,12 +302,12 @@ export default function SessionForm({ mode, session }) {
       </Card>
 
       {state?.error ? (
-        <p role="alert" className="text-sm font-medium text-danger">
+        <p role="alert" className="text-sm font-medium text-crimson">
           {state.error}
         </p>
       ) : null}
       {state?.message ? (
-        <p role="status" className="text-sm font-medium text-success">
+        <p role="status" className="text-sm font-medium text-gold">
           {state.message}
         </p>
       ) : null}
@@ -315,7 +316,7 @@ export default function SessionForm({ mode, session }) {
         <SubmitButton mode={mode} />
         <Link
           href="/admin/sessions"
-          className="inline-flex items-center rounded-control px-5 py-3 text-sm font-medium text-ink underline-offset-4 transition-colors hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple"
+          className="inline-flex items-center rounded-control px-5 py-3 text-sm font-medium text-muted underline-offset-4 transition-colors hover:text-ink hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
         >
           Cancel
         </Link>

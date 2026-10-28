@@ -144,12 +144,12 @@ describe('sessionSchema', () => {
 });
 
 describe('loginSchema', () => {
-  it('accepts valid credentials', () => {
-    expect(loginSchema.safeParse({ email: 'pastor@example.com', password: 'correcthorse' }).success).toBe(true);
+  it('accepts a password-only payload', () => {
+    expect(loginSchema.safeParse({ password: 'correcthorse' }).success).toBe(true);
   });
 
-  it('rejects a bad email and a short password', () => {
-    expect(loginSchema.safeParse({ email: 'not-an-email', password: 'correcthorse' }).success).toBe(false);
-    expect(loginSchema.safeParse({ email: 'pastor@example.com', password: 'short' }).success).toBe(false);
+  it('rejects an empty or oversized password', () => {
+    expect(loginSchema.safeParse({ password: '' }).success).toBe(false);
+    expect(loginSchema.safeParse({ password: 'x'.repeat(201) }).success).toBe(false);
   });
 });

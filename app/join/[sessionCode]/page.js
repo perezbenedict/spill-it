@@ -1,40 +1,30 @@
-import Link from 'next/link';
-import { notFound } from 'next/navigation';
-import { Hourglass, PartyPopper } from 'lucide-react';
-import Card from '@/components/ui/Card';
-import ErrorState from '@/components/ui/ErrorState';
-import JoinExperience from '@/components/participant/JoinExperience';
-import { isValidPublicCode } from '@/lib/session-code';
-import { createClient } from '@/lib/supabase/server';
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import ErrorState from "@/components/ui/ErrorState";
+import JoinExperience from "@/components/participant/JoinExperience";
+import { isValidPublicCode } from "@/lib/session-code";
+import { getPublicSession } from "@/lib/spill-api";
 
-export const dynamic = 'force-dynamic';
-
-const PUBLIC_FIELDS =
-  'public_code, title, description, welcome_message, status, available_categories, configuration';
+export const dynamic = "force-dynamic";
 
 async function fetchSession(code) {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from('published_sessions_by_code')
-    .select(PUBLIC_FIELDS)
-    .eq('public_code', code)
-    .maybeSingle();
-  if (error) {
-    console.error('[join] session lookup failed:', error.message);
+  const result = await getPublicSession(code);
+  if (result.status === 0 || !result.ok) {
+    console.error("[join] session lookup failed:", result.status);
     return { queryError: true };
   }
-  return { session: data };
+  return { session: result.body.session ?? null };
 }
 
 function normalizeCode(params) {
-  return String(params?.sessionCode ?? '').trim().toUpperCase();
+  return String(params?.sessionCode ?? "").trim().toUpperCase();
 }
 
 export async function generateMetadata({ params }) {
   const code = normalizeCode(await params);
-  if (!isValidPublicCode(code)) return { title: 'SPILL' };
+  if (!isValidPublicCode(code)) return { title: "Spill It" };
   const { session } = await fetchSession(code);
-  return { title: session ? `${session.title} · SPILL` : 'SPILL' };
+  return { title: session ? `${session.title} · Spill It` : "Spill It" };
 }
 
 function PageShell({ children }) {
@@ -57,7 +47,7 @@ export default async function JoinPage({ params }) {
           title="We could not load this discussion"
           description="That is on us, not you. Try reloading the page."
           retry={
-            <Link href={`/join/${code}`} className="font-medium text-purple underline-offset-4 hover:underline">
+            <Link href={`/join/${code}`} className="font-medium text-gold underline-offset-4 hover:underline">
               Try again
             </Link>
           }
@@ -65,60 +55,23 @@ export default async function JoinPage({ params }) {
       </PageShell>
     );
   }
-  if (!session || session.status === 'draft') notFound();
+  if (!session || session.status === "draft") notFound();
 
-  if (session.status === 'live') {
-    return (
-      <main className="mx-auto w-full max-w-lg px-gutter py-8">
-        <JoinExperience
-          session={{
-            code: session.public_code,
-            title: session.title,
-            description: session.description,
-            welcome_message: session.welcome_message,
-            available_categories: session.available_categories,
-            configuration: session.configuration,
-          }}
-        />
-      </main>
-    );
-  }
-
-  const paused = session.status === 'paused';
-
+  // Live, paused and closed sessions all render JoinExperience, which shows the
+  // topic plus an honest notice for the non-live states.
   return (
-    <PageShell>
-      <Card className="w-full text-center">
-        <span
-          aria-hidden="true"
-          className={`mx-auto flex h-12 w-12 items-center justify-center rounded-pill ${
-            paused ? 'bg-purple/10 text-purple' : 'bg-lime/40 text-success'
-          }`}
-        >
-          {paused ? (
-            <Hourglass className="h-6 w-6" />
-          ) : (
-            <PartyPopper className="h-6 w-6" />
-          )}
-        </span>
-        <h1 className="mt-4 font-display text-2xl font-bold text-ink">
-          {paused ? 'Submissions are taking a breather' : 'This conversation has wrapped'}
-        </h1>
-        <p className="mt-2 text-sm leading-relaxed text-muted">
-          {paused
-            ? 'This discussion is paused right now - the moderator will reopen it shortly. Check back in a few.'
-            : 'Thanks for wanting to contribute. This discussion is closed, so no new thoughts can be added.'}
-        </p>
-        <p className="mt-4 rounded-control bg-neutral-100 px-3 py-2 text-sm font-medium text-ink">
-          {session.title}
-        </p>
-        <Link
-          href="/"
-          className="mt-5 inline-block text-sm font-medium text-purple underline-offset-4 hover:underline"
-        >
-          Back to home
-        </Link>
-      </Card>
-    </PageShell>
+    <main className="mx-auto w-full max-w-lg px-gutter py-section">
+      <JoinExperience
+        session={{
+          code: session.public_code,
+          status: session.status,
+          title: session.title,
+          description: session.description,
+          welcome_message: session.welcome_message,
+          available_categories: session.available_categories,
+          configuration: session.configuration,
+        }}
+      />
+    </main>
   );
 }

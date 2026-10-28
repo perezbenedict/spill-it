@@ -1,0 +1,14 @@
+name = "spill-api"
+main = "worker.js"
+compatibility_date = "2024-09-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "spill"
+database_id = "7ad0a548-84e5-440e-8ce7-65ebe09742f2"
+
+# Secrets are set as encrypted Worker secrets, never plain vars in this file:
+#   npx wrangler secret put SPILL_API_SECRET
+#   npx wrangler secret put SPILL_ADMIN_PASSWORD
+# SPILL_ADMIN_PASSWORD is the single shared admin login password (see
+# DEPLOY.md). SPILL_ADMIN_EMAIL is no longer read.

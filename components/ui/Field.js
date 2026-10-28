@@ -1,8 +1,6 @@
 import { cloneElement, useId } from "react";
 import { cn } from "@/lib/cn";
 
-// Wraps a form control (Input, Textarea, ...) wiring label, hint and error.
-// Usage: <Field label="Name" hint="..." error="..."><Input /></Field>
 export default function Field({
   label,
   hint,
@@ -33,7 +31,7 @@ export default function Field({
       <label htmlFor={id} className="text-sm font-medium text-ink">
         {label}
         {required ? (
-          <span aria-hidden="true" className="ml-0.5 text-coral">
+          <span aria-hidden="true" className="ml-0.5 text-crimson">
             *
           </span>
         ) : null}
@@ -45,7 +43,7 @@ export default function Field({
         </p>
       ) : null}
       {error ? (
-        <p id={errorId} role="alert" className="text-xs font-medium text-danger">
+        <p id={errorId} role="alert" className="text-xs font-medium text-crimson">
           {error}
         </p>
       ) : null}

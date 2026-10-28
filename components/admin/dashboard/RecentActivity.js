@@ -1,17 +1,24 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Radio } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/cn";
-
-const MAX_ITEMS = 15;
+import Badge from "@/components/ui/Badge";
+import EmptyState from "@/components/ui/EmptyState";
 
 const MODERATION_LABELS = {
   pending: "Pending",
   approved: "Approved",
   hidden: "Hidden",
 };
+
+const MODERATION_VARIANTS = {
+  pending: "warning",
+  approved: "success",
+  hidden: "danger",
+};
+
+const POLL_INTERVAL_MS = 3500;
 
 function relativeTime(iso) {
   const then = new Date(iso).getTime();
@@ -27,64 +34,57 @@ function relativeTime(iso) {
 
 export default function RecentActivity({ sessionId, initialItems = [] }) {
   const [items, setItems] = useState(initialItems);
-  const [connection, setConnection] = useState("reconnecting"); // live | reconnecting
+  const [connection, setConnection] = useState("reconnecting");
+  const inFlightRef = useRef(false);
 
-  // Dedupe by id (upsert on INSERT and UPDATE), newest first, capped.
-  const mergeItem = useMemo(
-    () => (payload) => {
-      const row = payload?.new;
-      if (!row?.id) return;
-      setItems((prev) => {
-        const next = prev.filter((item) => item.id !== row.id);
-        next.unshift({
-          id: row.id,
-          nickname: row.nickname,
-          category: row.category,
-          moderation_status: row.moderation_status,
-          created_at: row.created_at,
-          content: row.content,
-        });
-        return next.slice(0, MAX_ITEMS);
-      });
-    },
-    []
-  );
-
+  // Polling replaces Supabase realtime: refresh the newest submissions every
+  // few seconds, paused while the tab is hidden. "Reconnecting..." only shows
+  // after a poll actually fails.
   useEffect(() => {
-    const supabase = createClient();
-    let channel = null;
     let disposed = false;
+    let timeoutId = null;
 
-    function attach() {
-      channel = supabase
-        .channel(`admin-recent-${sessionId}`)
-        .on(
-          "postgres_changes",
-          { event: "INSERT", schema: "public", table: "submissions", filter: `session_id=eq.${sessionId}` },
-          mergeItem
-        )
-        .on(
-          "postgres_changes",
-          { event: "UPDATE", schema: "public", table: "submissions", filter: `session_id=eq.${sessionId}` },
-          mergeItem
-        )
-        .subscribe((status) => {
-          if (disposed) return;
-          setConnection(status === "SUBSCRIBED" ? "live" : "reconnecting");
-        });
+    const pollUrl = `/api/admin/submissions?session_id=${encodeURIComponent(
+      sessionId
+    )}&sort=newest&limit=10`;
+
+    function schedule() {
+      if (disposed || timeoutId !== null) return;
+      timeoutId = setTimeout(() => {
+        timeoutId = null;
+        poll();
+      }, POLL_INTERVAL_MS);
     }
 
-    function ensure() {
-      if (channel && channel.state === "joined") return;
-      if (channel) supabase.removeChannel(channel);
-      attach();
+    async function poll() {
+      if (disposed) return;
+      if (document.hidden) {
+        schedule();
+        return;
+      }
+      inFlightRef.current = true;
+      try {
+        const response = await fetch(pollUrl, { cache: "no-store" });
+        const data = await response.json().catch(() => null);
+        if (disposed) throw new Error("poll failed");
+        if (!response.ok || !Array.isArray(data?.items)) throw new Error("poll failed");
+        setConnection("live");
+        setItems(data.items.slice(0, 15));
+      } catch {
+        if (!disposed) setConnection("reconnecting");
+      } finally {
+        inFlightRef.current = false;
+        schedule();
+      }
     }
 
-    attach();
+    poll();
 
-    const onOnline = () => ensure();
+    const onOnline = () => {
+      if (!disposed && !inFlightRef.current) poll();
+    };
     const onVisibility = () => {
-      if (document.visibilityState === "visible") ensure();
+      if (!disposed && !inFlightRef.current && document.visibilityState === "visible") poll();
     };
     window.addEventListener("online", onOnline);
     document.addEventListener("visibilitychange", onVisibility);
@@ -93,20 +93,23 @@ export default function RecentActivity({ sessionId, initialItems = [] }) {
       disposed = true;
       window.removeEventListener("online", onOnline);
       document.removeEventListener("visibilitychange", onVisibility);
-      if (channel) supabase.removeChannel(channel);
+      if (timeoutId !== null) clearTimeout(timeoutId);
     };
-  }, [sessionId, mergeItem]);
+  }, [sessionId]);
 
   return (
     <section aria-labelledby="recent-activity-heading" className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 id="recent-activity-heading" className="font-display text-lg font-semibold text-ink">
+        <h2
+          id="recent-activity-heading"
+          className="text-xs font-semibold uppercase tracking-[0.18em] text-muted"
+        >
           Recent activity
         </h2>
         <span
           className={cn(
-            "inline-flex items-center gap-1.5 rounded-pill px-2.5 py-0.5 text-xs font-medium",
-            connection === "live" ? "bg-lime/40 text-success" : "bg-warning/10 text-warning"
+            "inline-flex items-center gap-1.5 rounded-pill px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.14em]",
+            connection === "live" ? "bg-gold/40 text-gold-deep" : "bg-crimson/10 text-crimson-bright"
           )}
         >
           <Radio className="h-3.5 w-3.5" aria-hidden="true" />
@@ -115,25 +118,34 @@ export default function RecentActivity({ sessionId, initialItems = [] }) {
       </div>
 
       {items.length === 0 ? (
-        <p className="rounded-card border border-dashed border-neutral-300 bg-surface px-4 py-8 text-center text-sm text-muted">
-          No submissions yet. New ones appear here the moment they spill in.
-        </p>
+        <EmptyState
+          title="No submissions yet"
+          description="New ones appear here the moment they spill in."
+        />
       ) : (
         <ul className="flex flex-col gap-2">
           {items.map((item) => (
-            <li key={item.id} className="rounded-card border border-neutral-200 bg-surface p-4">
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
-                <span className="font-medium text-ink">{item.nickname}</span>
-                <span className="capitalize">{item.category}</span>
-                <span>{MODERATION_LABELS[item.moderation_status] ?? item.moderation_status}</span>
+            <li key={item.id} className="rounded-card border border-white/10 bg-surface p-4">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                <span className="text-sm font-medium text-ink">{item.nickname}</span>
+                <Badge
+                  variant={MODERATION_VARIANTS[item.moderation_status] ?? "neutral"}
+                  className="font-semibold uppercase tracking-[0.12em]"
+                >
+                  {MODERATION_LABELS[item.moderation_status] ?? item.moderation_status}
+                </Badge>
+                <span className="rounded-pill border border-white/10 bg-white/5 px-2 py-0.5 text-[11px] font-medium text-muted">
+                  {item.category}
+                </span>
                 <time
                   dateTime={item.created_at}
                   title={new Date(item.created_at).toLocaleString()}
+                  className="text-xs text-muted"
                 >
                   {relativeTime(item.created_at)}
                 </time>
               </div>
-              <p className="mt-1.5 line-clamp-3 whitespace-pre-wrap break-words text-sm text-ink">
+              <p className="mt-2 line-clamp-3 whitespace-pre-wrap break-words text-sm text-ink">
                 {item.content}
               </p>
             </li>

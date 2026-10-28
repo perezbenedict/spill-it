@@ -7,85 +7,65 @@ import {
   QrCode,
   Settings,
 } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { getAdminToken } from "@/lib/auth";
+import { listAdminSessions, listAdminSubmissions } from "@/lib/spill-api";
+import { buildJoinUrl } from "@/lib/qr";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import EmptyState from "@/components/ui/EmptyState";
 import StatusBadge from "@/components/admin/sessions/StatusBadge";
+import StatusControls from "@/components/admin/sessions/StatusControls";
+import CopyJoinLink from "@/components/admin/dashboard/CopyJoinLink";
+import PendingQueue from "@/components/admin/dashboard/PendingQueue";
 import SummaryCards from "@/components/admin/dashboard/SummaryCards";
 import RecentActivity from "@/components/admin/dashboard/RecentActivity";
 
 const quickLinkClass =
-  "inline-flex items-center gap-2 rounded-control bg-ink px-5 py-3 text-sm font-medium text-cream transition-colors hover:bg-neutral-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple";
+  "inline-flex items-center gap-2 rounded-control bg-surface px-5 py-3 text-sm font-medium text-ink transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold";
 
-async function countSubmissions(supabase, sessionId, filter = {}) {
-  let query = supabase
-    .from("submissions")
-    .select("id", { count: "exact", head: true })
-    .eq("session_id", sessionId);
-  for (const [column, value] of Object.entries(filter)) {
-    query = query.eq(column, value);
-  }
-  const { count, error } = await query;
-  if (error) {
-    console.error(`count ${JSON.stringify(filter)} failed:`, error.code, error.message);
-    return 0;
-  }
-  return count ?? 0;
-}
+const STATUS_NOTICES = {
+  live: "This room is open and collecting submissions.",
+  paused: "Submissions are paused. Resume when the room is ready.",
+  closed: "This discussion is closed. Everything already contributed is kept.",
+  draft: "This discussion is still a draft. Publish it to open the room.",
+};
+
+const PENDING_PREVIEW = 5;
 
 export default async function AdminDashboardPage() {
-  const supabase = await createClient();
+  const adminToken = await getAdminToken();
 
-  const { data: liveSession, error: liveError } = await supabase
-    .from("discussion_sessions")
-    .select("*")
-    .eq("status", "live")
-    .order("updated_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (liveError) {
-    console.error("dashboard live lookup failed:", liveError.code, liveError.message);
+  const liveResult = await listAdminSessions(adminToken, { status: "live", limit: 1 });
+  if (!liveResult.ok) {
+    console.error("dashboard live lookup failed:", liveResult.status);
   }
+  let session = liveResult.body?.items?.[0] ?? null;
 
-  let session = liveSession;
   if (!session) {
-    const { data, error } = await supabase
-      .from("discussion_sessions")
-      .select("*")
-      .neq("status", "draft")
-      .order("updated_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (error) {
-      console.error("dashboard recent lookup failed:", error.code, error.message);
+    const recentResult = await listAdminSessions(adminToken, { published: 1, limit: 1 });
+    if (!recentResult.ok) {
+      console.error("dashboard recent lookup failed:", recentResult.status);
     }
-    session = data;
+    session = recentResult.body?.items?.[0] ?? null;
   }
 
-  const { count: sessionCount, error: sessionCountError } = await supabase
-    .from("discussion_sessions")
-    .select("id", { count: "exact", head: true });
-  if (sessionCountError) {
-    console.error(
-      "dashboard session count failed:",
-      sessionCountError.code,
-      sessionCountError.message
-    );
+  const countResult = await listAdminSessions(adminToken, { limit: 1 });
+  if (!countResult.ok) {
+    console.error("dashboard session count failed:", countResult.status);
   }
+  const sessionCount = countResult.body?.total ?? 0;
 
   if (!session && !sessionCount) {
     return (
       <div className="flex flex-col gap-6">
-        <h1 className="font-display text-2xl font-bold text-ink sm:text-3xl">Dashboard</h1>
+        <h2 className="font-display text-2xl font-bold text-ink sm:text-3xl">Dashboard</h2>
         <EmptyState
           icon={<MessageSquare className="h-10 w-10" />}
           title="No discussions yet"
           description="Create a discussion, share the join code and watch the room spill in real time."
         >
           <Link href="/admin/sessions/new">
-            <Button>
+            <Button variant="primary">
               <Plus className="h-4 w-4" aria-hidden="true" />
               Create your first discussion
             </Button>
@@ -96,55 +76,129 @@ export default async function AdminDashboardPage() {
   }
 
   if (!session) {
-    // Sessions exist but none have been published yet.
     return (
       <div className="flex flex-col gap-6">
-        <h1 className="font-display text-2xl font-bold text-ink sm:text-3xl">Dashboard</h1>
+        <h2 className="font-display text-2xl font-bold text-ink sm:text-3xl">Dashboard</h2>
         <EmptyState
           icon={<Settings className="h-10 w-10" />}
           title="Nothing published yet"
-          description="Your discussions are still drafts. Publish one to start collecting submissions."
+          description="Your discussions are still drafts. Publish one - or create a new discussion - to start collecting submissions."
         >
-          <Link href="/admin/sessions">
-            <Button>Go to sessions</Button>
-          </Link>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <Link href="/admin/sessions/new">
+              <Button variant="primary">
+                <Plus className="h-4 w-4" aria-hidden="true" />
+                Create a discussion
+              </Button>
+            </Link>
+            <Link href="/admin/sessions">
+              <Button variant="secondary">Go to sessions</Button>
+            </Link>
+          </div>
         </EmptyState>
       </div>
     );
   }
 
-  const [total, question, opinion, challenge, pending] = await Promise.all([
-    countSubmissions(supabase, session.id),
-    countSubmissions(supabase, session.id, { category: "question" }),
-    countSubmissions(supabase, session.id, { category: "opinion" }),
-    countSubmissions(supabase, session.id, { category: "challenge" }),
-    countSubmissions(supabase, session.id, { moderation_status: "pending" }),
-  ]);
+  const summaryResult = await listAdminSubmissions(adminToken, {
+    session_id: session.id,
+    limit: 1,
+  });
+  if (!summaryResult.ok) {
+    console.error("dashboard summary failed:", summaryResult.status);
+  }
+  const summaries = summaryResult.body?.summaries ?? {};
+  const total = summaries.total ?? 0;
+  const question = summaries.question ?? 0;
+  const opinion = summaries.opinion ?? 0;
+  const challenge = summaries.challenge ?? 0;
+  const pending = summaries.pending ?? 0;
 
-  const { data: recent, error: recentError } = await supabase
-    .from("submissions")
-    .select("id, nickname, category, moderation_status, created_at, content")
-    .eq("session_id", session.id)
-    .order("created_at", { ascending: false })
-    .limit(10);
-  if (recentError) {
-    console.error("dashboard recent submissions failed:", recentError.code, recentError.message);
+  const pendingResult = await listAdminSubmissions(adminToken, {
+    session_id: session.id,
+    status: "pending",
+    sort: "newest",
+    limit: PENDING_PREVIEW,
+  });
+  if (!pendingResult.ok) {
+    console.error("dashboard pending queue failed:", pendingResult.status);
+  }
+  const pendingItems = pendingResult.body?.items ?? [];
+
+  const recentResult = await listAdminSubmissions(adminToken, {
+    session_id: session.id,
+    sort: "newest",
+    limit: 10,
+  });
+  if (!recentResult.ok) {
+    console.error("dashboard recent submissions failed:", recentResult.status);
+  }
+  const recent = recentResult.body?.items ?? [];
+
+  let joinUrl = null;
+  try {
+    joinUrl = buildJoinUrl(session.public_code);
+  } catch {
+    // NEXT_PUBLIC_SITE_URL is missing; the copy action simply does not render.
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-3">
-        <h1 className="font-display text-2xl font-bold text-ink sm:text-3xl">Dashboard</h1>
-        <Card className="flex flex-col gap-3">
+    <div className="flex flex-col gap-8">
+      <section aria-labelledby="active-discussion-heading" className="flex flex-col gap-4">
+        <h2
+          id="active-discussion-heading"
+          className="text-xs font-semibold uppercase tracking-[0.18em] text-muted"
+        >
+          Active discussion
+        </h2>
+        <Card className="flex flex-col gap-4">
           <div className="flex flex-wrap items-center gap-3">
-            <h2 className="font-display text-xl font-semibold text-ink">{session.title}</h2>
+            <h3 className="font-display text-2xl font-bold text-ink sm:text-3xl">
+              {session.title}
+            </h3>
             <StatusBadge status={session.status} />
+            <span className="rounded-pill border border-white/10 bg-white/5 px-2.5 py-0.5 font-mono text-xs font-medium text-ink">
+              {session.public_code}
+            </span>
           </div>
           <p className="text-sm text-muted">
-            Join code: <span className="font-mono font-semibold text-ink">{session.public_code}</span>
+            {STATUS_NOTICES[session.status] ?? "Manage this discussion below."}
           </p>
+          <nav
+            aria-label="Quick actions"
+            className="flex flex-wrap gap-3 border-t border-white/10 pt-4"
+          >
+            <Link href={`/admin/sessions/${session.id}`} className={quickLinkClass}>
+              <Settings className="h-4 w-4" aria-hidden="true" />
+              Manage discussion
+            </Link>
+            {session.status !== "draft" ? (
+              <>
+                <Link href={`/admin/sessions/${session.id}/live`} className={quickLinkClass}>
+                  <MonitorPlay className="h-4 w-4" aria-hidden="true" />
+                  Live moderation
+                </Link>
+                <Link href={`/room/${session.public_code}`} className={quickLinkClass}>
+                  <QrCode className="h-4 w-4" aria-hidden="true" />
+                  Presentation room
+                </Link>
+              </>
+            ) : null}
+            <Link href={`/join/${session.public_code}`} className={quickLinkClass}>
+              <ExternalLink className="h-4 w-4" aria-hidden="true" />
+              Participant view
+            </Link>
+            {joinUrl ? <CopyJoinLink joinUrl={joinUrl} /> : null}
+          </nav>
         </Card>
-      </div>
+        <StatusControls sessionId={session.id} status={session.status} />
+      </section>
+
+      <PendingQueue
+        items={pendingItems}
+        pendingCount={pending}
+        feedHref={`/admin/sessions/${session.id}/live?status=pending`}
+      />
 
       <SummaryCards
         total={total}
@@ -153,29 +207,6 @@ export default async function AdminDashboardPage() {
         challenge={challenge}
         pending={pending}
       />
-
-      <nav aria-label="Quick actions" className="flex flex-wrap gap-3">
-        <Link href={`/admin/sessions/${session.id}`} className={quickLinkClass}>
-          <Settings className="h-4 w-4" aria-hidden="true" />
-          Manage discussion
-        </Link>
-        {session.status !== "draft" ? (
-          <>
-            <Link href={`/admin/sessions/${session.id}/live`} className={quickLinkClass}>
-              <MonitorPlay className="h-4 w-4" aria-hidden="true" />
-              Live moderation
-            </Link>
-            <Link href={`/room/${session.public_code}`} className={quickLinkClass}>
-              <QrCode className="h-4 w-4" aria-hidden="true" />
-              Presentation room
-            </Link>
-          </>
-        ) : null}
-        <Link href={`/join/${session.public_code}`} className={quickLinkClass}>
-          <ExternalLink className="h-4 w-4" aria-hidden="true" />
-          Participant view
-        </Link>
-      </nav>
 
       {total === 0 ? (
         <EmptyState

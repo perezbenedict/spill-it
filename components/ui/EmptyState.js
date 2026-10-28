@@ -4,12 +4,12 @@ export default function EmptyState({ icon, title, description, className, childr
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center gap-3 rounded-card border border-dashed border-neutral-300 bg-surface px-6 py-12 text-center",
+        "flex flex-col items-center justify-center gap-3 rounded-card border border-dashed border-white/10 bg-surface px-6 py-12 text-center",
         className
       )}
     >
       {icon ? (
-        <div aria-hidden="true" className="text-purple">
+        <div aria-hidden="true" className="text-gold">
           {icon}
         </div>
       ) : null}

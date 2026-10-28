@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ExternalLink, MonitorPlay, QrCode } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { getAdminToken } from "@/lib/auth";
+import { getAdminSession } from "@/lib/spill-api";
 import StatusBadge from "@/components/admin/sessions/StatusBadge";
 import SessionForm from "@/components/admin/sessions/SessionForm";
 import StatusControls from "@/components/admin/sessions/StatusControls";
@@ -11,22 +12,23 @@ const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const linkClass =
-  "inline-flex items-center gap-2 rounded-control bg-ink px-5 py-3 text-sm font-medium text-cream transition-colors hover:bg-neutral-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple";
+  "inline-flex items-center gap-2 rounded-control bg-surface px-5 py-3 text-sm font-medium text-ink transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold";
 
 export default async function SessionDetailPage({ params }) {
   const { id } = await params;
   if (!UUID_RE.test(id)) notFound();
 
-  const supabase = await createClient();
-  const { data: session, error } = await supabase
-    .from("discussion_sessions")
-    .select("*")
-    .eq("id", id)
-    .maybeSingle();
+  const adminToken = await getAdminToken();
+  const result = await getAdminSession(adminToken, id);
 
-  if (error) {
-    console.error("session lookup failed:", error.code, error.message);
+  if (!result.ok) {
+    if (result.status !== 404) {
+      console.error("session lookup failed:", result.status);
+    }
+    if (result.status === 404) notFound();
+    throw new Error("session lookup failed");
   }
+  const session = result.body?.session ?? null;
   if (!session) notFound();
 
   return (
@@ -55,7 +57,7 @@ export default async function SessionDetailPage({ params }) {
       <StatusControls sessionId={session.id} status={session.status} />
 
       <section aria-labelledby="session-details-heading" className="flex flex-col gap-4">
-        <h2 id="session-details-heading" className="font-display text-lg font-semibold text-ink">
+        <h2 id="session-details-heading" className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
           Details
         </h2>
         <SessionForm mode="edit" session={session} />
