@@ -1,17 +1,23 @@
 "use client";
 
+import dynamic from 'next/dynamic';
+
+// Dynamically load Lucide icons on the client only to avoid SSR manifest errors.
+const IconMap = {
+  question: dynamic(() => import('lucide-react').then(mod => ({ default: mod.HelpCircle })), { ssr: false }),
+  opinion: dynamic(() => import('lucide-react').then(mod => ({ default: mod.Lightbulb })), { ssr: false }),
+  challenge: dynamic(() => import('lucide-react').then(mod => ({ default: mod.Flame })), { ssr: false }),
+  twocents: dynamic(() => import('lucide-react').then(mod => ({ default: mod.MessagesSquare })), { ssr: false }),
+};
+
 import { useState } from "react";
-import { Flame, HelpCircle, Lightbulb, MessagesSquare } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Field from "@/components/ui/Field";
 import Textarea from "@/components/ui/Textarea";
-import {
-  CATEGORIES,
-  DEFAULT_MAX_CONTENT_LENGTH,
-  DEFAULT_MIN_CONTENT_LENGTH,
-} from "@/lib/constants";
+import { CATEGORIES, DEFAULT_MAX_CONTENT_LENGTH, DEFAULT_MIN_CONTENT_LENGTH } from "@/lib/constants";
 import { submissionSchemaFactory } from "@/lib/validation";
 import { cn } from "@/lib/cn";
+
 
 const CATEGORY_HEADINGS = {
   question: "What are you wondering?",
@@ -126,13 +132,13 @@ export default function SubmissionForm({ session, nickname, category, onBack, on
           )}
         >
           {category === "challenge" ? (
-            <Flame className="h-5 w-5" />
+            <IconMap.challenge className="h-5 w-5" />
           ) : category === "opinion" ? (
-            <Lightbulb className="h-5 w-5" />
+            <IconMap.opinion className="h-5 w-5" />
           ) : category === "twocents" ? (
-            <MessagesSquare className="h-5 w-5" />
+            <IconMap.twocents className="h-5 w-5" />
           ) : (
-            <HelpCircle className="h-5 w-5" />
+            <IconMap.question className="h-5 w-5" />
           )}
         </span>
         <div>
@@ -191,7 +197,7 @@ export default function SubmissionForm({ session, nickname, category, onBack, on
             aria-hidden="true"
             className="animate-sheen pointer-events-none absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-transparent via-white/25 to-transparent"
           />
-          <span className="relative">{pending ? "Sending..." : "Spill It Now!"}</span>
+          <span className="relative">{pending ? "Sending..." : "Send"}</span>
         </Button>
       </div>
     </form>

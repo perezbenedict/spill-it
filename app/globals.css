@@ -19,8 +19,8 @@
   --color-warning: #6D4AB8;
 
   /* Typography */
-  --font-display: var(--font-playfair), "Playfair Display", Georgia, serif;
-  --font-body: var(--font-instrument), "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-dm-sans), "DM Sans", sans-serif;
+  --font-body: var(--font-manrope), "Manrope", sans-serif;
 
   /* Spacing */
   --spacing-gutter: 1.5rem;
