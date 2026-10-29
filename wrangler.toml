@@ -4,19 +4,7 @@ compatibility_flags = ["nodejs_compat"]
 
 pages_build_output_dir = ".open-next"
 
-[assets]
-directory = ".open-next/assets"
-binding = "STATIC_ASSETS"
-run_worker_first = true
-
-[[services]]
-binding = "WORKER_SELF_REFERENCE"
-service = "spill"
-
 [[d1_databases]]
 binding = "DB"
 database_name = "spill"
 database_id = "7ad0a548-84e5-440e-8ce7-65ebe09742f2"
-
-[images]
-binding = "IMAGES"
