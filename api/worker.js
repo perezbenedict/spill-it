@@ -561,6 +561,11 @@ function validateSessionValues(body, { partial }) {
   ) {
     return { fieldErrors: { closes_at: true } };
   }
+  if (body?.public_code !== undefined) {
+    const code = typeof body.public_code === 'string' ? body.public_code.trim().toUpperCase() : '';
+    if (!CODE_PATTERN.test(code)) return { fieldErrors: { public_code: true } };
+    values.public_code = code;
+  }
   return { values };
 }
 
@@ -718,6 +723,13 @@ async function handleUpdateAdminSession(request, env, admin, id) {
     .first();
   if (!current) return json({ error: 'That discussion no longer exists.' }, 404);
   if (Object.keys(values).length === 0) return json({ error: MSG_SESSION_GENERIC }, 400);
+
+  if (values.public_code) {
+    const existing = await env.DB.prepare(
+      'SELECT id FROM discussion_sessions WHERE public_code = ? AND id <> ?'
+    ).bind(values.public_code, id).first();
+    if (existing) return json({ error: 'That join code is already in use.', code: 'duplicate_code' }, 409);
+  }
 
   const columns = Object.keys(values);
   try {

@@ -1,7 +1,7 @@
 export default function PosterSheet({ title, qrDataUrl, sessionCode, joinUrl }) {
   return (
-    <article className="mx-auto flex w-full max-w-xl flex-col items-center gap-8 bg-white px-10 py-14 text-ink print:max-w-none print:gap-6 print:px-6 print:py-8 print:break-inside-avoid print:break-after-avoid">
-      <div className="rounded-control bg-midnight p-2">
+    <article className="mx-auto flex w-full max-w-xl flex-col items-center gap-8 bg-gradient-to-br from-[#24113F] via-[#301A50] to-[#6D4AB8] px-10 py-14 text-ink print:max-w-none print:gap-6 print:px-6 print:py-8 print:break-inside-avoid print:break-after-avoid">
+      <div className="rounded-control bg-white/10 p-2 ring-1 ring-white/20">
         <span className="inline-flex h-12 w-auto" aria-label="Spill It">
           <svg
             viewBox="0 0 120 120"
@@ -35,15 +35,15 @@ export default function PosterSheet({ title, qrDataUrl, sessionCode, joinUrl }) 
         </span>
       </div>
 
-      <h1 className="font-display text-5xl font-bold tracking-tight text-ink print:text-4xl print:text-black">
+      <h1 className="font-display text-5xl font-bold tracking-tight text-white print:text-4xl print:text-black">
         Spill It
       </h1>
 
-      <h2 className="text-balance text-center font-display text-2xl font-semibold text-ink print:text-xl print:text-black">
+      <h2 className="text-balance text-center font-display text-2xl font-semibold text-white print:text-xl print:text-black">
         {title}
       </h2>
 
-      <p className="max-w-sm text-center text-base text-muted print:text-black">
+      <p className="max-w-sm text-center text-base text-white/70 print:text-black">
         Scan to join - no signup, no names, just your honest take.
       </p>
 
@@ -57,16 +57,16 @@ export default function PosterSheet({ title, qrDataUrl, sessionCode, joinUrl }) 
       </div>
 
       {joinUrl ? (
-        <p className="max-w-full break-all text-center text-sm text-muted print:text-black">
+        <p className="max-w-full break-all text-center text-sm text-white/60 print:text-black">
           {joinUrl}
         </p>
       ) : null}
 
-      <p className="text-xs uppercase tracking-widest text-neutral-400 print:text-black">
+      <p className="text-xs uppercase tracking-widest text-white/40 print:text-black">
         Session {sessionCode}
       </p>
 
-      <footer className="font-display text-lg font-semibold text-ink print:text-black">
+      <footer className="font-display text-lg font-semibold text-white print:text-black">
         Say what you really think.
       </footer>
     </article>

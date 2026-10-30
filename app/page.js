@@ -50,39 +50,52 @@ export default async function HomePage() {
         />
       </div>
 
-      {/* Emblem / Logo */}
-      <div className="flex justify-center">
+      {/* Rotating emblem watermark (behind content) */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center overflow-hidden"
+      >
         <span
-          className="mb-6 inline-flex h-24 w-24 drop-shadow-[0_0_18px_rgba(167,139,250,0.25)] sm:h-28 sm:w-28 animate-emblem-drift"
-          aria-label="Spill It"
+          className="block h-[32vmin] w-[32vmin] opacity-[0.035] motion-safe:animate-rotate-slow"
+          style={{ animationDuration: "60s" }}
+          aria-label="Spill It watermark"
         >
           <Emblem className="h-full w-full" />
         </span>
       </div>
 
-      {/* Tag */}
-      <span className="mx-auto mb-5 inline-flex w-fit items-center gap-2 rounded-full border border-gold/30 bg-surface px-3 py-1.5 text-[clamp(10px,1.5vw,11px)] font-semibold uppercase tracking-[0.2em] text-gold">
-        Your thoughts. Your voice.
-      </span>
+      <div className="relative z-10 flex flex-col items-center gap-6">
+        {/* Emblem / Logo */}
+        <div className="flex justify-center">
+          <span
+            className="mb-6 inline-flex h-24 w-24 drop-shadow-[0_0_18px_rgba(167,139,250,0.25)] sm:h-28 sm:w-28 animate-emblem-drift"
+            aria-label="Spill It"
+          >
+            <Emblem className="h-full w-full" />
+          </span>
+        </div>
 
-      {/* Headline */}
-      <h1 className="relative overflow-hidden bg-gradient-to-br from-[#C4B5FD] via-[#A78BFA] to-[#6D4AB8] bg-clip-text font-display font-semibold leading-[1.05] text-[clamp(2.35rem,8vw,3rem)] tracking-[-0.01em] text-transparent">
-        <span className="inline-block overflow-hidden align-top pb-[0.12em]">
-          <span className="inline-block">Spill It</span>
+        {/* Brand name */}
+        <p className="font-display text-center text-2xl font-bold tracking-tight text-ink sm:text-3xl">
+          Grace Nation Wealthy Youths
+        </p>
+
+        {/* Tagline */}
+        <span className="mx-auto inline-flex items-center gap-2 text-center font-body text-lg font-medium text-gold sm:text-xl">
+          Your thoughts. Your voice.
         </span>
-        <span
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-y-0 left-0 w-24 -skew-x-12"
-          style={{
-            background:
-              "linear-gradient(90deg, transparent, rgba(167,139,250,0.45), transparent)",
-            left: "120%",
-          }}
-        />
-      </h1>
+
+        {/* Golden divider */}
+        <div className="mx-auto h-px w-16 bg-gradient-to-r from-transparent via-gold to-transparent opacity-40" />
+
+        {/* Headline */}
+        <h1 className="font-display text-center text-4xl font-bold tracking-tight text-ink sm:text-5xl md:text-6xl">
+          Spill It!
+        </h1>
+      </div>
 
       {/* Subtitle */}
-      <p className="mt-6 max-w-md text-[clamp(16px,2vw,18px)] leading-[1.65] text-muted">
+      <p className="relative z-10 mt-6 max-w-md text-center text-[clamp(16px,2vw,18px)] leading-[1.65] text-muted">
         {session
           ? "No pressure. Just be real with us."
           : "No discussion is open right now. Check back soon."}
@@ -90,7 +103,7 @@ export default async function HomePage() {
 
       {/* Join */}
       {session ? (
-        <div className="mt-8">
+        <div className="relative z-10 mt-8">
           <Link
             href={`/join/${session.public_code}`}
             className="inline-flex w-full items-center justify-center gap-2 rounded-control bg-gold px-6 py-3 text-base font-medium text-midnight shadow-[0_0_18px_rgba(167,139,250,0.3)] transition-colors hover:bg-gold-light focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold sm:w-auto"
