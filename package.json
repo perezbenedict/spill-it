@@ -11,7 +11,7 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "cf-build": "next build && opennextjs-cloudflare build",
-    "cf-bundle": "npm exec -- wrangler build --config wrangler.build.toml && sed -e 's/from \"async_hooks\"/from \"node:async_hooks\"/g' -e 's/from \"assert\"/from \"node:assert\"/g' -e 's/from \"buffer\"/from \"node:buffer\"/g' -e 's/from \"crypto\"/from \"node:crypto\"/g' -e 's/from \"path\"/from \"node:path\"/g' -e 's/from \"stream\"/from \"node:stream\"/g' -e 's/from \"url\"/from \"node:url\"/g' -e 's/from \"util\"/from \"node:util\"/g' -e 's/from \"zlib\"/from \"node:zlib\"/g' dist/worker.js > .open-next/_worker.js && cp -r .open-next/assets/* .open-next/"
+    "cf-bundle": "npm exec -- wrangler build --config wrangler.build.toml && sed -e 's/from \"async_hooks\"/from \"node:async_hooks\"/g' -e 's/from \"assert\"/from \"node:assert\"/g' -e 's/from \"buffer\"/from \"node:buffer\"/g' -e 's/from \"crypto\"/from \"node:crypto\"/g' -e 's/from \"path\"/from \"node:path\"/g' -e 's/from \"stream\"/from \"node:stream\"/g' -e 's/from \"url\"/from \"node:url\"/g' -e 's/from \"util\"/from \"node:util\"/g' -e 's/from \"zlib\"/from \"node:zlib\"/g' dist/worker.js > .open-next/_worker.js && sed -i '' 's/__ASSETS_RUN_WORKER_FIRST__: false/__ASSETS_RUN_WORKER_FIRST__: true/g' .open-next/_worker.js && cp -r .open-next/assets/* .open-next/"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.0.1",
