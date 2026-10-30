@@ -25,7 +25,7 @@ export default async function AdminLoginPage() {
             </p>
           </div>
         </div>
-        <div className="rounded-card border border-white/10 bg-surface p-6 shadow-lg sm:p-8">
+        <div className="rounded-card border border-white/10 bg-surface p-6 shadow-2xl sm:p-8">
           <LoginForm />
         </div>
       </div>

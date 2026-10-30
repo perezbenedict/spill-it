@@ -7,8 +7,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import Link from "next/link";
-import { Coins, Flame, HelpCircle, MessageSquare } from "lucide-react";
-import { createSession, updateSession } from "@/lib/actions/sessions";
+import { Coins, Copy, Flame, HelpCircle, MessageSquare, RefreshCw } from "lucide-react";
+import { createSession, updateSession, regeneratePublicCode } from "@/lib/actions/sessions";
+import { isValidPublicCode } from "@/lib/session-code";
 import { CATEGORIES, DEFAULT_MIN_CONTENT_LENGTH, DEFAULT_MAX_CONTENT_LENGTH } from "@/lib/constants";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
@@ -30,6 +31,12 @@ const formSchema = z
       .max(200, "Keep the title under 200 characters."),
     description: z.string().max(2000, "Keep the description under 2000 characters."),
     welcome_message: z.string().max(1000, "Keep the welcome message under 1000 characters."),
+    public_code: z
+      .string()
+      .trim()
+      .toUpperCase()
+      .refine((code) => isValidPublicCode(code), { message: "Invalid join code" })
+      .optional(),
     available_categories: z
       .array(z.enum(CATEGORY_KEYS))
       .min(1, "Pick at least one category."),
@@ -88,6 +95,7 @@ function toFormData(data) {
   formData.set("title", data.title);
   formData.set("description", data.description ?? "");
   formData.set("welcome_message", data.welcome_message ?? "");
+  if (data.public_code) formData.set("public_code", data.public_code);
   for (const category of data.available_categories ?? []) {
     formData.append("available_categories", category);
   }
@@ -132,6 +140,7 @@ export default function SessionForm({ mode, session }) {
       title: session?.title ?? "",
       description: session?.description ?? "",
       welcome_message: session?.welcome_message ?? "",
+      public_code: session?.public_code ?? "",
       available_categories: session?.available_categories ?? CATEGORY_KEYS,
       opens_at: toLocalInput(session?.opens_at),
       closes_at: toLocalInput(session?.closes_at),
@@ -173,6 +182,36 @@ export default function SessionForm({ mode, session }) {
         >
           <Textarea {...register("description")} rows={3} />
         </Field>
+
+        {mode === "edit" ? (
+          <Field
+            label="Join code"
+            hint="Customize or regenerate. Changing a shared code invalidates existing links and QR codes."
+            error={errors.public_code?.message}
+          >
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <Input {...register("public_code")} className="font-mono uppercase" />
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={async () => {
+                  if (session?.id) {
+                    const result = await regeneratePublicCode(session.id);
+                    if (result.ok) {
+                      alert(`New code: ${result.public_code}`);
+                      window.location.reload();
+                    } else {
+                      alert(result.error || "Could not regenerate code.");
+                    }
+                  }
+                }}
+              >
+                <RefreshCw className="h-4 w-4" aria-hidden="true" />
+                Regenerate
+              </Button>
+            </div>
+          </Field>
+        ) : null}
 
         <Field
           label="Welcome message"

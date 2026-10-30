@@ -56,7 +56,7 @@ export default async function PosterPage({ params }) {
   if (!session) notFound();
 
   return (
-    <div className="min-h-screen bg-midnight print:bg-white">
+    <div className="min-h-screen bg-gradient-to-br from-[#160D2B] via-[#24113F] to-[#6D4AB8] print:bg-white">
       <div className="mx-auto flex w-full max-w-xl items-center justify-between px-gutter py-6 print:hidden">
         <p className="min-w-0 text-sm text-muted">
           Printable poster for{" "}

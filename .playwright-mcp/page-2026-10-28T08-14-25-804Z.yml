@@ -1,9 +1,0 @@
-- main [ref=e2]:
-  - generic [ref=e5]:
-    - generic [ref=e6]:
-      - paragraph [ref=e7]: You're in - here's the topic
-      - heading "How do we disagree better?" [level=1] [ref=e8]
-    - paragraph [ref=e9]: Say the true thing, kindly.
-    - paragraph [ref=e10]: A room for honest disagreement.
-    - paragraph [ref=e11]: Say your mind kindly. Pick a nickname and say what you actually think.
-    - button "Let's get into it" [ref=e13]

@@ -19,7 +19,7 @@
   --color-warning: #6D4AB8;
 
   /* Typography */
-  --font-display: var(--font-dm-sans), "DM Sans", sans-serif;
+  --font-display: var(--font-dm-serif-display), "DM Serif Display", serif;
   --font-body: var(--font-manrope), "Manrope", sans-serif;
 
   /* Spacing */
@@ -121,6 +121,16 @@
   }
 }
 
+/* Slow rotating watermark */
+@keyframes rotate-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .animate-sheen {
   animation: sheen 0.9s ease-out 0.4s 1;
 }
@@ -131,6 +141,10 @@
 
 .animate-emblem-drift {
   animation: emblem-drift 11s ease-in-out infinite;
+}
+
+.motion-safe\:animate-rotate-slow {
+  animation: rotate-slow 60s linear infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
