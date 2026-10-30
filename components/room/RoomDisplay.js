@@ -245,10 +245,10 @@ export default function RoomDisplay({
           {currentRow ? (
             <motion.div
               key={currentRow.id}
-              initial={reduceMotion ? false : { opacity: 0, y: 18 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -14 }}
-              transition={{ duration: reduceMotion ? 0 : 0.45, ease: REVEAL_EASE }}
+              initial={reduceMotion ? false : { opacity: 0, y: 24, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -20, scale: 0.98 }}
+              transition={{ duration: reduceMotion ? 0 : 0.5, ease: REVEAL_EASE }}
               className="flex w-full flex-col items-center text-center"
             >
               <div className="flex flex-wrap items-center justify-center gap-3">
@@ -275,10 +275,10 @@ export default function RoomDisplay({
           ) : (
             <motion.div
               key={isClosed ? "ended" : "waiting"}
-              initial={reduceMotion ? false : { opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -10 }}
-              transition={{ duration: reduceMotion ? 0 : 0.45, ease: REVEAL_EASE }}
+              initial={reduceMotion ? false : { opacity: 0, y: 20, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -14, scale: 0.98 }}
+              transition={{ duration: reduceMotion ? 0 : 0.5, ease: REVEAL_EASE }}
               className="relative flex w-full flex-col items-center text-center"
             >
               <div

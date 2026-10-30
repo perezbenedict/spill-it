@@ -19,8 +19,8 @@
   --color-warning: #6D4AB8;
 
   /* Typography */
-  --font-display: var(--font-dm-serif-display), "DM Serif Display", serif;
-  --font-body: var(--font-manrope), "Manrope", sans-serif;
+  --font-display: var(--font-display), "Instrument Serif", serif;
+  --font-body: var(--font-sans), "Manrope", sans-serif;
 
   /* Spacing */
   --spacing-gutter: 1.5rem;
@@ -83,6 +83,27 @@
   ::selection {
     @apply bg-gold/30 text-midnight;
   }
+}
+
+
+/* Premium fluid typography (homepage) */
+.hero-title {
+  font-size: clamp(3.4rem, 7.5vw, 8rem);
+  line-height: 0.96;
+  letter-spacing: -0.055em;
+}
+
+.hero-eyebrow {
+  font-size: clamp(0.65rem, 0.85vw, 0.8rem);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.display-accent {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-style: italic;
+  letter-spacing: -0.035em;
 }
 
 /* Prevent the grey/black tap highlight on mobile devices */
