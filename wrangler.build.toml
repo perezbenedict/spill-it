@@ -8,7 +8,7 @@ compatibility_flags = ["nodejs_compat"]
 
 [assets]
 directory = ".open-next/assets"
-binding = "STATIC_ASSETS"
+binding = "ASSETS"
 run_worker_first = true
 
 [[services]]
