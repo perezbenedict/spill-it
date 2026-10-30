@@ -7,7 +7,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import Link from "next/link";
-import { Coins, Copy, Flame, HelpCircle, MessageSquare, RefreshCw } from "lucide-react";
+import { Coins, Flame, HelpCircle, MessageSquare, RefreshCw } from "lucide-react";
 import { createSession, updateSession, regeneratePublicCode } from "@/lib/actions/sessions";
 import { isValidPublicCode } from "@/lib/session-code";
 import { CATEGORIES, DEFAULT_MIN_CONTENT_LENGTH, DEFAULT_MAX_CONTENT_LENGTH } from "@/lib/constants";
