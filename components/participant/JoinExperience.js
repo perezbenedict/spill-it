@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { Check } from "lucide-react";
 import Button from "@/components/ui/Button";
 import CategoryCards from "@/components/participant/CategoryCards";
 import NicknamePicker from "@/components/participant/NicknamePicker";
@@ -199,59 +198,26 @@ export default function JoinExperience({ session }) {
           ) : null}
 
           {step === "form" ? (
-            <SubmissionForm
-              session={session}
-              nickname={nickname}
-              category={category}
-              onBack={() => setStep("category")}
-              onSuccess={() => setStep("success")}
-            />
+            <motion.div
+              key="form"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <SubmissionForm
+                session={session}
+                nickname={nickname}
+                category={category}
+                onBack={() => setStep("category")}
+                onSuccess={() => {
+                  setCategory(null);
+                  setStep("category");
+                }}
+              />
+            </motion.div>
           ) : null}
 
-          {step === "success" ? (
-            <div
-              role="status"
-              aria-live="polite"
-              className="flex flex-col items-center gap-3 py-6 text-center"
-            >
-              <motion.span
-                aria-hidden="true"
-                initial={{ scale: reducedMotion ? 1 : 0.5, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={
-                  reducedMotion
-                    ? { duration: 0 }
-                    : { type: "spring", stiffness: 320, damping: 18 }
-                }
-                className="flex h-16 w-16 items-center justify-center rounded-pill bg-gold text-midnight"
-              >
-                <Check className="h-9 w-9" strokeWidth={3} />
-              </motion.span>
-              <motion.h1 {...revealProps(0.15)} className="font-display text-2xl font-bold text-ink">
-                Your thought is with the moderator.
-              </motion.h1>
-              <motion.p {...revealProps(0.22)} className="text-muted">
-                Thanks for adding your voice. Stay curious.
-              </motion.p>
-              <motion.p {...revealProps(0.29)} className="max-w-sm text-sm text-muted">
-                It is not visible to the room yet - nothing shows up until a moderator
-                approves it.
-              </motion.p>
-              <motion.div {...revealProps(0.36)} className="mt-2 w-full">
-                <Button
-                  size="lg"
-                  variant="primary"
-                  className="w-full"
-                  onClick={() => {
-                    setCategory(null);
-                    setStep("category");
-                  }}
-                >
-                  Submit another
-                </Button>
-              </motion.div>
-            </div>
-          ) : null}
         </motion.div>
       </AnimatePresence>
     </section>

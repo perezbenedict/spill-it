@@ -1,23 +1,17 @@
-import { Manrope, DM_Sans, DM_Serif_Display } from "next/font/google";
+import { Manrope, Instrument_Serif } from "next/font/google";
 import "./globals.css";
 
-const dmSans = DM_Sans({
+const instrumentSerif = Instrument_Serif({
   subsets: ["latin"],
-  variable: "--font-dm-sans",
+  variable: "--font-display",
   display: "swap",
+  weight: "400",
 });
 
 const manrope = Manrope({
   subsets: ["latin"],
-  variable: "--font-manrope",
+  variable: "--font-sans",
   display: "swap",
-});
-
-const dmSerifDisplay = DM_Serif_Display({
-  subsets: ["latin"],
-  variable: "--font-dm-serif-display",
-  display: "swap",
-  weight: "400",
 });
 
 export const metadata = {
@@ -29,7 +23,7 @@ export default function RootLayout({ children }) {
   return (
     <html
       lang="en"
-      className={`${dmSans.variable} ${manrope.variable} ${dmSerifDisplay.variable}`}
+      className={`${instrumentSerif.variable} ${manrope.variable}`}
     >
       <body className="font-body bg-midnight text-ink antialiased">
         {children}

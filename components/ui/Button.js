@@ -38,7 +38,14 @@ export default function Button({
       type={type}
       disabled={disabled || loading}
       aria-busy={loading || undefined}
-      className={cn(base, variants[variant], sizes[size], className)}
+      aria-disabled={disabled || loading || undefined}
+      className={cn(
+        base,
+        variants[variant],
+        sizes[size],
+        (disabled || loading) && "pointer-events-none opacity-60",
+        className
+      )}
       {...props}
     >
       {loading ? <Spinner className="h-4 w-4" /> : null}

@@ -1,4 +1,5 @@
 import { cloneElement, useId } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/cn";
 
 export default function Field({
@@ -24,6 +25,7 @@ export default function Field({
     "aria-required": required || undefined,
     "aria-describedby": describedBy,
     "aria-invalid": error ? true : undefined,
+    error: !!error,
   });
 
   return (
@@ -42,11 +44,24 @@ export default function Field({
           {hint}
         </p>
       ) : null}
-      {error ? (
-        <p id={errorId} role="alert" className="text-xs font-medium text-crimson">
-          {error}
-        </p>
-      ) : null}
+      <div className="min-h-[1.25rem]">
+        <AnimatePresence initial={false}>
+          {error ? (
+            <motion.p
+              key={error}
+              id={errorId}
+              role="alert"
+              className="text-xs font-medium text-crimson"
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+            >
+              {error}
+            </motion.p>
+          ) : null}
+        </AnimatePresence>
+      </div>
     </div>
   );
 }
