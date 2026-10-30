@@ -4,6 +4,11 @@ compatibility_flags = ["nodejs_compat"]
 
 pages_build_output_dir = ".open-next"
 
+[assets]
+directory = ".open-next/assets"
+binding = "ASSETS"
+run_worker_first = true
+
 [[d1_databases]]
 binding = "DB"
 database_name = "spill"
