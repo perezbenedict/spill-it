@@ -810,7 +810,7 @@ export default function SubmissionFeed({
             onChange={(event) => setDeletePassword(event.target.value)}
             placeholder="Admin password"
             autoComplete="current-password"
-            error={false}
+            error={undefined}
           />
           <div className="flex justify-end gap-2">
             <Button

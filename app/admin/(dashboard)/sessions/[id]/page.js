@@ -2,11 +2,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ExternalLink, MonitorPlay, QrCode } from "lucide-react";
 import { getAdminToken } from "@/lib/auth";
-import { getAdminSession } from "@/lib/spill-api";
+import { getAdminSession, listAdminSubmissions } from "@/lib/spill-api";
 import StatusBadge from "@/components/admin/sessions/StatusBadge";
 import SessionForm from "@/components/admin/sessions/SessionForm";
 import StatusControls from "@/components/admin/sessions/StatusControls";
 import QrPanel from "@/components/admin/sessions/QrPanel";
+import ClearContributions from "@/components/admin/sessions/ClearContributions";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -30,6 +31,9 @@ export default async function SessionDetailPage({ params }) {
   }
   const session = result.body?.session ?? null;
   if (!session) notFound();
+
+  const countResult = await listAdminSubmissions(adminToken, { session_id: session.id, limit: 1 });
+  const contributionCount = countResult.body?.total ?? 0;
 
   return (
     <div className="flex flex-col gap-8">
@@ -64,6 +68,12 @@ export default async function SessionDetailPage({ params }) {
       </section>
 
       <QrPanel publicCode={session.public_code} />
+
+      <ClearContributions
+        sessionId={session.id}
+        sessionTitle={session.title}
+        count={contributionCount}
+      />
 
       {session.status !== "draft" ? (
         <nav aria-label="Session links" className="flex flex-wrap gap-3">

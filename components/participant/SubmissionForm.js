@@ -328,7 +328,7 @@ export default function SubmissionForm({ session, nickname, category, onBack, on
                 rows={3}
                 placeholder={CATEGORY_PLACEHOLDERS[category] || "Type it out - nobody here knows who you are."}
                 disabled={pending}
-                error={!!contentError}
+                error={contentError ? true : undefined}
                 className="text-base"
                 maxLength={maxLength}
               />

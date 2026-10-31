@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, startTransition } from "react";
 import { useActionState } from "react";
-import { useFormStatus } from "react-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -35,7 +34,7 @@ const formSchema = z
       .string()
       .trim()
       .toUpperCase()
-      .refine((code) => isValidPublicCode(code), { message: "Invalid join code" })
+      .refine((code) => code === "" || isValidPublicCode(code), { message: "Invalid join code" })
       .optional(),
     available_categories: z
       .array(z.enum(CATEGORY_KEYS))
@@ -109,8 +108,7 @@ function toFormData(data) {
   return formData;
 }
 
-function SubmitButton({ mode }) {
-  const { pending } = useFormStatus();
+function SubmitButton({ mode, pending }) {
   return (
     <Button type="submit" size="lg" loading={pending}>
       {pending
@@ -161,7 +159,7 @@ export default function SessionForm({ mode, session }) {
 
   const onSubmit = handleSubmit((data, event) => {
     event?.preventDefault();
-    formAction(toFormData(data));
+    startTransition(() => formAction(toFormData(data)));
   });
 
   return (
@@ -352,7 +350,7 @@ export default function SessionForm({ mode, session }) {
       ) : null}
 
       <div className="flex flex-wrap items-center gap-3">
-        <SubmitButton mode={mode} />
+        <SubmitButton mode={mode} pending={pending} />
         <Link
           href="/admin/sessions"
           className="inline-flex items-center rounded-control px-5 py-3 text-sm font-medium text-muted underline-offset-4 transition-colors hover:text-ink hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"

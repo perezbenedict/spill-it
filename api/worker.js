@@ -1125,6 +1125,67 @@ async function handleDeleteAdminSubmission(request, env, admin, id) {
   return json({ ok: true, row: serializeSubmission(row) });
 }
 
+async function handleClearSessionContributions(request, env, admin, sessionId) {
+  let body = {};
+  try {
+    body = await request.json();
+  } catch {
+    body = {};
+  }
+  const password = typeof body?.password === 'string' ? body.password : '';
+  if (!password) return json({ error: 'Admin password is required.' }, 401);
+
+  const confirmName = typeof body?.confirm_name === 'string' ? body.confirm_name.trim() : '';
+  const confirmText = typeof body?.confirm_text === 'string' ? body.confirm_text.trim() : '';
+
+  // Re-verify the admin password server-side before any destructive action.
+  const user = await env.DB.prepare(
+    'SELECT id, password_hash FROM admin_users WHERE id = ?'
+  )
+    .bind(admin.user.id)
+    .first();
+  const matchesHash = user ? await verifyPassword(password, user.password_hash) : false;
+  const matchesSecret =
+    !matchesHash && !!env.SPILL_ADMIN_PASSWORD && constantTimeEquals(password, env.SPILL_ADMIN_PASSWORD);
+  if (!user || (!matchesHash && !matchesSecret)) {
+    return json({ error: 'Incorrect admin password.' }, 401);
+  }
+
+  const session = await env.DB.prepare('SELECT id, title FROM discussion_sessions WHERE id = ?')
+    .bind(sessionId)
+    .first();
+  if (!session) return json({ error: 'That discussion no longer exists.' }, 404);
+
+  if (!confirmName || confirmName.toLowerCase() !== String(session.title).trim().toLowerCase()) {
+    return json({ error: 'Session name does not match.' }, 400);
+  }
+  if (confirmText !== 'DELETE') {
+    return json({ error: 'Type DELETE to confirm.' }, 400);
+  }
+
+  const countRow = await env.DB.prepare(
+    'SELECT COUNT(*) AS n FROM submissions WHERE session_id = ?'
+  )
+    .bind(sessionId)
+    .first();
+  const count = countRow?.n ?? 0;
+
+  const now = nowIso();
+  try {
+    await env.DB.batch([
+      env.DB.prepare('DELETE FROM submissions WHERE session_id = ?').bind(sessionId),
+      env.DB.prepare(
+        'UPDATE presentation_state SET current_submission_id = NULL, updated_at = ?, updated_by = ? ' +
+          'WHERE session_id = ?'
+      ).bind(now, admin.user.id, sessionId),
+    ]);
+  } catch {
+    return json({ error: 'Could not clear contributions. Please try again.' }, 500);
+  }
+
+  return json({ ok: true, deleted: count });
+}
+
 /* ---------- admin: presentation pointer ---------- */
 
 async function handleGetPresentation(env, sessionId) {
@@ -1271,6 +1332,13 @@ const worker = {
         const id = decodeURIComponent(reopenMatch[1]);
         if (!isUuid(id)) return json({ error: MSG_SESSION_GENERIC }, 400);
         return await handleReopenSession(request, env, admin, id);
+      }
+
+      const clearMatch = path.match(/^\/admin\/sessions\/([^/]+)\/clear-contributions$/);
+      if (clearMatch && method === 'POST') {
+        const id = decodeURIComponent(clearMatch[1]);
+        if (!isUuid(id)) return json({ error: MSG_SESSION_GENERIC }, 400);
+        return await handleClearSessionContributions(request, env, admin, id);
       }
 
       const submissionMatch = path.match(/^\/admin\/submissions\/([^/]+)$/);

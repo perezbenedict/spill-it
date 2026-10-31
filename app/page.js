@@ -42,10 +42,11 @@ async function resolveSession(searchParams) {
   return { session: null, provided: false };
 }
 
-export default function HomePage({ searchParams }) {
+export default async function HomePage({ searchParams }) {
+  const sp = await searchParams;
   return (
     <Suspense>
-      <HomePageContentAsync searchParams={searchParams} />
+      <HomePageContentAsync searchParams={sp} />
     </Suspense>
   );
 }

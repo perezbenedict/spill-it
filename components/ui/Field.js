@@ -25,7 +25,7 @@ export default function Field({
     "aria-required": required || undefined,
     "aria-describedby": describedBy,
     "aria-invalid": error ? true : undefined,
-    error: !!error,
+    error: error ? true : undefined,
   });
 
   return (
