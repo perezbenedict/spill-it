@@ -179,8 +179,83 @@
   color: transparent;
   -webkit-text-fill-color: transparent;
   /* One-time light sweep, fired once after the rise settles */
-  animation: spill-wordmark-sweep 1.8s cubic-bezier(0.22, 1, 0.36, 1) 1.35s 1
+  animation: spill-wordmark-sweep 1.8s cubic-bezier(0.22, 1, 0.36, 1) 1.12s 1
     forwards;
+}
+
+/* QR surfaces share one calm entrance system; the QR pixels never animate. */
+@keyframes qr-stage-reveal {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 20px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes qr-light-drift {
+  0%,
+  100% {
+    transform: translate3d(-3%, -2%, 0) scale(1);
+    opacity: 0.45;
+  }
+  50% {
+    transform: translate3d(4%, 3%, 0) scale(1.06);
+    opacity: 0.72;
+  }
+}
+
+@keyframes qr-border-breathe {
+  0%,
+  100% {
+    box-shadow: 0 20px 70px -32px rgba(167, 139, 250, 0.55), 0 0 0 1px rgba(196, 181, 253, 0.18);
+  }
+  50% {
+    box-shadow: 0 24px 80px -30px rgba(167, 139, 250, 0.75), 0 0 0 1px rgba(196, 181, 253, 0.32);
+  }
+}
+
+.qr-stage-reveal {
+  animation: qr-stage-reveal 0.85s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.qr-stage-reveal-delay-1 {
+  animation-delay: 0.12s;
+}
+
+.qr-stage-reveal-delay-2 {
+  animation-delay: 0.24s;
+}
+
+.qr-ambient-light {
+  animation: qr-light-drift 24s ease-in-out infinite;
+}
+
+.qr-premium-frame {
+  animation: qr-border-breathe 7s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spill-wordmark,
+  .spill-wordmark:hover,
+  .qr-stage-reveal,
+  .qr-ambient-light,
+  .qr-premium-frame {
+    animation: none !important;
+  }
+}
+
+@media print {
+  .qr-stage-reveal,
+  .qr-ambient-light,
+  .qr-premium-frame {
+    animation: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+    box-shadow: none !important;
+  }
 }
 
 /* Gentle hover — desktop (pointer: hover) only, one-shot per hover */

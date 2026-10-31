@@ -62,33 +62,39 @@ export default async function QrProjectorPage({ params }) {
         : null;
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-8 bg-midnight px-gutter py-12 text-center">
-      <header className="flex flex-col items-center gap-2">
-        <p className="font-display text-3xl font-bold tracking-tight text-gold sm:text-4xl">
+    <main className="relative isolate flex min-h-screen min-w-0 flex-col items-center justify-center gap-6 overflow-hidden bg-midnight px-4 py-10 text-center sm:gap-8 sm:px-gutter sm:py-12">
+      <div
+        aria-hidden="true"
+        className="qr-ambient-light pointer-events-none absolute -inset-[18%] -z-10 bg-[radial-gradient(50%_45%_at_28%_25%,rgba(167,139,250,0.22),transparent_70%),radial-gradient(45%_40%_at_78%_72%,rgba(109,74,184,0.2),transparent_72%)] print:hidden"
+      />
+      <header className="qr-stage-reveal flex w-full max-w-5xl min-w-0 flex-col items-center gap-2">
+        <p className="font-display text-[clamp(1.75rem,7vw,2.5rem)] font-bold tracking-tight text-gold">
           Spill It
         </p>
-        <h1 className="text-balance font-display text-2xl font-semibold text-ink sm:text-4xl">
+        <h1 className="max-w-full break-words text-balance font-display text-[clamp(1.5rem,5vw,2.5rem)] font-semibold leading-tight text-ink">
           {session.title}
         </h1>
       </header>
 
-      <div className="rounded-card bg-surface p-4 shadow-lg sm:p-6">
-        {/* eslint-disable-next-line @next/next/no-img-element -- data URL, no server round-trip */}
-        <img
-          src={qrDataUrl}
-          alt={`QR code to join ${session.title} at ${joinUrl}`}
-          className="h-auto w-[min(72vmin,28rem)]"
-        />
+      <div className="qr-premium-frame qr-stage-reveal qr-stage-reveal-delay-1 w-full max-w-[30rem] rounded-card bg-gradient-to-br from-gold/30 via-white/10 to-gold-deep/25 p-px">
+        <div className="flex w-full items-center justify-center rounded-[calc(2rem-1px)] bg-white p-3 sm:p-6">
+          {/* eslint-disable-next-line @next/next/no-img-element -- data URL, no server round-trip */}
+          <img
+            src={qrDataUrl}
+            alt={`QR code to join ${session.title} at ${joinUrl}`}
+            className="h-auto w-full max-w-[25rem] bg-white [image-rendering:auto]"
+          />
+        </div>
       </div>
 
-      <p className="text-lg font-medium text-ink sm:text-2xl">
+      <p className="qr-stage-reveal qr-stage-reveal-delay-2 text-[clamp(1.1rem,4vw,1.5rem)] font-medium leading-snug text-ink">
         Scan to join the conversation
       </p>
 
       {statusLine ? (
         <p
           role="status"
-          className={`rounded-pill px-4 py-1.5 text-sm font-medium sm:text-base ${
+          className={`qr-stage-reveal qr-stage-reveal-delay-2 max-w-full rounded-pill px-4 py-1.5 text-sm font-medium sm:text-base ${
             session.status === "paused"
               ? "bg-gold/15 text-gold"
               : "bg-crimson/15 text-crimson-bright"
@@ -98,11 +104,11 @@ export default async function QrProjectorPage({ params }) {
         </p>
       ) : null}
 
-      <div className="print:hidden">
+      <div className="qr-stage-reveal qr-stage-reveal-delay-2 w-full sm:w-auto print:hidden">
         <PrintButton />
       </div>
 
-      <p className="select-all break-all text-xs text-muted sm:text-sm">
+      <p className="qr-stage-reveal qr-stage-reveal-delay-2 max-w-2xl select-all break-all text-xs leading-relaxed text-muted sm:text-sm">
         {joinUrl}
       </p>
     </main>

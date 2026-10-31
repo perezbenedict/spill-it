@@ -12,6 +12,7 @@ const MODERATION_STATUSES = ['pending', 'approved', 'hidden'];
 const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // no 0/O, 1/I/L
 const CODE_LENGTH = 8;
 const CODE_PATTERN = /^[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{8}$/;
+const REQUEST_ID_PATTERN = /^[A-Za-z0-9_-]{16,80}$/;
 
 const DEFAULT_MIN_CONTENT_LENGTH = 3;
 const DEFAULT_MAX_CONTENT_LENGTH = 1000;
@@ -473,6 +474,8 @@ async function handleCreateSubmission(request, env) {
   // the httpOnly cookie; the body is the only channel for it here.
   const participantId = typeof body?.participant_id === 'string' ? body.participant_id : '';
   if (!isUuid(participantId)) return json({ error: MSG_BAD_BODY }, 400);
+  const requestId = typeof body?.request_id === 'string' ? body.request_id.trim() : '';
+  if (!REQUEST_ID_PATTERN.test(requestId)) return json({ error: MSG_BAD_BODY }, 400);
 
   const session = await env.DB.prepare(
     'SELECT id, status, available_categories, configuration, closes_at ' +
@@ -483,6 +486,16 @@ async function handleCreateSubmission(request, env) {
   if (!session || session.status === 'draft') {
     return json({ error: 'This discussion could not be found.' }, 404);
   }
+
+  // A replay of a completed logical attempt is successful even if the
+  // discussion was paused or closed after the first response. This lookup is
+  // only an optimization; the unique D1 index is the concurrency-safe guard.
+  const completedAttempt = await env.DB.prepare(
+    'SELECT id FROM submissions WHERE session_id = ? AND participant_id = ? AND request_id = ?'
+  )
+    .bind(session.id, participantId, requestId)
+    .first();
+  if (completedAttempt) return json({ ok: true, duplicate: true });
 
   const availableCategories = parseJson(session.available_categories, []);
   const configuration = parseJson(session.configuration, {});
@@ -561,18 +574,19 @@ async function handleCreateSubmission(request, env) {
   const isDuplicate = recent.some(
     (row) => row.created_at >= duplicateCutoff && normalizeContent(row.content) === normalized
   );
-  if (isDuplicate) return json({ ok: true });
+  if (isDuplicate) return json({ ok: true, duplicate: true });
 
   try {
     await env.DB.prepare(
-      'INSERT INTO submissions (id, session_id, participant_id, nickname, category, content, ' +
+      'INSERT INTO submissions (id, session_id, participant_id, request_id, nickname, category, content, ' +
         'moderation_status, is_pinned, hidden_from_presentation, created_at, updated_at) ' +
-        'VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?)'
+        'VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?)'
     )
       .bind(
         crypto.randomUUID(),
         session.id,
         participantId,
+        requestId,
         nickname,
         category,
         content,
@@ -582,6 +596,16 @@ async function handleCreateSubmission(request, env) {
       )
       .run();
   } catch {
+    // Concurrent copies of the same request can both miss the fast lookup,
+    // but only one can satisfy submissions_request_id_idx. Treat the losing
+    // copy as the same successful delivery after confirming the row exists.
+    const delivered = await env.DB.prepare(
+      'SELECT id FROM submissions WHERE session_id = ? AND participant_id = ? AND request_id = ?'
+    )
+      .bind(session.id, participantId, requestId)
+      .first()
+      .catch(() => null);
+    if (delivered) return json({ ok: true, duplicate: true });
     return json({ error: MSG_SUBMISSION_GENERIC }, 500);
   }
 

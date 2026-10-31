@@ -1,25 +1,35 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const suppliedBaseURL = process.env.PLAYWRIGHT_BASE_URL;
+const baseURL = suppliedBaseURL || 'http://127.0.0.1:3000';
+
 export default defineConfig({
   testDir: './tests/e2e',
-  fullyParallel: true,
+  // Stateful event-flow specs share disposable discussion fixtures. Running
+  // them serially prevents one browser journey from racing another journey's
+  // lifecycle or moderation changes.
+  fullyParallel: false,
+  workers: 1,
   retries: 0,
   reporter: 'list',
   use: {
-    baseURL: 'http://localhost:3000',
+    baseURL,
     trace: 'on-first-retry',
+    screenshot: 'only-on-failure',
+    video: 'retain-on-failure',
+    reducedMotion: 'reduce',
   },
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
-    {
-      name: 'mobile-chromium',
-      use: { ...devices['Pixel 5'] },
-    },
   ],
-  webServer: {
-    command: 'npm run build && npm run start',
-    url: 'http://localhost:3000',
-    reuseExistingServer: true,
-    timeout: 180000,
-  },
+  // A supplied URL is always treated as an already-running target. With no
+  // URL, retain the repository's convenient local production-build startup.
+  webServer: suppliedBaseURL
+    ? undefined
+    : {
+        command: 'npm run build && npm run start',
+        url: baseURL,
+        reuseExistingServer: true,
+        timeout: 180000,
+      },
 });

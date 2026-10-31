@@ -12,6 +12,7 @@ export const runtime = 'nodejs';
 const MSG_NOT_FOUND = 'This discussion could not be found.';
 const MSG_GENERIC = 'Something went wrong and your thought was not saved. Please try again.';
 const MSG_BAD_BODY = 'Check your submission and try again.';
+const REQUEST_ID_PATTERN = /^[A-Za-z0-9_-]{16,80}$/;
 
 function fail(status, message, headers) {
   return NextResponse.json({ error: message }, { status, headers });
@@ -30,6 +31,8 @@ export async function POST(request) {
   const sessionCode =
     typeof body?.sessionCode === 'string' ? body.sessionCode.trim().toUpperCase() : '';
   if (!isValidPublicCode(sessionCode)) return fail(404, MSG_NOT_FOUND);
+  const requestId = typeof body?.requestId === 'string' ? body.requestId.trim() : '';
+  if (!REQUEST_ID_PATTERN.test(requestId)) return fail(400, MSG_BAD_BODY);
 
   const participantId = await getOrCreateParticipantId(sessionCode);
 
@@ -39,6 +42,7 @@ export async function POST(request) {
     category: body?.category,
     nickname: body?.nickname,
     content: body?.content,
+    requestId,
   });
 
   if (result.status === 0) return fail(500, MSG_GENERIC);

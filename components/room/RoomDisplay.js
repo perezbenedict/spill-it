@@ -54,6 +54,7 @@ export default function RoomDisplay({
     isVisible(initialCurrentSubmission) ? initialCurrentSubmission : null
   );
   const [connection, setConnection] = useState("connecting");
+  const [sessionStatus, setSessionStatus] = useState(session.status);
   const currentIdRef = useRef(currentId);
 
   useEffect(() => {
@@ -116,6 +117,7 @@ export default function RoomDisplay({
     let disposed = false;
     let timeoutId = null;
     let inFlight = false;
+    let controller = null;
 
     function schedule() {
       if (disposed || timeoutId !== null) return;
@@ -126,17 +128,22 @@ export default function RoomDisplay({
     }
 
     async function poll() {
-      if (disposed) return;
+      if (disposed || inFlight) return;
       if (document.hidden) {
         schedule();
         return;
       }
       inFlight = true;
+      controller = new AbortController();
       try {
-        const response = await fetch(pollUrl, { cache: "no-store" });
+        const response = await fetch(pollUrl, {
+          cache: "no-store",
+          signal: controller.signal,
+        });
         const data = response.ok ? await response.json() : null;
         if (disposed || !data) throw new Error("poll failed");
         setConnection("live");
+        if (data.status) setSessionStatus(data.status);
         const nextId = data.currentId ?? null;
         const row = data.submission ?? null;
         if (row) rowsRef.current.set(row.id, row);
@@ -146,6 +153,7 @@ export default function RoomDisplay({
       } catch {
         if (!disposed) setConnection("reconnecting");
       } finally {
+        controller = null;
         inFlight = false;
         schedule();
       }
@@ -154,10 +162,19 @@ export default function RoomDisplay({
     poll();
 
     const onOnline = () => {
-      if (!disposed && !inFlight) poll();
+      if (timeoutId !== null) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+      poll();
     };
     const onVisibility = () => {
-      if (!disposed && !inFlight && document.visibilityState === "visible") poll();
+      if (document.visibilityState !== "visible") return;
+      if (timeoutId !== null) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+      poll();
     };
     window.addEventListener("online", onOnline);
     document.addEventListener("visibilitychange", onVisibility);
@@ -166,12 +183,13 @@ export default function RoomDisplay({
       window.removeEventListener("online", onOnline);
       document.removeEventListener("visibilitychange", onVisibility);
       if (timeoutId !== null) clearTimeout(timeoutId);
+      controller?.abort();
     };
   }, [pollUrl]);
 
-  const isClosed = session.status === "closed";
+  const isClosed = sessionStatus === "closed";
   const statusLine =
-    session.status === "paused"
+    sessionStatus === "paused"
       ? "Submissions paused"
       : isClosed
         ? "This conversation has been wrapped"
@@ -284,7 +302,7 @@ export default function RoomDisplay({
           <AnimatePresence mode="wait" initial={false}>
             {statusLine ? (
               <motion.p
-                key={`status-${session.status}`}
+                key={`status-${sessionStatus}`}
                 initial={reduceMotion ? false : { opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -6 }}

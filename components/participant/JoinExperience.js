@@ -155,7 +155,7 @@ export default function JoinExperience({ session, usedNicknames = [] }) {
         : "You're in - here's the topic";
 
   return (
-    <section className="relative isolate">
+    <section className="relative isolate overflow-x-clip">
       <motion.div
         aria-hidden="true"
         className="pointer-events-none absolute -inset-x-8 -top-10 -z-10 h-56 rounded-full bg-[radial-gradient(circle,rgba(167,139,250,0.10),transparent_68%)]"
@@ -194,8 +194,14 @@ export default function JoinExperience({ session, usedNicknames = [] }) {
                   {eyebrowText}
                 </p>
                 <h1 className="text-balance font-display text-3xl font-bold leading-tight text-ink">
-                  {session.title}
+                  Make yourself at home.
                 </h1>
+                <p className="max-w-lg text-sm leading-relaxed text-muted sm:text-base">
+                  Pick a nickname and get ready to share what&apos;s on your mind.
+                </p>
+                <p className="break-words text-xs font-semibold uppercase tracking-[0.16em] text-gold">
+                  {session.title}
+                </p>
               </motion.div>
 
               {/* The topic is surfaced once, on the welcome/introduce step. */}
@@ -234,7 +240,7 @@ export default function JoinExperience({ session, usedNicknames = [] }) {
                     className="w-full"
                     onClick={() => setStep("introduce")}
                   >
-                    Join the conversation
+                    Enter the Conversation
                   </Button>
                 </motion.div>
               ) : (

@@ -187,6 +187,7 @@ export default function SubmissionFeed({
     let disposed = false;
     let timeoutId = null;
     let inFlight = false;
+    let controller = null;
 
     const query = new URLSearchParams({ session_id: sessionId });
     if (filters.status !== "all") query.set("status", filters.status);
@@ -206,14 +207,18 @@ export default function SubmissionFeed({
     }
 
     async function poll() {
-      if (disposed) return;
+      if (disposed || inFlight) return;
       if (document.hidden) {
         schedule();
         return;
       }
       inFlight = true;
+      controller = new AbortController();
       try {
-        const response = await fetch(pollUrl, { cache: "no-store" });
+        const response = await fetch(pollUrl, {
+          cache: "no-store",
+          signal: controller.signal,
+        });
         const data = await response.json().catch(() => null);
         if (disposed) return;
         if (!response.ok || !Array.isArray(data?.items)) throw new Error("poll failed");
@@ -227,6 +232,7 @@ export default function SubmissionFeed({
       } catch {
         if (!disposed) setConnection("reconnecting");
       } finally {
+        controller = null;
         inFlight = false;
         schedule();
       }
@@ -235,10 +241,19 @@ export default function SubmissionFeed({
     poll();
 
     const onOnline = () => {
-      if (!disposed && !inFlight) poll();
+      if (timeoutId !== null) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+      poll();
     };
     const onVisibility = () => {
-      if (!disposed && !inFlight && document.visibilityState === "visible") poll();
+      if (document.visibilityState !== "visible") return;
+      if (timeoutId !== null) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+      poll();
     };
     window.addEventListener("online", onOnline);
     document.addEventListener("visibilitychange", onVisibility);
@@ -248,6 +263,7 @@ export default function SubmissionFeed({
       window.removeEventListener("online", onOnline);
       document.removeEventListener("visibilitychange", onVisibility);
       if (timeoutId !== null) clearTimeout(timeoutId);
+      controller?.abort();
     };
   }, [sessionId, filters, sort, page, pageSize, updateRows]);
 

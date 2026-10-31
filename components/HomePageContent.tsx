@@ -119,9 +119,9 @@ export default function HomePageContent({ session, provided }: HomePageContentPr
         {/* Emblem / Logo */}
         <motion.div
           className="flex justify-center"
-          initial={{ opacity: 0, y: 12 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: EASE }}
+          transition={{ duration: 0.8, ease: EASE }}
         >
           <span
             className="mb-2 inline-flex h-20 w-20 drop-shadow-[0_0_18px_rgba(167,139,250,0.25)] sm:h-24 sm:w-24 animate-emblem-drift"
@@ -134,9 +134,9 @@ export default function HomePageContent({ session, provided }: HomePageContentPr
         {/* Brand signature — uppercase Manrope eyebrow with champagne-gold accent line */}
         <motion.div
           className="flex w-full max-w-full items-center justify-center gap-2 sm:gap-3"
-          initial={{ opacity: 0, y: 8 }}
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.15, ease: EASE }}
+          transition={{ duration: 0.8, ease: EASE }}
         >
           <span
             className="h-px w-5 shrink-0 bg-gradient-to-r from-transparent via-gold to-transparent opacity-60 sm:w-8"
@@ -153,13 +153,13 @@ export default function HomePageContent({ session, provided }: HomePageContentPr
 
         {/* Editorial headline — three distinct lines in one staggered reveal. */}
         <h1 className="hero-headline w-full">
-          <RevealLine delay={0.3} className="thought-line">
+          <RevealLine delay={0.28} className="thought-line">
             Your thoughts.
           </RevealLine>
-          <RevealLine delay={0.48} className="voice-line">
+          <RevealLine delay={0.44} className="voice-line">
             Your voice.
           </RevealLine>
-          <RevealLine delay={0.66} className="wordmark-line">
+          <RevealLine delay={0.6} className="wordmark-line">
             <span className="spill-wordmark">
               Spill it
             </span>
@@ -168,7 +168,7 @@ export default function HomePageContent({ session, provided }: HomePageContentPr
       </div>
 
       {/* Subtitle */}
-      <AnimatedSection className="relative z-10 mt-8 flex justify-center" delay={0.9}>
+      <AnimatedSection className="relative z-10 mt-8 flex justify-center" delay={0.76}>
         <p className="max-w-md text-center text-[clamp(16px,2vw,18px)] leading-[1.65] text-muted">
           {sessionObj
             ? "No pressure. Just be real with us."
@@ -180,12 +180,12 @@ export default function HomePageContent({ session, provided }: HomePageContentPr
 
       {/* Join CTA */}
       {joinHref ? (
-        <AnimatedSection className="relative z-10 mt-8 flex justify-center" delay={1.0}>
+        <AnimatedSection className="relative z-10 mt-8 flex justify-center" delay={0.92}>
           <MagneticButton
             href={joinHref}
             className="group inline-flex w-full items-center justify-center gap-2 rounded-control bg-gold px-6 py-3 text-base font-medium text-midnight shadow-[0_0_18px_rgba(167,139,250,0.3)] transition-[background-color,box-shadow] duration-300 ease-out hover:bg-gold-light hover:shadow-[0_10px_30px_rgba(167,139,250,0.32)] active:shadow-[0_4px_18px_rgba(167,139,250,0.24)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold sm:w-auto"
           >
-            Join the conversation
+            Join the Conversation
             <motion.span
               className="inline-block"
               aria-hidden="true"

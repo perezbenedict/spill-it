@@ -10,7 +10,7 @@ const IconMap = {
   twocents: dynamic(() => import('lucide-react').then(mod => ({ default: mod.MessagesSquare })), { ssr: false }),
 };
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Check } from "lucide-react";
 import Button from "@/components/ui/Button";
@@ -63,6 +63,15 @@ function messageForIssue(issue, minLength, maxLength) {
   }
   if (issue?.path?.includes("nickname")) return "Pick a nickname before sending.";
   return "Check your submission and try again.";
+}
+
+function createRequestId() {
+  if (typeof globalThis.crypto?.randomUUID === "function") {
+    return globalThis.crypto.randomUUID();
+  }
+  const bytes = new Uint8Array(24);
+  globalThis.crypto.getRandomValues(bytes);
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
 // Animated SVG spinner used as the button's loading indicator (no emoji).
@@ -135,6 +144,9 @@ export default function SubmissionForm({ session, nickname, category, onBack, on
   const [contentError, setContentError] = useState(null);
   const [status, setStatus] = useState("idle"); // idle | submitting | success | error
   const [composerFocused, setComposerFocused] = useState(false);
+  // One opaque key represents one logical send. It survives ambiguous network
+  // failures so a retry cannot create a second database row.
+  const requestIdRef = useRef(null);
 
   const pending = status === "submitting";
   const nearLimit = content.length >= maxLength * 0.9;
@@ -142,6 +154,7 @@ export default function SubmissionForm({ session, nickname, category, onBack, on
 
   function handleContentChange(event) {
     setContent(event.target.value);
+    requestIdRef.current = null;
     if (contentError) setContentError(null);
   }
 
@@ -168,11 +181,13 @@ export default function SubmissionForm({ session, nickname, category, onBack, on
     setContentError(null);
     setError(null);
     setStatus("submitting");
+    const requestId = requestIdRef.current ?? createRequestId();
+    requestIdRef.current = requestId;
     try {
       const response = await fetch("/api/submissions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(parsed.data),
+        body: JSON.stringify({ ...parsed.data, requestId }),
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
@@ -187,7 +202,9 @@ export default function SubmissionForm({ session, nickname, category, onBack, on
       // Success confirmed by the server - transition to confirmation state.
       setStatus("success");
     } catch {
-      setError("We could not reach the server. Check your connection and try again.");
+      setError(
+        "We could not confirm the server response. Check your connection and retry - the same send will not be duplicated."
+      );
       setStatus("error");
     }
   }
@@ -199,6 +216,7 @@ export default function SubmissionForm({ session, nickname, category, onBack, on
 
   function handleSubmitAnother() {
     setContent("");
+    requestIdRef.current = null;
     setError(null);
     setContentError(null);
     setStatus("idle");

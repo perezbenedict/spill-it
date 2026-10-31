@@ -35,6 +35,10 @@ CREATE TABLE IF NOT EXISTS submissions (
   session_id TEXT NOT NULL REFERENCES discussion_sessions(id) ON DELETE CASCADE,
   -- Session-scoped pseudonymous id from an httpOnly cookie; not tied to auth.
   participant_id TEXT NOT NULL,
+  -- Opaque browser-generated key for one logical submit attempt. Nullable so
+  -- existing rows and legacy imports remain valid; every new app submission
+  -- supplies a value and the partial unique index below makes retries atomic.
+  request_id TEXT,
   nickname TEXT NOT NULL CHECK (length(trim(nickname)) BETWEEN 1 AND 60),
   category TEXT NOT NULL
     CHECK (category IN ('question', 'opinion', 'challenge', 'twocents')),
@@ -57,6 +61,9 @@ CREATE INDEX IF NOT EXISTS submissions_session_category_idx
   ON submissions (session_id, category);
 CREATE INDEX IF NOT EXISTS submissions_session_participant_idx
   ON submissions (session_id, participant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS submissions_request_id_idx
+  ON submissions (session_id, participant_id, request_id)
+  WHERE request_id IS NOT NULL;
 -- Fast lookup of a session's pinned submission.
 CREATE INDEX IF NOT EXISTS submissions_session_pinned_idx
   ON submissions (session_id) WHERE is_pinned = 1;

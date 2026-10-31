@@ -27,5 +27,6 @@ export async function GET(request, { params }) {
   return NextResponse.json({
     currentId: result.body.currentId,
     submission: result.body.currentSubmission,
+    status: result.body.session?.status ?? null,
   });
 }
