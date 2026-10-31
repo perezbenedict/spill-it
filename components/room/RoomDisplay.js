@@ -1,7 +1,8 @@
 "use client";
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { Pin } from "lucide-react";
+import { ArrowLeft, Pin } from "lucide-react";
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import RoomControls from "@/components/room/RoomControls";
@@ -178,6 +179,34 @@ export default function RoomDisplay({
 
   return (
     <div ref={screenRef} className="relative flex h-dvh w-full flex-col overflow-hidden bg-midnight text-ink">
+      <style>{`
+        @keyframes ambientGradient {
+          0%, 100% { background-position: 0% 0%; }
+          50% { background-position: 100% 100%; }
+        }
+      `}</style>
+      {/* Slow ambient gradient drift behind the presentation screen. Cheap
+          transform-only motion, gated on prefers-reduced-motion. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 opacity-60 motion-safe:animate-[ambientGradient_32s_ease-in-out_infinite]"
+        style={{
+          background:
+            "radial-gradient(60% 55% at 22% 18%, rgba(167,139,250,0.20), transparent 60%), radial-gradient(55% 50% at 80% 82%, rgba(109,74,184,0.22), transparent 60%)",
+          backgroundSize: "160% 160%",
+        }}
+      />
+      {isAdmin ? (
+        <Link
+          href="/admin"
+          className="pointer-events-auto absolute left-5 top-5 z-40 inline-flex items-center gap-1.5 rounded-pill border border-gold/15 bg-surface/60 px-3 py-1.5 text-sm text-muted shadow-sm backdrop-blur-md transition-colors duration-200 hover:border-gold/30 hover:text-gold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+          aria-label="Back to dashboard"
+          title="Back to dashboard"
+        >
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+          Back to Dashboard
+        </Link>
+      ) : null}
       <header className="grid grid-cols-[1fr_auto_1fr] items-start gap-8 px-10 pt-8">
         <div className="flex items-center gap-3">
           <span className="text-xl font-bold tracking-tight">Spill It</span>
@@ -216,14 +245,18 @@ export default function RoomDisplay({
         {/* Middle grid cell always renders so the status column stays right-anchored */}
         <div className="max-w-[42ch] text-center">
           {currentRow ? (
-            <>
+            <motion.div
+              initial={reduceMotion ? false : { opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: reduceMotion ? 0 : 0.6, ease: REVEAL_EASE }}
+            >
               <p className="text-sm font-semibold uppercase tracking-[0.28em] text-gold">
                 Now discussing
               </p>
               <p className="mt-2 font-display text-[clamp(1.25rem,2vw,1.75rem)] leading-snug text-gold-light">
                 {session.title}
               </p>
-            </>
+            </motion.div>
           ) : null}
         </div>
         <div className="justify-self-end text-right">
