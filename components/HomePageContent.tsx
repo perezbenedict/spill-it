@@ -9,9 +9,35 @@ import { motion } from "framer-motion";
 
 const EASE = [0.22, 1, 0.36, 1];
 
-export default function HomePageContent({ session, provided }) {
-  const sessionObj = session?.session;
-  const joinHref = sessionObj ? `/join/${sessionObj.public_code}` : null;
+export interface HomePageSession {
+  id: string;
+  public_code: string;
+  title: string;
+  description?: string;
+  welcome_message?: string;
+  status: string;
+  available_categories?: string[];
+  configuration?: Record<string, unknown>;
+  opens_at?: string | null;
+  closes_at?: string | null;
+  topic?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface HomePageContentProps {
+  session: HomePageSession | null;
+  provided: boolean;
+}
+
+export default function HomePageContent({ session, provided }: HomePageContentProps) {
+  // The homepage receives the session object directly (see app/page.js).
+  // Standardize on that shape here instead of unwrapping session.session.
+  const sessionObj = session ?? null;
+  const joinHref =
+    sessionObj && typeof sessionObj.public_code === "string" && sessionObj.public_code.length > 0
+      ? `/join/${sessionObj.public_code}`
+      : null;
 
   // Interactive background glow — pointer position tracked as motion values
   // (no React state on every move), smoothed with a spring.
@@ -156,16 +182,16 @@ export default function HomePageContent({ session, provided }) {
       {/* Subtitle */}
       <AnimatedSection className="relative z-10 mt-8 flex justify-center" delay={0.9}>
         <p className="max-w-md text-center text-[clamp(16px,2vw,18px)] leading-[1.65] text-muted">
-          {provided
-            ? "This discussion isn’t open right now. Check back soon, or join a live one."
-            : session
-              ? "No pressure. Just be real with us."
+          {sessionObj
+            ? "No pressure. Just be real with us."
+            : provided
+              ? "This discussion isn’t open right now. Check back soon, or join a live one."
               : "No discussion is open right now. Check back soon."}
         </p>
       </AnimatedSection>
 
       {/* Join CTA */}
-      {session ? (
+      {joinHref ? (
         <AnimatedSection className="relative z-10 mt-8 flex justify-center" delay={1.0}>
           <MagneticButton
             href={joinHref}
