@@ -51,10 +51,10 @@ export default function HomePage({ searchParams }) {
 }
 
 async function HomePageContentAsync({ searchParams }) {
-  const session = await resolveSession(searchParams);
+  const { session, provided } = await resolveSession(searchParams);
   return (
     <AnimatedBackground>
-      <HomePageContent session={session} />
+      <HomePageContent session={session} provided={provided} />
     </AnimatedBackground>
   );
 }

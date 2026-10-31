@@ -196,16 +196,25 @@ export default function RoomDisplay({
           backgroundSize: "160% 160%",
         }}
       />
+      {/* Compact icon-only back-to-dashboard control at the top-right,
+          away from the logo. Expands on hover/focus for an accessible label. */}
       {isAdmin ? (
-        <Link
-          href="/admin"
-          className="pointer-events-auto absolute left-5 top-5 z-40 inline-flex items-center gap-1.5 rounded-pill border border-gold/15 bg-surface/60 px-3 py-1.5 text-sm text-muted shadow-sm backdrop-blur-md transition-colors duration-200 hover:border-gold/30 hover:text-gold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
-          aria-label="Back to dashboard"
-          title="Back to dashboard"
+        <nav
+          className="pointer-events-auto fixed right-4 top-5 z-40 flex items-center"
+          aria-label="Admin navigation"
         >
-          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-          Back to Dashboard
-        </Link>
+          <Link
+            href="/admin"
+            className="group inline-flex items-center gap-2 rounded-pill border border-gold/15 bg-surface/60 px-2.5 py-1.5 text-sm text-muted opacity-60 shadow-sm backdrop-blur-md transition-all duration-200 hover:border-gold/30 hover:text-gold hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+            aria-label="Back to dashboard"
+            title="Back to dashboard"
+          >
+            <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" aria-hidden="true" />
+            <span className="max-w-0 overflow-hidden whitespace-nowrap text-xs transition-all duration-200 group-hover:max-w-[10rem] group-hover:pl-1.5 focus-within:max-w-[10rem] focus-within:pl-1.5">
+              Back to Dashboard
+            </span>
+          </Link>
+        </nav>
       ) : null}
       <header className="grid grid-cols-[1fr_auto_1fr] items-start gap-8 px-10 pt-8">
         <div className="flex items-center gap-3">

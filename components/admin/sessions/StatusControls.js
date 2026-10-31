@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
-import { Pause, Play, XCircle } from "lucide-react";
-import { setSessionStatus } from "@/lib/actions/sessions";
+import { Pause, Play, RotateCcw, XCircle } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { setSessionStatus, reopenSession } from "@/lib/actions/sessions";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import Dialog from "@/components/ui/Dialog";
@@ -20,7 +21,7 @@ const ACTIONS = {
     { next: "live", label: "Resume", icon: Play, variant: "primary" },
     { next: "closed", label: "Close", icon: XCircle, variant: "danger" },
   ],
-  closed: [],
+  closed: [{ next: "reopen", label: "Reopen", icon: RotateCcw, variant: "primary" }],
 };
 
 function StatusActionForm({ next, label, icon: Icon, variant, disabled, onSubmitted }) {
@@ -37,9 +38,11 @@ function StatusActionForm({ next, label, icon: Icon, variant, disabled, onSubmit
 }
 
 export default function StatusControls({ sessionId, status }) {
+  const router = useRouter();
   const [state, formAction, pending] = useActionState(
     async (prevState, formData) => {
       const next = formData.get("next");
+      if (next === "reopen") return reopenSession(sessionId);
       return setSessionStatus(sessionId, next);
     },
     { error: null }
@@ -48,8 +51,16 @@ export default function StatusControls({ sessionId, status }) {
   const [confirmClose, setConfirmClose] = useState(false);
 
   useEffect(() => {
-    if (state?.ok) setConfirmClose(false);
+    if (state?.ok) {
+      setConfirmClose(false);
+      // Force the server-rendered parent (dashboard / session detail) to
+      // refresh so the new status is reflected immediately.
+      if (typeof window !== "undefined") {
+        router.refresh();
+      }
+    }
   }, [state]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
 
   const actions = ACTIONS[status] ?? [];
   const isClosed = status === "closed";
@@ -67,10 +78,16 @@ export default function StatusControls({ sessionId, status }) {
       </div>
 
       {isClosed ? (
-        <p className="rounded-control bg-white/5 px-4 py-3 text-sm text-ink">
-          This discussion is closed. Submissions are closed but everything already
-          contributed is kept.
-        </p>
+        <div className="flex flex-wrap gap-3">
+          <StatusActionForm
+            next="reopen"
+            label="Reopen discussion"
+            icon={RotateCcw}
+            variant="primary"
+            disabled={pending}
+            onSubmitted={formAction}
+          />
+        </div>
       ) : (
         <div className="flex flex-wrap gap-3">
           {actions.map((action) =>
