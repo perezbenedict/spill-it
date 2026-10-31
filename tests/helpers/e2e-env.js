@@ -4,6 +4,8 @@ export const E2E = Object.freeze({
   baseURL: configuredBaseURL,
   liveCode: process.env.SPILL_E2E_SESSION_CODE || '',
   longCode: process.env.SPILL_E2E_LONG_SESSION_CODE || '',
+  secondCode: process.env.SPILL_E2E_SECOND_SESSION_CODE || '',
+  topic: process.env.SPILL_E2E_TOPIC || '',
   closedCode: process.env.SPILL_E2E_CLOSED_SESSION_CODE || '',
   roomCode: process.env.SPILL_E2E_ROOM_CODE || '',
   presentedText: process.env.SPILL_E2E_PRESENTED_TEXT || '',
@@ -53,5 +55,5 @@ export async function enterNicknameStep(page) {
 }
 
 export function uniqueNickname(prefix = 'E2E') {
-  return `${prefix}${Date.now().toString(36)}`.slice(0, 60);
+  return `${prefix}${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`.slice(0, 60);
 }

@@ -18,12 +18,14 @@ const DEFAULT_MIN_CONTENT_LENGTH = 3;
 const DEFAULT_MAX_CONTENT_LENGTH = 1000;
 const MAX_NICKNAME_LENGTH = 60;
 const MAX_TITLE_LENGTH = 200;
+const MAX_TOPIC_LENGTH = 200;
 const MAX_DESCRIPTION_LENGTH = 2000;
 const MAX_WELCOME_MESSAGE_LENGTH = 1000;
 
 const RATE_LIMIT_MAX_SUBMISSIONS = 5;
 const RATE_LIMIT_WINDOW_SECONDS = 60;
 const DUPLICATE_WINDOW_SECONDS = 600;
+const NICKNAME_RESERVATION_HOURS = 24;
 
 const ADMIN_SESSION_HOURS = 7 * 24;
 const PBKDF2_ITERATIONS = 100000;
@@ -52,7 +54,7 @@ const MSG_RATE_LIMITED = 'Slow down a moment - try again shortly.';
 const MSG_BAD_BODY = 'Check your submission and try again.';
 const MSG_SESSION_GENERIC = 'Could not save this discussion. Please try again.';
 const MSG_INVALID = 'Invalid contribution.';
-const MSG_NICKNAME_TAKEN = 'That nickname is already taken. Try another one.';
+const MSG_NICKNAME_TAKEN = "That nickname's already taken. Try another one.";
 const MSG_LOGIN_INVALID = 'Incorrect password.';
 const MSG_LOGIN_THROTTLED = 'Too many attempts. Try again shortly.';
 
@@ -76,6 +78,96 @@ function clampLength(value, fallback) {
 // Same normalization the Next app uses for duplicate suppression.
 function normalizeContent(content) {
   return String(content).replace(/\s+/g, ' ').trim();
+}
+
+function displayNickname(nickname) {
+  return String(nickname == null ? '' : nickname)
+    .normalize('NFKC')
+    .replace(/\s+/gu, ' ')
+    .trim();
+}
+
+function normalizeNickname(nickname) {
+  return displayNickname(nickname).toLocaleLowerCase('en-US');
+}
+
+function nicknameReservationExpiry() {
+  return new Date(Date.now() + NICKNAME_RESERVATION_HOURS * 60 * 60 * 1000).toISOString();
+}
+
+// A single INSERT owns the race. The participant-key conflict lets a returning
+// browser refresh or change its own nickname; the normalized-name conflict only
+// updates when the existing owner is that same anonymous participant. If a
+// participant changes to someone else's name, SQLite aborts the statement and
+// preserves their previous reservation.
+async function reserveSessionNickname(env, { sessionId, participantId, nickname }) {
+  const display = displayNickname(nickname);
+  const normalized = normalizeNickname(display);
+  if (!display || display.length > MAX_NICKNAME_LENGTH || !normalized) {
+    return { ok: false, invalid: true };
+  }
+
+  const now = nowIso();
+  const expiresAt = nicknameReservationExpiry();
+  await env.DB.prepare(
+    'DELETE FROM nickname_reservations WHERE session_id = ? AND expires_at <= ?'
+  )
+    .bind(sessionId, now)
+    .run();
+
+  // The migration backfills existing submissions, but normalize those rows in
+  // JavaScript as well so legacy Unicode and repeated-whitespace spellings use
+  // exactly the same comparison as new reservations.
+  const { results: legacyNames } = await env.DB.prepare(
+    'SELECT participant_id, nickname FROM submissions WHERE session_id = ?'
+  )
+    .bind(sessionId)
+    .all();
+  const legacyOwner = legacyNames.find(
+    (row) => normalizeNickname(row.nickname) === normalized && row.participant_id !== participantId
+  );
+  if (legacyOwner) return { ok: false, taken: true };
+
+  try {
+    await env.DB.prepare(
+      'INSERT INTO nickname_reservations (' +
+        'session_id, normalized_nickname, participant_id, display_nickname, ' +
+        'reserved_at, refreshed_at, expires_at' +
+        ') VALUES (?, ?, ?, ?, ?, ?, ?) ' +
+        'ON CONFLICT(session_id, participant_id) DO UPDATE SET ' +
+        'normalized_nickname = excluded.normalized_nickname, ' +
+        'display_nickname = excluded.display_nickname, ' +
+        'refreshed_at = excluded.refreshed_at, expires_at = excluded.expires_at ' +
+        'ON CONFLICT(session_id, normalized_nickname) DO UPDATE SET ' +
+        'display_nickname = excluded.display_nickname, ' +
+        'refreshed_at = excluded.refreshed_at, expires_at = excluded.expires_at ' +
+        'WHERE nickname_reservations.participant_id = excluded.participant_id'
+    )
+      .bind(sessionId, normalized, participantId, display, now, now, expiresAt)
+      .run();
+  } catch {
+    const owner = await env.DB.prepare(
+      'SELECT participant_id FROM nickname_reservations ' +
+        'WHERE session_id = ? AND normalized_nickname = ?'
+    )
+      .bind(sessionId, normalized)
+      .first()
+      .catch(() => null);
+    return owner && owner.participant_id !== participantId
+      ? { ok: false, taken: true }
+      : { ok: false };
+  }
+
+  const reservation = await env.DB.prepare(
+    'SELECT participant_id, display_nickname FROM nickname_reservations ' +
+      'WHERE session_id = ? AND normalized_nickname = ?'
+  )
+    .bind(sessionId, normalized)
+    .first();
+  if (!reservation || reservation.participant_id !== participantId) {
+    return { ok: false, taken: true };
+  }
+  return { ok: true, nickname: reservation.display_nickname };
 }
 
 function parseJson(value, fallback) {
@@ -503,32 +595,14 @@ async function handleCreateSubmission(request, env) {
   const maxLength = clampLength(configuration.max_content_length, DEFAULT_MAX_CONTENT_LENGTH);
 
   const category = typeof body?.category === 'string' ? body.category : '';
-  const nickname = typeof body?.nickname === 'string' ? body.nickname.trim() : '';
+  const requestedNickname = typeof body?.nickname === 'string' ? body.nickname : '';
   const content = typeof body?.content === 'string' ? body.content.trim() : '';
+  const requestedDisplayNickname = displayNickname(requestedNickname);
 
   // Fixed validation copy, mirroring the Next route's zod messages.
   if (!KNOWN_CATEGORIES.includes(category)) return json({ error: MSG_BAD_BODY }, 400);
-  if (!nickname || nickname.length > MAX_NICKNAME_LENGTH) {
+  if (!requestedDisplayNickname || requestedDisplayNickname.length > MAX_NICKNAME_LENGTH) {
     return json({ error: 'Pick a nickname before sending.' }, 400);
-  }
-
-  // Session-scoped nickname uniqueness (authoritative). Compare the trimmed,
-  // lowercased nickname against existing submissions in THIS session only —
-  // not globally. lower(trim(...)) mirrors the client pre-check in
-  // lib/nickname.js; SQLite lower() is ASCII-only, which is the intended
-  // case-folding. The original display capitalization is stored as-is.
-  //
-  // The current participant is excluded so they can keep their own nickname
-  // across the multiple submissions this flow allows (rate limit + "Submit
-  // another"); uniqueness is enforced across distinct participants.
-  const takenRow = await env.DB.prepare(
-    'SELECT COUNT(*) AS n FROM submissions ' +
-      'WHERE session_id = ? AND LOWER(TRIM(nickname)) = ? AND participant_id <> ?'
-  )
-    .bind(session.id, nickname.toLowerCase(), participantId)
-    .first();
-  if ((takenRow?.n ?? 0) > 0) {
-    return json({ error: MSG_NICKNAME_TAKEN, code: 'nickname_taken' }, 409);
   }
   if (content.length > maxLength) {
     return json({ error: `Keep it under ${maxLength} characters.` }, 400);
@@ -559,6 +633,17 @@ async function handleCreateSubmission(request, env) {
       'Retry-After': String(RATE_LIMIT_WINDOW_SECONDS),
     });
   }
+
+  // Refresh the participant's reservation only after the rest of the request
+  // is valid, preventing malformed direct requests from squatting nicknames.
+  const claim = await reserveSessionNickname(env, {
+    sessionId: session.id,
+    participantId,
+    nickname: requestedNickname,
+  });
+  if (claim.taken) return json({ error: MSG_NICKNAME_TAKEN, code: 'nickname_taken' }, 409);
+  if (!claim.ok) return json({ error: MSG_SUBMISSION_GENERIC }, 500);
+  const nickname = claim.nickname;
 
   // Idempotent double-click/retry protection: same content from the same
   // participant in this session recently counts as already delivered.
@@ -612,11 +697,9 @@ async function handleCreateSubmission(request, env) {
   return json({ ok: true });
 }
 
-// Authoritative nickname-availability check for a session. Returns whether the
-// trimmed, lowercased nickname is already in use by a DIFFERENT participant in
-// this session (the caller's own submissions are excluded, matching the
-// uniqueness rule in handleCreateSubmission). The frontend pre-check in
-// lib/nickname.js is a convenience; this endpoint is the source of truth.
+// Atomically reserves one normalized nickname for the session-scoped anonymous
+// participant. A returning participant refreshes the same reservation, while a
+// simultaneous claimant receives a conflict from the D1 uniqueness guarantee.
 async function handleCheckNickname(request, env) {
   let body;
   try {
@@ -630,10 +713,10 @@ async function handleCheckNickname(request, env) {
   if (!CODE_PATTERN.test(sessionCode)) {
     return json({ error: 'This discussion could not be found.' }, 404);
   }
-  const nickname = typeof body?.nickname === 'string' ? body.nickname.trim() : '';
-  if (!nickname) return json({ error: 'Pick a nickname before sending.' }, 400);
+  const nickname = typeof body?.nickname === 'string' ? body.nickname : '';
+  if (!displayNickname(nickname)) return json({ error: 'Pick a nickname before sending.' }, 400);
   const participantId = typeof body?.participant_id === 'string' ? body.participant_id : '';
-  const participantFilter = participantId && isUuid(participantId) ? participantId : null;
+  if (!isUuid(participantId)) return json({ error: MSG_BAD_BODY }, 400);
 
   const session = await env.DB.prepare(
     'SELECT id FROM discussion_sessions WHERE public_code = ? AND status <> ?'
@@ -642,19 +725,15 @@ async function handleCheckNickname(request, env) {
     .first();
   if (!session) return json({ error: 'This discussion could not be found.' }, 404);
 
-  const takenRow = await env.DB.prepare(
-    'SELECT COUNT(*) AS n FROM submissions ' +
-      'WHERE session_id = ? AND LOWER(TRIM(nickname)) = ?' +
-      (participantFilter ? ' AND participant_id <> ?' : '')
-  )
-    .bind(
-      session.id,
-      nickname.toLowerCase(),
-      ...(participantFilter ? [participantFilter] : [])
-    )
-    .first();
-
-  return json({ available: (takenRow?.n ?? 0) === 0 });
+  const claim = await reserveSessionNickname(env, {
+    sessionId: session.id,
+    participantId,
+    nickname,
+  });
+  if (claim.invalid) return json({ error: 'Pick a nickname before sending.' }, 400);
+  if (claim.taken) return json({ error: MSG_NICKNAME_TAKEN, code: 'nickname_taken' }, 409);
+  if (!claim.ok) return json({ error: MSG_SUBMISSION_GENERIC }, 500);
+  return json({ available: true, reserved: true, nickname: claim.nickname });
 }
 
 /* ---------- admin: sessions ---------- */
@@ -667,6 +746,11 @@ function validateSessionValues(body, { partial }) {
     const title = typeof body?.title === 'string' ? body.title.trim() : '';
     if (!title || title.length > MAX_TITLE_LENGTH) return { fieldErrors: { title: true } };
     values.title = title;
+  }
+  if (body?.topic !== undefined || !partial) {
+    const topic = typeof body?.topic === 'string' ? body.topic.trim() : '';
+    if (!topic || topic.length > MAX_TOPIC_LENGTH) return { fieldErrors: { topic: true } };
+    values.topic = topic;
   }
   if (body?.description !== undefined || !partial) {
     const description = typeof body?.description === 'string' ? body.description : '';
@@ -826,13 +910,14 @@ async function handleCreateAdminSession(request, env) {
     const id = crypto.randomUUID();
     try {
       await env.DB.prepare(
-        'INSERT INTO discussion_sessions (id, title, description, welcome_message, public_code, ' +
+        'INSERT INTO discussion_sessions (id, title, topic, description, welcome_message, public_code, ' +
           'status, available_categories, configuration, opens_at, closes_at, created_at, updated_at) ' +
-          'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+          'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
       )
         .bind(
           id,
           values.title,
+          values.topic,
           values.description,
           values.welcome_message,
           generatePublicCode(),

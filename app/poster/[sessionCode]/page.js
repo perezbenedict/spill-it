@@ -55,22 +55,27 @@ export default async function PosterPage({ params }) {
   }
   if (!session) notFound();
 
+  const topic = session.topic?.trim() || session.title;
+
   return (
     <div className="relative isolate min-h-screen overflow-hidden bg-gradient-to-br from-[#160D2B] via-[#24113F] to-[#6D4AB8] print:overflow-visible print:bg-white">
       <div
         aria-hidden="true"
         className="qr-ambient-light pointer-events-none absolute -inset-[18%] -z-10 bg-[radial-gradient(50%_45%_at_25%_20%,rgba(196,181,253,0.18),transparent_70%),radial-gradient(45%_42%_at_80%_78%,rgba(109,74,184,0.24),transparent_72%)] print:hidden"
       />
+      <div aria-hidden="true" className="qr-light-beam qr-light-beam-left print:hidden" />
+      <div aria-hidden="true" className="qr-light-beam qr-light-beam-right print:hidden" />
+      <div aria-hidden="true" className="qr-event-grid pointer-events-none absolute inset-0 -z-10 print:hidden" />
       <div className="mx-auto flex w-full max-w-xl flex-col gap-3 px-4 py-6 sm:flex-row sm:items-center sm:justify-between sm:px-gutter print:hidden">
         <p className="min-w-0 break-words text-sm leading-relaxed text-muted">
           Printable poster for{" "}
-          <span className="font-display font-semibold text-ink">{session.title}</span>
+          <span className="font-display font-semibold text-ink">{topic}</span>
         </p>
         <PrintButton className="w-full shrink-0 sm:w-auto" />
       </div>
       <div className="px-4 pb-16 sm:px-gutter print:px-0 print:pb-0">
         <PosterSheet
-          title={session.title}
+          title={topic}
           qrDataUrl={qrDataUrl}
           sessionCode={session.public_code}
           joinUrl={joinUrl}

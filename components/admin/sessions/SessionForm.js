@@ -28,6 +28,11 @@ const formSchema = z
       .trim()
       .min(1, "Give the discussion a title.")
       .max(200, "Keep the title under 200 characters."),
+    topic: z
+      .string()
+      .trim()
+      .min(1, "Add the topic participants will discuss.")
+      .max(200, "Keep the topic under 200 characters."),
     description: z.string().max(2000, "Keep the description under 2000 characters."),
     welcome_message: z.string().max(1000, "Keep the welcome message under 1000 characters."),
     public_code: z
@@ -92,6 +97,7 @@ function toLocalInput(value) {
 function toFormData(data) {
   const formData = new FormData();
   formData.set("title", data.title);
+  formData.set("topic", data.topic);
   formData.set("description", data.description ?? "");
   formData.set("welcome_message", data.welcome_message ?? "");
   if (data.public_code) formData.set("public_code", data.public_code);
@@ -136,6 +142,7 @@ export default function SessionForm({ mode, session }) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: session?.title ?? "",
+      topic: session?.topic?.trim() || session?.title || "",
       description: session?.description ?? "",
       welcome_message: session?.welcome_message ?? "",
       public_code: session?.public_code ?? "",
@@ -169,8 +176,27 @@ export default function SessionForm({ mode, session }) {
           Discussion
         </h2>
 
-        <Field label="Title" required error={errors.title?.message}>
+        <Field
+          label="Title"
+          required
+          hint="Internal name used to manage this discussion in the admin area."
+          error={errors.title?.message}
+        >
           <Input {...register("title")} placeholder="Friday product retro" />
+        </Field>
+
+        <Field
+          label="Topic"
+          required
+          hint="The participant-facing question or theme shown on the join, QR, and room screens."
+          error={errors.topic?.message}
+        >
+          <Textarea
+            {...register("topic")}
+            rows={3}
+            maxLength={200}
+            placeholder="Relationships, Faith & Real-Life Decisions"
+          />
         </Field>
 
         <Field

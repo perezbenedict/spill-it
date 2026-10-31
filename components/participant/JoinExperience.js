@@ -58,6 +58,7 @@ export default function JoinExperience({ session, usedNicknames = [] }) {
   const [category, setCategory] = useState(null);
   const [chosenCategory, setChosenCategory] = useState(null);
   const [nicknameError, setNicknameError] = useState(null);
+  const [nicknamePending, setNicknamePending] = useState(false);
 
   useEffect(() => {
     const saved = readNicknameCookie(session.code);
@@ -84,34 +85,34 @@ export default function JoinExperience({ session, usedNicknames = [] }) {
   }
 
   async function handleNicknameContinue(value) {
-    const trimmed = value.trim();
-    // Authoritative server-side check via the new /nickname availability
-    // endpoint — the worker is the source of truth on session-scoped
-    // uniqueness and excludes the caller's own prior submissions, so a
-    // returning participant can keep their own nickname across submissions.
-    // The picker's inline hint (from usedNicknames) is a soft visual cue only.
+    if (nicknamePending) return;
+    const trimmed = value.replace(/\s+/g, " ").trim();
+    setNicknamePending(true);
+    setNicknameError(null);
     try {
       const response = await fetch("/api/nickname", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sessionCode: session.code, nickname: trimmed }),
-      }).catch(() => null);
-
-      if (response && response.ok) {
-        const data = await response.json().catch(() => ({}));
-        if (data && data.available === false) {
-          setNicknameError("That nickname is already taken.");
-          return;
-        }
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setNicknameError(
+          response.status === 409
+            ? "That nickname's already taken. Try another one."
+            : data?.error || "We couldn't save that nickname. Try again."
+        );
+        return;
       }
+      const reservedNickname = data?.nickname || trimmed;
+      setNickname(reservedNickname);
+      writeNicknameCookie(session.code, reservedNickname);
+      setStep("category");
     } catch {
-      // Network error — fall through; the worker still enforces at submit.
+      setNicknameError("We couldn't save that nickname. Check your connection and try again.");
+    } finally {
+      setNicknamePending(false);
     }
-
-    setNicknameError(null);
-    setNickname(trimmed);
-    writeNicknameCookie(session.code, trimmed);
-    setStep("category");
   }
 
   function handleCategorySelect(key) {
@@ -153,6 +154,7 @@ export default function JoinExperience({ session, usedNicknames = [] }) {
       : status === "closed"
         ? "This conversation has wrapped"
         : "You're in - here's the topic";
+  const sessionTopic = session.topic?.trim() || session.title;
 
   return (
     <section className="relative isolate overflow-x-clip">
@@ -193,20 +195,12 @@ export default function JoinExperience({ session, usedNicknames = [] }) {
                 <p className="text-xs font-semibold uppercase tracking-widest text-gold">
                   {eyebrowText}
                 </p>
-                <h1 className="text-balance font-display text-3xl font-bold leading-tight text-ink">
-                  Make yourself at home.
+                <h1 className="max-w-full break-words text-balance font-display text-[clamp(2rem,8vw,3.35rem)] font-bold leading-[1.08] text-ink">
+                  {sessionTopic}
                 </h1>
                 <p className="max-w-lg text-sm leading-relaxed text-muted sm:text-base">
                   Pick a nickname and get ready to share what&apos;s on your mind.
                 </p>
-                <p className="break-words text-xs font-semibold uppercase tracking-[0.16em] text-gold">
-                  {session.title}
-                </p>
-              </motion.div>
-
-              {/* The topic is surfaced once, on the welcome/introduce step. */}
-              <motion.div {...revealProps(0.12)}>
-                <TopicCard topic={session.topic} />
               </motion.div>
 
               {session.welcome_message ? (
@@ -275,7 +269,7 @@ export default function JoinExperience({ session, usedNicknames = [] }) {
               </motion.div>
 
               <motion.div {...revealProps(0.12)}>
-                <TopicCard topic={session.topic} />
+                <TopicCard topic={sessionTopic} />
               </motion.div>
 
               <motion.div {...revealProps(0.2)} className="flex items-center justify-end gap-2">
@@ -301,6 +295,7 @@ export default function JoinExperience({ session, usedNicknames = [] }) {
                   usedNames={usedNicknames}
                   onContinue={handleNicknameContinue}
                   error={nicknameError}
+                  pending={nicknamePending}
                 />
               </motion.div>
             </div>

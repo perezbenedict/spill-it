@@ -217,6 +217,53 @@
   }
 }
 
+@keyframes qr-beam-drift {
+  0%,
+  100% {
+    opacity: 0.14;
+    transform: translate3d(-3%, 0, 0) rotate(-12deg);
+  }
+  50% {
+    opacity: 0.32;
+    transform: translate3d(4%, -2%, 0) rotate(-9deg);
+  }
+}
+
+@keyframes qr-orbit-float {
+  0%,
+  100% {
+    opacity: 0.28;
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  50% {
+    opacity: 0.55;
+    transform: translate3d(0, -10px, 0) rotate(8deg);
+  }
+}
+
+@keyframes qr-topic-arrival {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 12px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes qr-poster-halo-drift {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: translate3d(-3%, 0, 0) scale(1);
+  }
+  50% {
+    opacity: 0.72;
+    transform: translate3d(5%, 4%, 0) scale(1.08);
+  }
+}
+
 .qr-stage-reveal {
   animation: qr-stage-reveal 0.85s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
@@ -229,6 +276,10 @@
   animation-delay: 0.24s;
 }
 
+.qr-stage-reveal-delay-3 {
+  animation-delay: 0.38s;
+}
+
 .qr-ambient-light {
   animation: qr-light-drift 24s ease-in-out infinite;
 }
@@ -237,12 +288,128 @@
   animation: qr-border-breathe 7s ease-in-out infinite;
 }
 
+.qr-event-stage::before {
+  position: absolute;
+  inset: 0;
+  z-index: -15;
+  content: "";
+  background:
+    linear-gradient(115deg, rgba(196, 181, 253, 0.035), transparent 34%, rgba(109, 74, 184, 0.05) 66%, transparent),
+    radial-gradient(circle at 50% 115%, rgba(124, 58, 237, 0.2), transparent 48%);
+}
+
+.qr-event-grid {
+  opacity: 0.15;
+  background-image:
+    linear-gradient(rgba(196, 181, 253, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(196, 181, 253, 0.12) 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: linear-gradient(to bottom, transparent, black 24%, black 72%, transparent);
+  -webkit-mask-image: linear-gradient(to bottom, transparent, black 24%, black 72%, transparent);
+}
+
+.qr-light-beam {
+  position: absolute;
+  z-index: -10;
+  width: min(22rem, 42vw);
+  height: 125%;
+  pointer-events: none;
+  background: linear-gradient(to right, transparent, rgba(196, 181, 253, 0.12), transparent);
+  filter: blur(28px);
+  animation: qr-beam-drift 18s ease-in-out infinite;
+}
+
+.qr-light-beam-left {
+  top: -15%;
+  left: 5%;
+}
+
+.qr-light-beam-right {
+  right: 1%;
+  bottom: -18%;
+  animation-delay: -8s;
+  transform: rotate(12deg);
+}
+
+.qr-topic-reveal {
+  animation: qr-topic-arrival 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.32s both;
+}
+
+.qr-card-shell {
+  isolation: isolate;
+}
+
+.qr-card-glint {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.72), transparent);
+  opacity: 0.7;
+}
+
+.qr-orbit {
+  position: absolute;
+  z-index: -1;
+  border: 1px solid rgba(196, 181, 253, 0.25);
+  border-radius: 999px;
+  pointer-events: none;
+  animation: qr-orbit-float 10s ease-in-out infinite;
+}
+
+.qr-orbit::after {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--color-gold-light);
+  box-shadow: 0 0 22px rgba(196, 181, 253, 0.9);
+  content: "";
+}
+
+.qr-orbit-one {
+  inset: -0.75rem;
+  transform: rotate(-5deg);
+}
+
+.qr-orbit-one::after {
+  top: 19%;
+  right: -4px;
+}
+
+.qr-orbit-two {
+  inset: -1.8rem 1.2rem;
+  animation-delay: -4.5s;
+  transform: rotate(7deg);
+}
+
+.qr-orbit-two::after {
+  bottom: 14%;
+  left: -4px;
+}
+
+.qr-poster-halo {
+  animation: qr-poster-halo-drift 16s ease-in-out infinite;
+}
+
+.qr-poster-halo-delay {
+  animation-delay: -8s;
+}
+
+/* The generated matrix always keeps fixed geometry and an unanimated white field. */
+.qr-static-code,
+.qr-static-code img {
+  animation: none !important;
+  transform: none !important;
+  filter: none !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .spill-wordmark,
   .spill-wordmark:hover,
   .qr-stage-reveal,
   .qr-ambient-light,
-  .qr-premium-frame {
+  .qr-premium-frame,
+  .qr-light-beam,
+  .qr-topic-reveal,
+  .qr-orbit,
+  .qr-poster-halo {
     animation: none !important;
   }
 }
@@ -250,11 +417,23 @@
 @media print {
   .qr-stage-reveal,
   .qr-ambient-light,
-  .qr-premium-frame {
+  .qr-premium-frame,
+  .qr-light-beam,
+  .qr-topic-reveal,
+  .qr-orbit,
+  .qr-poster-halo {
     animation: none !important;
     transform: none !important;
     opacity: 1 !important;
     box-shadow: none !important;
+  }
+
+  .qr-event-grid,
+  .qr-light-beam,
+  .qr-orbit,
+  .qr-poster-halo,
+  .qr-card-glint {
+    display: none !important;
   }
 }
 

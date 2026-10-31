@@ -30,10 +30,11 @@ test('homepage choreography stays ordered and the CTA reaches the live discussio
 });
 test('join copy is not repetitive and nickname/composer input survives transitions', async ({ page }) => {
   requireFixture(test, E2E.liveCode, 'SPILL_E2E_SESSION_CODE');
+  requireFixture(test, E2E.topic, 'SPILL_E2E_TOPIC');
   requireLocalMutationTarget(test);
 
   await page.goto(`/join/${E2E.liveCode}`);
-  await expect(page.getByRole('heading', { name: 'Make yourself at home.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: E2E.topic, exact: true })).toBeVisible();
   await expect(
     page.getByText("Pick a nickname and get ready to share what's on your mind.", { exact: true })
   ).toBeVisible();

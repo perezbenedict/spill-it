@@ -13,6 +13,7 @@ export default function NicknamePicker({
   usedNames = [],
   onContinue,
   error,
+  pending = false,
 }) {
   const [suggestions, setSuggestions] = useState([]);
   const [picked, setPicked] = useState("");
@@ -61,7 +62,7 @@ export default function NicknamePicker({
     onContinue(activeManual || picked || current || "");
   }
 
-  const disabled = !active;
+  const disabled = !active || pending;
   const hasError = !!error || isActiveTaken;
 
   return (
@@ -191,7 +192,7 @@ export default function NicknamePicker({
           transition={{ duration: 0.2, ease: "easeOut" }}
           className="rounded-control border border-crimson/30 bg-crimson/10 px-3 py-2 text-sm font-medium text-crimson"
         >
-          {error || "That nickname is already taken."}
+          {error || "That nickname's already taken. Try another one."}
         </motion.p>
       )}
 
@@ -208,10 +209,11 @@ export default function NicknamePicker({
           size="lg"
           variant="primary"
           disabled={disabled}
+          loading={pending}
           onClick={handleContinue}
           className="w-full sm:w-auto"
         >
-          Continue
+          {pending ? "Checking nickname" : "Continue"}
         </Button>
       </div>
     </div>

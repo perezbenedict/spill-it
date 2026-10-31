@@ -54,6 +54,8 @@ export default async function QrProjectorPage({ params }) {
   }
   if (!session) notFound();
 
+  const topic = session.topic?.trim() || session.title;
+
   const statusLine =
     session.status === "paused"
       ? "Submissions are paused"
@@ -62,55 +64,76 @@ export default async function QrProjectorPage({ params }) {
         : null;
 
   return (
-    <main className="relative isolate flex min-h-screen min-w-0 flex-col items-center justify-center gap-6 overflow-hidden bg-midnight px-4 py-10 text-center sm:gap-8 sm:px-gutter sm:py-12">
+    <main className="qr-event-stage relative isolate flex min-h-screen min-w-0 items-center overflow-hidden bg-midnight px-4 py-10 text-center sm:px-gutter sm:py-12">
       <div
         aria-hidden="true"
-        className="qr-ambient-light pointer-events-none absolute -inset-[18%] -z-10 bg-[radial-gradient(50%_45%_at_28%_25%,rgba(167,139,250,0.22),transparent_70%),radial-gradient(45%_40%_at_78%_72%,rgba(109,74,184,0.2),transparent_72%)] print:hidden"
+        className="qr-ambient-light pointer-events-none absolute -inset-[18%] -z-20 bg-[radial-gradient(48%_42%_at_24%_20%,rgba(196,181,253,0.26),transparent_68%),radial-gradient(46%_42%_at_82%_78%,rgba(109,74,184,0.3),transparent_70%)] print:hidden"
       />
-      <header className="qr-stage-reveal flex w-full max-w-5xl min-w-0 flex-col items-center gap-2">
-        <p className="font-display text-[clamp(1.75rem,7vw,2.5rem)] font-bold tracking-tight text-gold">
-          Spill It
-        </p>
-        <h1 className="max-w-full break-words text-balance font-display text-[clamp(1.5rem,5vw,2.5rem)] font-semibold leading-tight text-ink">
-          {session.title}
-        </h1>
-      </header>
+      <div aria-hidden="true" className="qr-light-beam qr-light-beam-left print:hidden" />
+      <div aria-hidden="true" className="qr-light-beam qr-light-beam-right print:hidden" />
+      <div aria-hidden="true" className="qr-event-grid pointer-events-none absolute inset-0 -z-10 print:hidden" />
 
-      <div className="qr-premium-frame qr-stage-reveal qr-stage-reveal-delay-1 w-full max-w-[30rem] rounded-card bg-gradient-to-br from-gold/30 via-white/10 to-gold-deep/25 p-px">
-        <div className="flex w-full items-center justify-center rounded-[calc(2rem-1px)] bg-white p-3 sm:p-6">
-          {/* eslint-disable-next-line @next/next/no-img-element -- data URL, no server round-trip */}
-          <img
-            src={qrDataUrl}
-            alt={`QR code to join ${session.title} at ${joinUrl}`}
-            className="h-auto w-full max-w-[25rem] bg-white [image-rendering:auto]"
-          />
+      <section className="mx-auto grid w-full max-w-7xl min-w-0 items-center gap-8 lg:grid-cols-[minmax(0,0.86fr)_minmax(24rem,1.14fr)] lg:gap-14 xl:gap-20">
+        <div className="flex min-w-0 flex-col items-center lg:items-start lg:text-left">
+          <p className="qr-stage-reveal text-sm font-semibold uppercase tracking-[0.28em] text-gold/80">
+            Live conversation
+          </p>
+          <p className="qr-stage-reveal qr-stage-reveal-delay-1 mt-3 font-display text-[clamp(3rem,9vw,6.5rem)] font-semibold leading-[0.86] tracking-[-0.045em] text-gold">
+            Spill it
+          </p>
+          <h1 className="qr-stage-reveal qr-stage-reveal-delay-2 mt-5 max-w-3xl break-words text-balance font-display text-[clamp(1.8rem,4vw,3.35rem)] font-medium leading-[1.04] tracking-[-0.025em] text-ink">
+            Scan to join the conversation
+          </h1>
+          <p className="qr-topic-reveal mt-5 max-w-2xl break-words text-balance text-[clamp(1.05rem,2vw,1.35rem)] font-medium leading-snug text-gold-light">
+            {topic}
+          </p>
+          <p className="qr-stage-reveal qr-stage-reveal-delay-3 mt-4 max-w-xl text-sm leading-relaxed text-muted sm:text-base">
+            Scan the code, pick a nickname, and share your thoughts.
+          </p>
+
+          {statusLine ? (
+            <p
+              role="status"
+              className={`qr-stage-reveal qr-stage-reveal-delay-3 mt-5 max-w-full rounded-pill px-4 py-1.5 text-sm font-medium sm:text-base ${
+                session.status === "paused"
+                  ? "bg-gold/15 text-gold"
+                  : "bg-crimson/15 text-crimson-bright"
+              }`}
+            >
+              {statusLine}
+            </p>
+          ) : null}
+
+          <div className="qr-stage-reveal qr-stage-reveal-delay-3 mt-6 w-full sm:w-auto print:hidden">
+            <PrintButton />
+          </div>
         </div>
-      </div>
 
-      <p className="qr-stage-reveal qr-stage-reveal-delay-2 text-[clamp(1.1rem,4vw,1.5rem)] font-medium leading-snug text-ink">
-        Scan to join the conversation
-      </p>
-
-      {statusLine ? (
-        <p
-          role="status"
-          className={`qr-stage-reveal qr-stage-reveal-delay-2 max-w-full rounded-pill px-4 py-1.5 text-sm font-medium sm:text-base ${
-            session.status === "paused"
-              ? "bg-gold/15 text-gold"
-              : "bg-crimson/15 text-crimson-bright"
-          }`}
-        >
-          {statusLine}
-        </p>
-      ) : null}
-
-      <div className="qr-stage-reveal qr-stage-reveal-delay-2 w-full sm:w-auto print:hidden">
-        <PrintButton />
-      </div>
-
-      <p className="qr-stage-reveal qr-stage-reveal-delay-2 max-w-2xl select-all break-all text-xs leading-relaxed text-muted sm:text-sm">
-        {joinUrl}
-      </p>
+        <div className="qr-card-shell relative mx-auto w-full max-w-[35rem] min-w-0 p-3 sm:p-5">
+          <div aria-hidden="true" className="qr-orbit qr-orbit-one print:hidden" />
+          <div aria-hidden="true" className="qr-orbit qr-orbit-two print:hidden" />
+          <div className="qr-premium-frame relative rounded-[2.4rem] border border-white/15 bg-gradient-to-br from-white/15 via-gold/10 to-gold-deep/25 p-2 shadow-[0_38px_110px_-42px_rgba(167,139,250,0.9)] sm:p-3">
+            <div className="rounded-[1.9rem] border border-white/10 bg-[#160D2B]/95 p-4 shadow-inner sm:p-6">
+              <div className="qr-static-code flex w-full items-center justify-center rounded-[1.45rem] bg-white p-3 shadow-[0_22px_60px_-28px_rgba(0,0,0,0.92)] sm:p-6">
+                {/* eslint-disable-next-line @next/next/no-img-element -- data URL, no server round-trip */}
+                <img
+                  src={qrDataUrl}
+                  alt={`QR code to join ${topic} at ${joinUrl}`}
+                  className="h-auto w-full max-w-[27rem] bg-white [image-rendering:auto]"
+                />
+              </div>
+              <div className="mt-4 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs uppercase tracking-[0.18em] text-white/55 sm:text-sm">
+                <span>Session {session.public_code}</span>
+                <span aria-hidden="true" className="h-1 w-1 rounded-full bg-gold/65" />
+                <span>Anonymous by design</span>
+              </div>
+            </div>
+          </div>
+          <p className="mt-4 max-w-full select-all break-all text-center text-[0.68rem] leading-relaxed text-white/40 sm:text-xs">
+            {joinUrl}
+          </p>
+        </div>
+      </section>
     </main>
   );
 }

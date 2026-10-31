@@ -79,13 +79,15 @@ export default function QRCodeCard({ url, fileName }) {
 
   return (
     <motion.div
-      initial={reducedMotion ? false : { opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial={reducedMotion ? false : { opacity: 0 }}
+      animate={{ opacity: 1 }}
       transition={{ duration: reducedMotion ? 0 : 0.8, ease: [0.22, 1, 0.36, 1] }}
-      className="w-full rounded-card bg-gradient-to-br from-gold/35 via-gold/10 to-gold-deep/25 p-px shadow-[0_24px_70px_-34px_rgba(167,139,250,0.75)]"
+      className="qr-card-shell relative w-full rounded-[2.15rem] bg-gradient-to-br from-gold/45 via-white/10 to-gold-deep/35 p-px shadow-[0_30px_90px_-38px_rgba(167,139,250,0.9)]"
     >
-      <Card className="flex min-w-0 flex-col items-center gap-5 overflow-hidden bg-surface/95 px-4 py-6 text-center sm:px-6 sm:py-8">
-        <div className="relative flex min-h-52 w-full items-center justify-center rounded-[1.5rem] bg-white p-3 shadow-[0_18px_55px_-28px_rgba(0,0,0,0.9)] sm:min-h-64 sm:p-4">
+      <div aria-hidden="true" className="qr-orbit qr-orbit-one print:hidden" />
+      <Card className="relative flex min-w-0 flex-col items-center gap-5 overflow-hidden rounded-[calc(2.15rem-1px)] border border-white/10 bg-surface/95 px-4 py-6 text-center shadow-inner sm:px-6 sm:py-8">
+        <div aria-hidden="true" className="qr-card-glint pointer-events-none absolute inset-x-8 top-0 h-px print:hidden" />
+        <div className="qr-static-code relative flex min-h-52 w-full items-center justify-center rounded-[1.5rem] bg-white p-3 shadow-[0_18px_55px_-28px_rgba(0,0,0,0.9)] sm:min-h-64 sm:p-4">
           {status === "loading" || !dataUrl ? (
             <Spinner className="h-8 w-8 text-gold" label="Generating QR code" />
           ) : (
@@ -98,43 +100,43 @@ export default function QRCodeCard({ url, fileName }) {
           )}
         </div>
 
-      <p className="max-w-full select-all break-all text-xs leading-relaxed text-muted sm:text-sm">{url}</p>
+        <p className="max-w-full select-all break-all text-xs leading-relaxed text-muted sm:text-sm">{url}</p>
 
-      <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:items-center sm:justify-center">
-        {status === "loading" || !dataUrl ? (
-          <Button variant="secondary" disabled loading>
-            Download PNG
-          </Button>
-        ) : (
-          <a
-            href={dataUrl}
-            download={fileName}
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-control bg-gold px-5 py-2.5 text-sm font-medium text-midnight transition-[background-color,transform,box-shadow] duration-200 hover:bg-gold-light hover:shadow-[0_10px_28px_-14px_rgba(196,181,253,0.9)] motion-safe:hover:-translate-y-0.5 motion-safe:active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+        <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:items-center sm:justify-center">
+          {status === "loading" || !dataUrl ? (
+            <Button variant="secondary" disabled loading>
+              Download PNG
+            </Button>
+          ) : (
+            <a
+              href={dataUrl}
+              download={fileName}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-control bg-gold px-5 py-2.5 text-sm font-medium text-midnight transition-[background-color,transform,box-shadow] duration-200 hover:bg-gold-light hover:shadow-[0_10px_28px_-14px_rgba(196,181,253,0.9)] motion-safe:hover:-translate-y-0.5 motion-safe:active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+            >
+              <Download className="h-4 w-4" aria-hidden="true" />
+              Download PNG
+            </a>
+          )}
+
+          <Button
+            variant="secondary"
+            onClick={handleCopy}
+            disabled={status === "loading"}
           >
-            <Download className="h-4 w-4" aria-hidden="true" />
-            Download PNG
+            <Copy className="h-4 w-4" aria-hidden="true" />
+            {copied ? "Copied!" : "Copy link"}
+          </Button>
+
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-control bg-transparent px-5 py-2.5 text-sm font-medium text-ink transition-[background-color,color,transform] duration-200 hover:bg-white/10 hover:text-gold motion-safe:hover:-translate-y-0.5 motion-safe:active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+          >
+            <ExternalLink className="h-4 w-4" aria-hidden="true" />
+            Open
           </a>
-        )}
-
-        <Button
-          variant="secondary"
-          onClick={handleCopy}
-          disabled={status === "loading"}
-        >
-          <Copy className="h-4 w-4" aria-hidden="true" />
-          {copied ? "Copied!" : "Copy link"}
-        </Button>
-
-        <a
-          href={url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-control bg-transparent px-5 py-2.5 text-sm font-medium text-ink transition-[background-color,color,transform] duration-200 hover:bg-white/10 hover:text-gold motion-safe:hover:-translate-y-0.5 motion-safe:active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
-        >
-          <ExternalLink className="h-4 w-4" aria-hidden="true" />
-          Open
-        </a>
-      </div>
+        </div>
 
         <p aria-live="polite" className="min-h-5 text-sm text-gold">
           {copied ? "Copied!" : ""}

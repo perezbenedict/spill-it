@@ -1,13 +1,11 @@
 "use client";
 
-import { useMotionValue, useSpring } from "framer-motion";
+import { motion, useMotionValue, useReducedMotion, useSpring } from "framer-motion";
 import Emblem from "@/components/Emblem";
-import { RevealLine } from "@/components/motion/Reveal";
 import { AnimatedSection } from "@/components/motion/AnimatedSection";
 import { MagneticButton } from "@/components/motion/MagneticButton";
-import { motion } from "framer-motion";
 
-const EASE = [0.22, 1, 0.36, 1];
+const EASE = [0.22, 1, 0.36, 1] as const;
 
 export interface HomePageSession {
   id: string;
@@ -45,6 +43,17 @@ export default function HomePageContent({ session, provided }: HomePageContentPr
   const pointerY = useMotionValue(0.5);
   const glowX = useSpring(pointerX, { stiffness: 80, damping: 24, mass: 0.4 });
   const glowY = useSpring(pointerY, { stiffness: 80, damping: 24, mass: 0.4 });
+  const reducedMotion = useReducedMotion();
+
+  const lineEntrance = (delay: number) => ({
+    initial: reducedMotion ? false : { opacity: 0, y: 18 },
+    animate: { opacity: 1, y: 0 },
+    transition: {
+      duration: reducedMotion ? 0 : 0.85,
+      delay: reducedMotion ? 0 : delay,
+      ease: EASE,
+    },
+  });
 
   function handlePointerMove(e) {
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
@@ -151,19 +160,42 @@ export default function HomePageContent({ session, provided }: HomePageContentPr
           />
         </motion.div>
 
-        {/* Editorial headline — three distinct lines in one staggered reveal. */}
-        <h1 className="hero-headline w-full">
-          <RevealLine delay={0.28} className="thought-line">
-            Your thoughts.
-          </RevealLine>
-          <RevealLine delay={0.44} className="voice-line">
-            Your voice.
-          </RevealLine>
-          <RevealLine delay={0.6} className="wordmark-line">
-            <span className="spill-wordmark">
-              Spill it
-            </span>
-          </RevealLine>
+        {/*
+         * Each headline line owns a stable row in normal flow. The row keeps
+         * its final geometry while only its child translates inside a padded
+         * reveal mask, so the entrance cannot move or collide with siblings.
+         */}
+        <h1
+          className="hero-headline w-full px-1 sm:px-2"
+          style={{ gap: "clamp(0.45rem, 1.4vw, 0.85rem)" }}
+        >
+          <span
+            className="flex w-full items-center justify-center overflow-hidden px-[0.35em] py-[0.14em]"
+            style={{ minHeight: "clamp(2.65rem, 6.2vw, 3.75rem)" }}
+            data-home-headline-row="thoughts"
+          >
+            <motion.span className="thought-line block" {...lineEntrance(0.28)}>
+              Your thoughts.
+            </motion.span>
+          </span>
+          <span
+            className="flex w-full items-center justify-center overflow-hidden px-[0.4em] py-[0.14em]"
+            style={{ minHeight: "clamp(2.55rem, 5.9vw, 3.55rem)" }}
+            data-home-headline-row="voice"
+          >
+            <motion.span className="voice-line block" {...lineEntrance(0.44)}>
+              Your voice.
+            </motion.span>
+          </span>
+          <span
+            className="flex w-full items-center justify-center overflow-hidden px-[0.55em] py-[0.18em]"
+            style={{ minHeight: "clamp(2.7rem, 5.7vw, 3.5rem)" }}
+            data-home-headline-row="wordmark"
+          >
+            <motion.span className="wordmark-line block" {...lineEntrance(0.6)}>
+              <span className="spill-wordmark">Spill it</span>
+            </motion.span>
+          </span>
         </h1>
       </div>
 

@@ -2,10 +2,12 @@ import { expect, test } from '@playwright/test';
 import { E2E, requireFixture } from '../helpers/e2e-env.js';
 
 const VIEWPORTS = [
-  { name: 'narrow mobile', width: 320, height: 700 },
+  { name: '320px mobile', width: 320, height: 740 },
+  { name: '375px mobile', width: 375, height: 812 },
+  { name: '390px mobile', width: 390, height: 844 },
   { name: 'tablet', width: 768, height: 1024 },
-  { name: 'laptop', width: 1366, height: 768 },
-  { name: 'large display', width: 1920, height: 1080 },
+  { name: '1024px laptop', width: 1024, height: 768 },
+  { name: '1440px display', width: 1440, height: 900 },
 ];
 
 function boxesOverlap(a, b) {

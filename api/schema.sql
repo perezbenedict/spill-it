@@ -6,6 +6,7 @@
 CREATE TABLE IF NOT EXISTS discussion_sessions (
   id TEXT PRIMARY KEY,
   title TEXT NOT NULL CHECK (length(trim(title)) BETWEEN 1 AND 200),
+  topic TEXT NOT NULL DEFAULT '' CHECK (length(topic) <= 200),
   description TEXT NOT NULL DEFAULT '',
   welcome_message TEXT NOT NULL DEFAULT '',
   -- 8 chars from an unambiguous alphabet (no 0/O/1/I/L), stored uppercase.
@@ -67,6 +68,24 @@ CREATE UNIQUE INDEX IF NOT EXISTS submissions_request_id_idx
 -- Fast lookup of a session's pinned submission.
 CREATE INDEX IF NOT EXISTS submissions_session_pinned_idx
   ON submissions (session_id) WHERE is_pinned = 1;
+
+-- One active anonymous nickname per participant and one owner per normalized
+-- nickname inside a discussion. The display spelling remains private to the
+-- participant/submission; comparisons use the pre-normalized key.
+CREATE TABLE IF NOT EXISTS nickname_reservations (
+  session_id TEXT NOT NULL REFERENCES discussion_sessions(id) ON DELETE CASCADE,
+  normalized_nickname TEXT NOT NULL,
+  participant_id TEXT NOT NULL,
+  display_nickname TEXT NOT NULL,
+  reserved_at TEXT NOT NULL,
+  refreshed_at TEXT NOT NULL,
+  expires_at TEXT NOT NULL,
+  PRIMARY KEY (session_id, normalized_nickname),
+  UNIQUE (session_id, participant_id)
+);
+
+CREATE INDEX IF NOT EXISTS nickname_reservations_expiry_idx
+  ON nickname_reservations (session_id, expires_at);
 
 -- At most one discussion may be live at a time. The partial unique index is
 -- the final guarantee: even if two admins publish concurrently and both pass

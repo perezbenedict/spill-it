@@ -1,14 +1,13 @@
 import { NextResponse } from 'next/server';
 import { getOrCreateParticipantId } from '@/lib/participant';
-import { checkNicknameAvailability } from '@/lib/spill-api';
+import { reserveParticipantNickname } from '@/lib/spill-api';
 import { isValidPublicCode } from '@/lib/session-code';
 
 export const runtime = 'nodejs';
 
-// Proxy to the worker's /nickname availability endpoint. The worker is
-// authoritative on session-scoped nickname uniqueness; this route only
-// resolves the participant id from the httpOnly cookie so the worker can
-// exclude the caller's own prior submissions.
+// Atomically reserves a nickname for the anonymous participant id stored in
+// the session-scoped httpOnly cookie. The worker and D1 unique constraints are
+// authoritative; the browser never supplies or learns the participant id.
 const MSG_NOT_FOUND = 'This discussion could not be found.';
 const MSG_BAD_BODY = 'Check your submission and try again.';
 const MSG_GENERIC = 'Something went wrong. Please try again.';
@@ -32,11 +31,11 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Pick a nickname before sending.' }, { status: 400 });
   }
 
-  // Get participant ID from cookie (or create one if missing). Pass it to the worker
-  // so it can exclude the caller's own submissions when checking uniqueness.
+  // The participant identity comes only from the session-scoped httpOnly
+  // cookie, so a browser cannot claim another participant's reservation.
   const participantId = await getOrCreateParticipantId(sessionCode);
 
-  const result = await checkNicknameAvailability({
+  const result = await reserveParticipantNickname({
     sessionCode,
     participantId,
     nickname,
@@ -46,7 +45,11 @@ export async function POST(request) {
   if (!result.ok) {
     return NextResponse.json({ error: result.body?.error || MSG_NOT_FOUND }, { status: result.status });
   }
-  return NextResponse.json({ available: result.body?.available ?? false });
+  return NextResponse.json({
+    available: true,
+    reserved: true,
+    nickname: result.body?.nickname || nickname,
+  });
 }
 
 export async function GET() {
