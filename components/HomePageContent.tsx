@@ -2,7 +2,6 @@
 
 import Emblem from "@/components/Emblem";
 import { RevealLine } from "@/components/motion/Reveal";
-import { StaggerText } from "@/components/motion/StaggerText";
 import { AnimatedSection } from "@/components/motion/AnimatedSection";
 import { MagneticButton } from "@/components/motion/MagneticButton";
 import { motion } from "framer-motion";
@@ -48,33 +47,31 @@ export default function HomePageContent({ session }) {
 
         {/* Brand signature — uppercase Manrope eyebrow with champagne-gold accent line */}
         <motion.div
-          className="flex items-center gap-3"
+          className="flex w-full max-w-full items-center justify-center gap-2 sm:gap-3"
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.15, ease: EASE }}
         >
           <span
-            className="h-px w-8 bg-gradient-to-r from-transparent via-gold to-transparent opacity-60"
+            className="h-px w-5 shrink-0 bg-gradient-to-r from-transparent via-gold to-transparent opacity-60 sm:w-8"
             aria-hidden="true"
           />
-          <p className="hero-eyebrow font-sans font-semibold uppercase tracking-[0.22em] text-gold">
+          <p className="hero-eyebrow font-sans font-semibold uppercase tracking-[0.18em] text-gold">
             Grace Nation Wealthy Youths
           </p>
           <span
-            className="h-px w-8 bg-gradient-to-r from-transparent via-gold to-transparent opacity-60"
+            className="h-px w-5 shrink-0 bg-gradient-to-r from-transparent via-gold to-transparent opacity-60 sm:w-8"
             aria-hidden="true"
           />
         </motion.div>
 
-        {/* Headline — two independent reveal lines */}
-        <h1 className="hero-title font-sans font-semibold text-ink text-center leading-[0.96] tracking-[-0.055em]">
-          <RevealLine delay={0.3}>
-            <span className="block">Your thoughts.</span>
+        {/* Headline — two reveal lines composed as one staggered unit */}
+        <h1 className="hero-headline w-full">
+          <RevealLine delay={0.3} className="thought-line">
+            Your thoughts.
           </RevealLine>
-          <RevealLine delay={0.45}>
-            <span className="display-accent block text-gold-light">
-              Your voice.
-            </span>
+          <RevealLine delay={0.45} className="voice-line">
+            Your voice.
           </RevealLine>
         </h1>
 
@@ -87,12 +84,14 @@ export default function HomePageContent({ session }) {
           aria-hidden="true"
         />
 
-        {/* Product identity — subordinate */}
+        {/* Product identity — animated gold-gradient wordmark */}
         <AnimatedSection delay={0.85} className="flex justify-center">
-          <StaggerText
-            text="Spill It!"
-            className="font-display text-2xl font-bold tracking-tight text-ink sm:text-3xl"
-          />
+          <RevealLine delay={0} className="block overflow-hidden">
+            <span className="spill-wordmark">
+              <span className="font-display italic">Spill</span>{" "}
+              <span className="font-sans font-semibold">It!</span>
+            </span>
+          </RevealLine>
         </AnimatedSection>
       </div>
 

@@ -24,7 +24,7 @@ const CATEGORY_LABELS = Object.fromEntries(CATEGORIES.map((entry) => [entry.key,
 const STATUS_LABELS = {
   pending: "Awaiting review",
   approved: "Approved",
-  hidden: "Hidden",
+  hidden: "Rejected",
 };
 const STATUS_VARIANTS = {
   pending: "warning",
@@ -104,6 +104,7 @@ export default function SubmissionFeed({
   sort,
   filters,
   hasFilters,
+  currentId: currentIdProp,
 }) {
   const router = useRouter();
   const reduceMotion = useReducedMotion();
@@ -113,6 +114,18 @@ export default function SubmissionFeed({
   const updateRows = useCallback((updater) => {
     rowsRef.current = updater(rowsRef.current);
     setRowsState(rowsRef.current);
+  }, []);
+
+  // Confirmation banner: a brief, understated success message after an action.
+  const [confirmed, setConfirmed] = useState(null);
+  const confirmTimerRef = useRef(null);
+  function showConfirmation(message) {
+    setConfirmed(message);
+    if (confirmTimerRef.current) clearTimeout(confirmTimerRef.current);
+    confirmTimerRef.current = setTimeout(() => setConfirmed(null), 2500);
+  }
+  useEffect(() => () => {
+    if (confirmTimerRef.current) clearTimeout(confirmTimerRef.current);
   }, []);
 
   // Pagination total, kept fresh from successful polls.
@@ -138,8 +151,8 @@ export default function SubmissionFeed({
     });
   }
 
-  const currentIdRef = useRef(null);
-  const [currentId, setCurrentIdState] = useState(null);
+  const currentIdRef = useRef(currentIdProp ?? null);
+  const [currentId, setCurrentIdState] = useState(currentIdProp ?? null);
   const setCurrentId = useCallback((value) => {
     currentIdRef.current = value;
     setCurrentIdState(value);
@@ -266,7 +279,17 @@ export default function SubmissionFeed({
     endBusy(`${id}|${actionKey}`);
 
     if (result?.ok) {
-      if (!remove && result.row) updateRows((prev) => new Map(prev).set(id, result.row));
+      const nextRow = !remove && result.row ? result.row : null;
+      if (nextRow) updateRows((prev) => new Map(prev).set(id, nextRow));
+      if (actionKey === "approve") showConfirmation("Approved.");
+      else if (actionKey === "hide") showConfirmation("Rejected and hidden.");
+      else if (actionKey === "pin")
+        showConfirmation(nextRow?.is_pinned ? "Pinned." : "Unpinned.");
+      else if (actionKey === "discussed")
+        showConfirmation(nextRow?.discussed_at ? "Marked discussed." : "Marked not discussed.");
+      else if (actionKey === "presentation")
+        showConfirmation(nextRow?.hidden_from_presentation ? "Hidden from screen." : "Shown on screen.");
+      else if (actionKey === "delete") showConfirmation("Deleted.");
       return;
     }
 
@@ -346,11 +369,42 @@ export default function SubmissionFeed({
         return;
       }
       setCurrentId(data.currentId ?? null);
+      showConfirmation("Sent to screen.");
     } catch {
       setCurrentId(beforeCurrent);
       setError("Could not send that to the screen. Please try again.");
     } finally {
       endBusy(`${id}|screen`);
+    }
+  }
+
+  // Clears whatever is on the presentation screen without deleting the
+  // submission or changing its approval status. Mirrors sendToScreen's
+  // mechanism: POSTs /api/presentation with action "clear".
+  async function removeFromScreen() {
+    if (currentIdRef.current == null) return;
+    const beforeCurrent = currentIdRef.current;
+    beginBusy(`${beforeCurrent}|clear`);
+    setError(null);
+    try {
+      const response = await fetch("/api/presentation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionCode, action: "clear" }),
+      });
+      const data = await response.json().catch(() => null);
+      if (!response.ok || !data?.ok) {
+        setCurrentId(beforeCurrent);
+        setError(data?.error || "Could not remove that from the screen. Please try again.");
+        return;
+      }
+      setCurrentId(data.currentId ?? null);
+      showConfirmation("Removed from screen.");
+    } catch {
+      setCurrentId(beforeCurrent);
+      setError("Could not remove that from the screen. Please try again.");
+    } finally {
+      endBusy(`${beforeCurrent}|clear`);
     }
   }
 
@@ -476,6 +530,8 @@ export default function SubmissionFeed({
                 loading={isBusy(row.id, "approve")}
                 disabled={busy}
                 onClick={() => handleApprove(row.id)}
+                title="Mark this submission as approved and eligible for presentation"
+                aria-label="Approve submission"
               >
                 Approve
               </Button>
@@ -488,8 +544,37 @@ export default function SubmissionFeed({
                 loading={isBusy(row.id, "hide")}
                 disabled={busy}
                 onClick={() => handleHide(row.id)}
+                title="Reject this submission; it will no longer appear in the feed or be presented"
+                aria-label="Reject submission"
               >
-                Hide
+                Reject
+              </Button>
+            ) : null}
+            {row.moderation_status === "approved" && !row.hidden_from_presentation && !onScreen ? (
+              <Button
+                size="sm"
+                className={cardActionClassName}
+                loading={isBusy(row.id, "screen")}
+                disabled={busy}
+                onClick={() => sendToScreen(row.id)}
+                title="Display this approved submission on the presentation screen"
+                aria-label="Send to screen"
+              >
+                Send to screen
+              </Button>
+            ) : null}
+            {onScreen ? (
+              <Button
+                size="sm"
+                variant="secondary"
+                className={cardActionClassName}
+                loading={isBusy(row.id, "clear")}
+                disabled={busy || row.moderation_status !== "approved"}
+                onClick={removeFromScreen}
+                title="Clear the presentation screen (keeps submission approved)"
+                aria-label="Remove from screen"
+              >
+                Remove from screen
               </Button>
             ) : null}
             <Button
@@ -500,6 +585,8 @@ export default function SubmissionFeed({
               disabled={busy}
               aria-pressed={Boolean(row.is_pinned)}
               onClick={() => handlePin(row)}
+              title={row.is_pinned ? "Unpin this submission" : "Pin to the top of the feed"}
+              aria-label={row.is_pinned ? "Unpin submission" : "Pin submission"}
             >
               {row.is_pinned ? "Unpin" : "Pin"}
             </Button>
@@ -511,20 +598,11 @@ export default function SubmissionFeed({
               disabled={busy}
               aria-pressed={Boolean(row.discussed_at)}
               onClick={() => handleDiscussed(row)}
+              title={row.discussed_at ? "Mark as not discussed" : "Mark as discussed"}
+              aria-label={row.discussed_at ? "Mark not discussed" : "Mark discussed"}
             >
               {row.discussed_at ? "Mark not discussed" : "Mark discussed"}
             </Button>
-            {row.moderation_status === "approved" && !row.hidden_from_presentation ? (
-              <Button
-                size="sm"
-                className={cardActionClassName}
-                loading={isBusy(row.id, "screen")}
-                disabled={busy}
-                onClick={() => sendToScreen(row.id)}
-              >
-                Send to screen
-              </Button>
-            ) : null}
             {row.moderation_status === "approved" ? (
               <Button
                 size="sm"
@@ -534,6 +612,8 @@ export default function SubmissionFeed({
                 disabled={busy}
                 aria-pressed={Boolean(row.hidden_from_presentation)}
                 onClick={() => handlePresentationHidden(row)}
+                title={row.hidden_from_presentation ? "Show on presentation screen" : "Hide from presentation screen"}
+                aria-label={row.hidden_from_presentation ? "Show on screen" : "Hide from screen"}
               >
                 {row.hidden_from_presentation ? "Show on screen" : "Hide from screen"}
               </Button>
@@ -544,6 +624,8 @@ export default function SubmissionFeed({
               className={cardActionClassName}
               disabled={busy}
               onClick={() => setConfirmId(row.id)}
+              title="Delete this submission permanently"
+              aria-label="Delete submission"
             >
               Delete
             </Button>
@@ -603,17 +685,45 @@ export default function SubmissionFeed({
         <h2 id="feed-heading" className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
           Contributions
         </h2>
-        <span
-          role="status"
-          aria-live="polite"
-          className={cn(
-            "inline-flex items-center gap-1.5 rounded-pill px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.14em]",
-            connection === "live" ? "bg-gold/40 text-gold-deep" : "bg-crimson/10 text-crimson-bright"
-          )}
-        >
-          <Radio className="h-3.5 w-3.5" aria-hidden="true" />
-          {connection === "live" ? "Live" : "Reconnecting"}
-        </span>
+        <div className="flex flex-wrap items-center gap-2">
+          {currentId ? (
+            <span
+              className={cn(indicatorClassName, "text-gold")}
+              title="Currently displayed on the presentation screen"
+            >
+              <Monitor className="h-3.5 w-3.5" aria-hidden="true" />
+              On screen{(() => {
+                const r = rows.get(currentId);
+                return r ? `: ${r.nickname}` : "";
+              })()}
+            </span>
+          ) : null}
+          {currentId ? (
+            <Button
+              size="sm"
+              variant="secondary"
+              className={cardActionClassName}
+              loading={isBusy(currentId, "clear")}
+              disabled={cardBusy(currentId)}
+              onClick={removeFromScreen}
+              title="Clear the presentation screen without deleting the submission"
+              aria-label="Remove from screen"
+            >
+              Remove from screen
+            </Button>
+          ) : null}
+          <span
+            role="status"
+            aria-live="polite"
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-pill px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.14em]",
+              connection === "live" ? "bg-gold/40 text-gold-deep" : "bg-crimson/10 text-crimson-bright"
+            )}
+          >
+            <Radio className="h-3.5 w-3.5" aria-hidden="true" />
+            {connection === "live" ? "Live" : "Reconnecting"}
+          </span>
+        </div>
       </div>
 
       {error ? (
@@ -633,6 +743,17 @@ export default function SubmissionFeed({
             </Button>
           }
         />
+      ) : null}
+
+      {confirmed ? (
+        <p
+          role="status"
+          aria-live="polite"
+          className="inline-flex items-center gap-2 rounded-pill border border-gold/40 bg-gold/15 px-3 py-1.5 text-xs font-semibold text-gold"
+        >
+          <Check className="h-3.5 w-3.5" aria-hidden="true" />
+          {confirmed}
+        </p>
       ) : null}
 
       {visible.length === 0 ? (

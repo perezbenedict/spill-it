@@ -11,8 +11,10 @@ export default async function AdminDashboardLayout({ children }) {
 
   return (
     <div className="flex min-h-screen flex-col bg-midnight text-ink">
-      {/* One sticky block so the topbar and section tabs never overlap. */}
-      <div className="sticky top-0 z-20">
+      {/* One sticky block so the topbar and section tabs never overlap.
+          z-30 sits above framer-motion list portals and content layers
+          so the Dashboard/Sessions nav always receives pointer events. */}
+      <div className="sticky top-0 z-30">
         <header className="border-b border-white/10 bg-surface/80 backdrop-blur">
           <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-x-4 gap-y-2 px-4 py-3 sm:px-6 lg:px-8">
             <Link href="/admin" className="flex min-w-0 items-center gap-3">

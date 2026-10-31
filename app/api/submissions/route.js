@@ -44,6 +44,12 @@ export async function POST(request) {
   if (result.status === 0) return fail(500, MSG_GENERIC);
   if (result.ok) return NextResponse.json({ ok: true });
 
+  // Surface a worker-reported taken nickname as a distinct error so the
+  // participant can act on it ("That nickname is already taken. Try another one.").
+  if (result.status === 409 && result.body?.code === 'nickname_taken') {
+    return fail(409, result.body?.error || MSG_GENERIC);
+  }
+
   const headers =
     result.status === 429 ? { 'Retry-After': '60' } : undefined;
   return fail(result.status, result.body?.error || MSG_GENERIC, headers);
