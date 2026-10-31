@@ -7,6 +7,7 @@ import { Check, EyeOff, Monitor, Pin, Radio } from "lucide-react";
 import { CATEGORIES } from "@/lib/constants";
 import { cn } from "@/lib/cn";
 import Badge from "@/components/ui/Badge";
+import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import Dialog from "@/components/ui/Dialog";
 import EmptyState from "@/components/ui/EmptyState";
@@ -140,6 +141,7 @@ export default function SubmissionFeed({
   const [connection, setConnection] = useState("reconnecting");
   const [error, setError] = useState(null);
   const [confirmId, setConfirmId] = useState(null);
+  const [deletePassword, setDeletePassword] = useState("");
   const [expandedIds, setExpandedIds] = useState(() => new Set());
 
   function toggleExpanded(id) {
@@ -315,13 +317,13 @@ export default function SubmissionFeed({
       action: hide,
     });
 
-  const handleDelete = (id) =>
+  const handleDelete = (id, password) =>
     perform({
       id,
       actionKey: "delete",
       remove: true,
       clearCurrent: currentIdRef.current === id,
-      action: removeSubmission,
+      action: (submissionId) => removeSubmission(submissionId, password),
     });
 
   const handlePin = (row) =>
@@ -411,8 +413,10 @@ export default function SubmissionFeed({
   async function confirmDelete() {
     const id = confirmId;
     if (!id) return;
-    await handleDelete(id);
+    const password = deletePassword;
+    await handleDelete(id, password);
     setConfirmId(null);
+    setDeletePassword("");
   }
 
   const visible = useMemo(() => {
@@ -792,23 +796,45 @@ export default function SubmissionFeed({
 
       <Dialog
         open={confirmId != null}
-        onClose={() => setConfirmId(null)}
+        onClose={() => {
+          setConfirmId(null);
+          setDeletePassword("");
+        }}
         title="Delete this contribution?"
-        description="This cannot be undone."
+        description="This cannot be undone. Enter your admin password to confirm."
       >
-        <div className="flex justify-end gap-2">
-          <Button type="button" variant="ghost" className={cardActionClassName} onClick={() => setConfirmId(null)}>
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            variant="danger"
-            className={cardActionClassName}
-            loading={confirmId ? isBusy(confirmId, "delete") : false}
-            onClick={confirmDelete}
-          >
-            Delete
-          </Button>
+        <div className="flex flex-col gap-3">
+          <Input
+            type="password"
+            value={deletePassword}
+            onChange={(event) => setDeletePassword(event.target.value)}
+            placeholder="Admin password"
+            autoComplete="current-password"
+            error={false}
+          />
+          <div className="flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              className={cardActionClassName}
+              onClick={() => {
+                setConfirmId(null);
+                setDeletePassword("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="danger"
+              className={cardActionClassName}
+              loading={confirmId ? isBusy(confirmId, "delete") : false}
+              onClick={confirmDelete}
+              disabled={!deletePassword}
+            >
+              Delete
+            </Button>
+          </div>
         </div>
       </Dialog>
     </section>

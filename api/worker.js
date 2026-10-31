@@ -32,12 +32,14 @@ const LOGIN_FAILURE_WINDOW_SECONDS = 15 * 60;
 // this address is internal only - never displayed and never accepted as input.
 const ADMIN_EMAIL_PLACEHOLDER = 'admin@spill.local';
 
-// closed is terminal; only the transitions the UI offers are allowed.
+// Status transition matrix. "closed" can be reopened with an explicit
+// Reopen action (POST /admin/sessions/:id/reopen), but we keep a guard
+// that only one discussion may be live at a time.
 const ALLOWED_TRANSITIONS = {
   draft: ['live'],
   live: ['paused', 'closed'],
   paused: ['live', 'closed'],
-  closed: [],
+  closed: ['live'],
 };
 
 // Fixed, friendly copy. Internal identifiers never appear in responses.
@@ -881,6 +883,44 @@ async function handleSetSessionStatus(request, env, admin, id) {
   return json({ ok: true, status: next });
 }
 
+// Reopen a closed discussion. Only available from "closed" via an explicit
+// Reopen action; auto-reopening is intentionally disabled. The single-live
+// guard is enforced by a conditional UPDATE (no-op if another session is live).
+async function handleReopenSession(request, env, admin, id) {
+  const current = await env.DB.prepare('SELECT status FROM discussion_sessions WHERE id = ?')
+    .bind(id)
+    .first();
+  if (!current) return json({ error: 'That discussion no longer exists.' }, 404);
+
+  if (current.status !== 'closed') {
+    return json({ error: 'That change is not available from the current status.' }, 400);
+  }
+
+  try {
+    const results = await env.DB.batch([
+      env.DB.prepare(
+        'UPDATE discussion_sessions SET status = ?, updated_at = ? WHERE id = ? AND status = ?'
+      ).bind('live', nowIso(), id, 'closed'),
+    ]);
+    if (!results[0]?.meta?.changes) {
+      return json(
+        { error: 'This discussion is no longer closed - refresh and try again.', code: 'concurrent_change' },
+        409
+      );
+    }
+  } catch (err) {
+    if (isUniqueViolation(err, 'discussion_sessions_one_live')) {
+      return json({ error: 'Another discussion is already live - pause or close it first.' }, 409);
+    }
+    return json({ error: MSG_SESSION_GENERIC }, 500);
+  }
+
+  const refreshed = await env.DB.prepare('SELECT * FROM discussion_sessions WHERE id = ?')
+    .bind(id)
+    .first();
+  return json({ session: serializeSession(refreshed) });
+}
+
 async function handleDeleteAdminSession(env, id) {
   const result = await env.DB.prepare('DELETE FROM discussion_sessions WHERE id = ?')
     .bind(id)
@@ -1055,7 +1095,29 @@ async function handlePatchAdminSubmission(request, env, admin, id) {
   return json({ row: serializeSubmission(row) });
 }
 
-async function handleDeleteAdminSubmission(env, id) {
+async function handleDeleteAdminSubmission(request, env, admin, id) {
+  let body = {};
+  try {
+    body = await request.json();
+  } catch {
+    body = {};
+  }
+  const password = typeof body?.password === 'string' ? body.password : '';
+  if (!password) return json({ error: 'Admin password is required to delete a contribution.' }, 401);
+
+  // Re-verify the admin password server-side before any destructive action.
+  const user = await env.DB.prepare(
+    'SELECT id, password_hash FROM admin_users WHERE id = ?'
+  )
+    .bind(admin.user.id)
+    .first();
+  const matchesHash = user ? await verifyPassword(password, user.password_hash) : false;
+  const matchesSecret =
+    !matchesHash && !!env.SPILL_ADMIN_PASSWORD && constantTimeEquals(password, env.SPILL_ADMIN_PASSWORD);
+  if (!user || (!matchesHash && !matchesSecret)) {
+    return json({ error: 'Incorrect admin password.' }, 401);
+  }
+
   const row = await env.DB.prepare('SELECT * FROM submissions WHERE id = ?').bind(id).first();
   if (!row) return json({ error: MSG_INVALID }, 404);
   // presentation_state.current_submission_id is ON DELETE SET NULL.
@@ -1204,13 +1266,20 @@ const worker = {
         return await handleSetSessionStatus(request, env, admin, id);
       }
 
+      const reopenMatch = path.match(/^\/admin\/sessions\/([^/]+)\/reopen$/);
+      if (reopenMatch && method === 'POST') {
+        const id = decodeURIComponent(reopenMatch[1]);
+        if (!isUuid(id)) return json({ error: MSG_SESSION_GENERIC }, 400);
+        return await handleReopenSession(request, env, admin, id);
+      }
+
       const submissionMatch = path.match(/^\/admin\/submissions\/([^/]+)$/);
       if (submissionMatch) {
         const id = decodeURIComponent(submissionMatch[1]);
         if (!isUuid(id)) return json({ error: MSG_INVALID }, 400);
         if (method === 'GET') return await handleGetAdminSubmission(env, id);
         if (method === 'PATCH') return await handlePatchAdminSubmission(request, env, admin, id);
-        if (method === 'DELETE') return await handleDeleteAdminSubmission(env, id);
+        if (method === 'DELETE') return await handleDeleteAdminSubmission(request, env, admin, id);
       }
 
       const presentationMatch = path.match(/^\/admin\/presentation\/([^/]+)$/);

@@ -10,7 +10,8 @@ import { motion } from "framer-motion";
 const EASE = [0.22, 1, 0.36, 1];
 
 export default function HomePageContent({ session, provided }) {
-  const joinHref = session ? `/join/${session.public_code}` : null;
+  const sessionObj = session?.session;
+  const joinHref = sessionObj ? `/join/${sessionObj.public_code}` : null;
 
   // Interactive background glow — pointer position tracked as motion values
   // (no React state on every move), smoothed with a spring.

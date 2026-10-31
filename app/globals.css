@@ -115,36 +115,31 @@
  */
 .hero-headline {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: 1fr;
   grid-template-rows: auto auto;
-  row-gap: clamp(0.15rem, 0.6vw, 0.35rem);
+  row-gap: clamp(0.2rem, 0.7vw, 0.4rem);
   text-align: center;
-  line-height: 1.02;
+  line-height: 0.96;
 }
 
 .hero-headline .thought-line {
-  grid-column: 1;
-  justify-self: end;
-  padding-right: clamp(0.25rem, 1.4vw, 0.7rem);
   font-family: var(--font-body);
   font-weight: 600;
-  font-size: clamp(2.2rem, 5.5vw, 4.6rem);
-  line-height: 1.02;
-  letter-spacing: -0.02em;
+  font-size: clamp(2.4rem, 4.8vw, 3.6rem);
+  line-height: 0.96;
+  letter-spacing: -0.055em;
   color: var(--color-ink);
 }
 
 .hero-headline .voice-line {
-  grid-column: 2;
-  justify-self: start;
-  padding-left: clamp(0.25rem, 1.4vw, 0.7rem);
   font-family: var(--font-display);
   font-weight: 400;
   font-style: italic;
-  font-size: clamp(2.6rem, 6.4vw, 5.6rem);
-  line-height: 1;
-  letter-spacing: -0.02em;
+  font-size: clamp(2.2rem, 4.5vw, 3.4rem);
+  line-height: 0.94;
+  letter-spacing: -0.035em;
   color: var(--color-gold-light);
+  padding-left: clamp(0.2rem, 1.6vw, 0.9rem);
 }
 
 /*
