@@ -142,6 +142,7 @@ export default function SubmissionFeed({
   const [error, setError] = useState(null);
   const [confirmId, setConfirmId] = useState(null);
   const [deletePassword, setDeletePassword] = useState("");
+  const [deleteError, setDeleteError] = useState(null);
   const [expandedIds, setExpandedIds] = useState(() => new Set());
 
   function toggleExpanded(id) {
@@ -251,7 +252,7 @@ export default function SubmissionFeed({
   }, [sessionId, filters, sort, page, pageSize, updateRows]);
 
   async function perform({ id, actionKey, patch, remove = false, clearCurrent = false, action }) {
-    if (cardBusy(id)) return;
+    if (cardBusy(id)) return { error: "That contribution is already being updated." };
     const before = rowsRef.current.get(id) ?? null;
     const beforeCurrent = currentIdRef.current;
 
@@ -281,6 +282,16 @@ export default function SubmissionFeed({
     endBusy(`${id}|${actionKey}`);
 
     if (result?.ok) {
+      if (remove) {
+        // A poll can race the delete request and briefly reinsert the row.
+        // Treat the successful response as authoritative for the visible rows.
+        updateRows((prev) => {
+          if (!prev.has(id)) return prev;
+          const next = new Map(prev);
+          next.delete(id);
+          return next;
+        });
+      }
       const nextRow = !remove && result.row ? result.row : null;
       if (nextRow) updateRows((prev) => new Map(prev).set(id, nextRow));
       if (actionKey === "approve") showConfirmation("Approved.");
@@ -292,7 +303,7 @@ export default function SubmissionFeed({
       else if (actionKey === "presentation")
         showConfirmation(nextRow?.hidden_from_presentation ? "Hidden from screen." : "Shown on screen.");
       else if (actionKey === "delete") showConfirmation("Deleted.");
-      return;
+      return result;
     }
 
     updateRows((prev) => {
@@ -303,6 +314,7 @@ export default function SubmissionFeed({
     });
     setCurrentId(beforeCurrent);
     setError(result?.error || FALLBACK_ERROR);
+    return result;
   }
 
   const handleApprove = (id) =>
@@ -414,9 +426,17 @@ export default function SubmissionFeed({
     const id = confirmId;
     if (!id) return;
     const password = deletePassword;
-    await handleDelete(id, password);
-    setConfirmId(null);
-    setDeletePassword("");
+    const result = await handleDelete(id, password);
+    if (result?.ok) {
+      setConfirmId(null);
+      setDeletePassword("");
+      setDeleteError(null);
+    } else {
+      // Keep the dialog open so a mistyped password can be corrected without
+      // making the administrator find the contribution again.
+      setDeletePassword("");
+      setDeleteError(result?.error || FALLBACK_ERROR);
+    }
   }
 
   const visible = useMemo(() => {
@@ -429,6 +449,7 @@ export default function SubmissionFeed({
   }, [rows, filters, sort]);
 
   const totalPages = Math.max(1, Math.ceil(liveTotal / pageSize));
+  const deleteTarget = confirmId ? rows.get(confirmId) ?? null : null;
 
   function goPage(target) {
     const qs =
@@ -627,7 +648,12 @@ export default function SubmissionFeed({
               variant="danger"
               className={cardActionClassName}
               disabled={busy}
-              onClick={() => setConfirmId(row.id)}
+              onClick={() => {
+                setError(null);
+                setDeletePassword("");
+                setDeleteError(null);
+                setConfirmId(row.id);
+              }}
               title="Delete this submission permanently"
               aria-label="Delete submission"
             >
@@ -799,19 +825,45 @@ export default function SubmissionFeed({
         onClose={() => {
           setConfirmId(null);
           setDeletePassword("");
+          setDeleteError(null);
         }}
         title="Delete this contribution?"
-        description="This cannot be undone. Enter your admin password to confirm."
+        description={
+          deleteTarget
+            ? `Permanently delete ${deleteTarget.nickname}'s contribution. This cannot be undone.`
+            : "Permanently delete this contribution. This cannot be undone."
+        }
       >
         <div className="flex flex-col gap-3">
-          <Input
-            type="password"
-            value={deletePassword}
-            onChange={(event) => setDeletePassword(event.target.value)}
-            placeholder="Admin password"
-            autoComplete="current-password"
-            error={undefined}
-          />
+          {deleteTarget ? (
+            <div className="rounded-control border border-white/10 bg-midnight/40 p-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted">
+                {CATEGORY_LABELS[deleteTarget.category] ?? deleteTarget.category}
+              </p>
+              <p className="mt-1 line-clamp-3 whitespace-pre-wrap break-words text-sm text-ink">
+                {deleteTarget.content}
+              </p>
+            </div>
+          ) : null}
+          <label className="flex flex-col gap-1 text-sm font-medium text-ink">
+            Admin password
+            <Input
+              type="password"
+              value={deletePassword}
+              onChange={(event) => {
+                setDeletePassword(event.target.value);
+                setDeleteError(null);
+              }}
+              placeholder="Admin password"
+              autoComplete="current-password"
+              error={undefined}
+            />
+          </label>
+          {deleteError ? (
+            <p role="alert" className="text-sm font-medium text-crimson">
+              {deleteError}
+            </p>
+          ) : null}
           <div className="flex justify-end gap-2">
             <Button
               type="button"
@@ -820,6 +872,7 @@ export default function SubmissionFeed({
               onClick={() => {
                 setConfirmId(null);
                 setDeletePassword("");
+                setDeleteError(null);
               }}
             >
               Cancel

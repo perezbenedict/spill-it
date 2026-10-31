@@ -69,11 +69,19 @@ export default async function SessionDetailPage({ params }) {
 
       <QrPanel publicCode={session.public_code} />
 
-      <ClearContributions
-        sessionId={session.id}
-        sessionTitle={session.title}
-        count={contributionCount}
-      />
+      <section aria-labelledby="contribution-management-heading" className="flex flex-col gap-4">
+        <h2
+          id="contribution-management-heading"
+          className="text-xs font-semibold uppercase tracking-[0.18em] text-muted"
+        >
+          Contribution management
+        </h2>
+        <ClearContributions
+          sessionId={session.id}
+          sessionTitle={session.title}
+          count={contributionCount}
+        />
+      </section>
 
       {session.status !== "draft" ? (
         <nav aria-label="Session links" className="flex flex-wrap gap-3">

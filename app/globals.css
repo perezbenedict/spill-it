@@ -115,36 +115,37 @@
  */
 .hero-headline {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  grid-template-rows: auto auto;
-  row-gap: clamp(0.1rem, 0.5vw, 0.25rem);
+  grid-template-columns: max-content max-content;
+  justify-content: center;
+  column-gap: clamp(0.4rem, 1.5vw, 0.85rem);
+  max-width: 100%;
   text-align: center;
-  line-height: 1.02;
+  line-height: 1.1;
 }
 
 .hero-headline .thought-line {
   grid-column: 1;
   justify-self: end;
-  padding-right: clamp(0.2rem, 1vw, 0.5rem);
   font-family: var(--font-body);
   font-weight: 600;
-  font-size: clamp(1.9rem, 4vw, 2.8rem);
-  line-height: 1.02;
+  font-size: clamp(1.4rem, 3.4vw, 2.25rem);
+  line-height: 1.1;
   letter-spacing: -0.02em;
   color: var(--color-ink);
+  white-space: nowrap;
 }
 
 .hero-headline .voice-line {
   grid-column: 2;
   justify-self: start;
-  padding-left: clamp(0.2rem, 1vw, 0.5rem);
   font-family: var(--font-display);
   font-weight: 400;
   font-style: italic;
-  font-size: clamp(2.1rem, 4.4vw, 3.2rem);
-  line-height: 1;
+  font-size: clamp(1.55rem, 3.7vw, 2.45rem);
+  line-height: 1.1;
   letter-spacing: -0.02em;
   color: var(--color-gold-light);
+  white-space: nowrap;
 }
 
 /*
@@ -156,8 +157,8 @@
   font-family: var(--font-display);
   font-weight: 400;
   font-style: italic;
-  font-size: clamp(1.5rem, 3.6vw, 2rem);
-  line-height: 1.05;
+  font-size: clamp(1.3rem, 2.8vw, 1.75rem);
+  line-height: 1.1;
   letter-spacing: -0.015em;
   display: inline-block;
   /* Wide gradient with a luminous band that sweeps once */

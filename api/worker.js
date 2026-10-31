@@ -28,6 +28,8 @@ const ADMIN_SESSION_HOURS = 7 * 24;
 const PBKDF2_ITERATIONS = 100000;
 const LOGIN_MAX_FAILURES = 10;
 const LOGIN_FAILURE_WINDOW_SECONDS = 15 * 60;
+const DESTRUCTIVE_AUTH_MAX_FAILURES = 5;
+const DESTRUCTIVE_AUTH_FAILURE_WINDOW_SECONDS = 15 * 60;
 // The admin_users.email column is NOT NULL, but with a single shared password
 // this address is internal only - never displayed and never accepted as input.
 const ADMIN_EMAIL_PLACEHOLDER = 'admin@spill.local';
@@ -197,6 +199,10 @@ async function requireAdminUser(request, env) {
 // table. Failed attempts count toward LOGIN_MAX_FAILURES inside a fixed
 // window that starts at the first failure.
 const loginFailures = new Map();
+// Destructive password checks have a tighter, independent throttle. The key
+// combines the authenticated admin with the connecting IP so a stolen session
+// token cannot be used for an unbounded password-guessing loop.
+const destructiveAuthFailures = new Map();
 
 function loginThrottleFor(ip) {
   const entry = loginFailures.get(ip);
@@ -220,6 +226,36 @@ function recordLoginFailure(ip) {
   entry.count += 1;
 }
 
+function destructiveAuthKey(request, admin) {
+  const ip = request.headers.get('CF-Connecting-IP') || 'local';
+  return `${admin.user.id}:${ip}`;
+}
+
+function destructiveAuthThrottleFor(key) {
+  const entry = destructiveAuthFailures.get(key);
+  if (!entry) return null;
+  if (entry.resetAt <= Date.now()) {
+    destructiveAuthFailures.delete(key);
+    return null;
+  }
+  if (entry.count < DESTRUCTIVE_AUTH_MAX_FAILURES) return null;
+  const retryAfter = Math.max(1, Math.ceil((entry.resetAt - Date.now()) / 1000));
+  return json({ error: MSG_LOGIN_THROTTLED }, 429, { 'Retry-After': String(retryAfter) });
+}
+
+function recordDestructiveAuthFailure(key) {
+  const now = Date.now();
+  const entry = destructiveAuthFailures.get(key);
+  if (!entry || entry.resetAt <= now) {
+    destructiveAuthFailures.set(key, {
+      count: 1,
+      resetAt: now + DESTRUCTIVE_AUTH_FAILURE_WINDOW_SECONDS * 1000,
+    });
+    return;
+  }
+  entry.count += 1;
+}
+
 // Password equality that walks every byte: both sides are encoded to bytes
 // and XOR-compared over the full (padded) length, with the length difference
 // seeded into the diff, so there is no early-exit signal beyond length.
@@ -232,6 +268,38 @@ function constantTimeEquals(a, b) {
     diff |= (bytesA[i] || 0) ^ (bytesB[i] || 0);
   }
   return diff === 0;
+}
+
+async function verifyDestructiveAdminPassword(request, env, admin, password) {
+  if (admin.user.role !== 'admin') {
+    return { response: json({ error: 'Administrator access is required.' }, 403) };
+  }
+
+  const throttleKey = destructiveAuthKey(request, admin);
+  const throttled = destructiveAuthThrottleFor(throttleKey);
+  if (throttled) return { response: throttled };
+
+  if (!password) {
+    recordDestructiveAuthFailure(throttleKey);
+    return { response: json({ error: 'Admin password is required.' }, 401) };
+  }
+
+  const user = await env.DB.prepare('SELECT id, password_hash FROM admin_users WHERE id = ?')
+    .bind(admin.user.id)
+    .first();
+  const matchesHash = user ? await verifyPassword(password, user.password_hash) : false;
+  const matchesSecret =
+    !matchesHash &&
+    !!env.SPILL_ADMIN_PASSWORD &&
+    constantTimeEquals(password, env.SPILL_ADMIN_PASSWORD);
+
+  if (!user || (!matchesHash && !matchesSecret)) {
+    recordDestructiveAuthFailure(throttleKey);
+    return { response: json({ error: 'Incorrect admin password.' }, 401) };
+  }
+
+  destructiveAuthFailures.delete(throttleKey);
+  return { ok: true };
 }
 
 async function handleLogin(request, env) {
@@ -1103,25 +1171,28 @@ async function handleDeleteAdminSubmission(request, env, admin, id) {
     body = {};
   }
   const password = typeof body?.password === 'string' ? body.password : '';
-  if (!password) return json({ error: 'Admin password is required to delete a contribution.' }, 401);
-
-  // Re-verify the admin password server-side before any destructive action.
-  const user = await env.DB.prepare(
-    'SELECT id, password_hash FROM admin_users WHERE id = ?'
-  )
-    .bind(admin.user.id)
-    .first();
-  const matchesHash = user ? await verifyPassword(password, user.password_hash) : false;
-  const matchesSecret =
-    !matchesHash && !!env.SPILL_ADMIN_PASSWORD && constantTimeEquals(password, env.SPILL_ADMIN_PASSWORD);
-  if (!user || (!matchesHash && !matchesSecret)) {
-    return json({ error: 'Incorrect admin password.' }, 401);
-  }
+  const verification = await verifyDestructiveAdminPassword(request, env, admin, password);
+  if (verification.response) return verification.response;
 
   const row = await env.DB.prepare('SELECT * FROM submissions WHERE id = ?').bind(id).first();
   if (!row) return json({ error: MSG_INVALID }, 404);
-  // presentation_state.current_submission_id is ON DELETE SET NULL.
-  await env.DB.prepare('DELETE FROM submissions WHERE id = ?').bind(id).run();
+
+  // Clear the live-display pointer and delete in the same D1 batch. The FK is
+  // also ON DELETE SET NULL, but the explicit update keeps the invariant even
+  // if this schema is imported into an SQLite environment with FKs disabled.
+  const now = nowIso();
+  try {
+    await env.DB.batch([
+      env.DB.prepare(
+        'UPDATE presentation_state SET current_submission_id = NULL, updated_at = ?, updated_by = ? ' +
+          'WHERE session_id = ? AND current_submission_id = ?'
+      ).bind(now, admin.user.id, row.session_id, id),
+      env.DB.prepare('DELETE FROM submissions WHERE id = ? AND session_id = ?')
+        .bind(id, row.session_id),
+    ]);
+  } catch {
+    return json({ error: 'Could not delete that contribution. Please try again.' }, 500);
+  }
   return json({ ok: true, row: serializeSubmission(row) });
 }
 
@@ -1133,23 +1204,12 @@ async function handleClearSessionContributions(request, env, admin, sessionId) {
     body = {};
   }
   const password = typeof body?.password === 'string' ? body.password : '';
-  if (!password) return json({ error: 'Admin password is required.' }, 401);
 
   const confirmName = typeof body?.confirm_name === 'string' ? body.confirm_name.trim() : '';
   const confirmText = typeof body?.confirm_text === 'string' ? body.confirm_text.trim() : '';
 
-  // Re-verify the admin password server-side before any destructive action.
-  const user = await env.DB.prepare(
-    'SELECT id, password_hash FROM admin_users WHERE id = ?'
-  )
-    .bind(admin.user.id)
-    .first();
-  const matchesHash = user ? await verifyPassword(password, user.password_hash) : false;
-  const matchesSecret =
-    !matchesHash && !!env.SPILL_ADMIN_PASSWORD && constantTimeEquals(password, env.SPILL_ADMIN_PASSWORD);
-  if (!user || (!matchesHash && !matchesSecret)) {
-    return json({ error: 'Incorrect admin password.' }, 401);
-  }
+  const verification = await verifyDestructiveAdminPassword(request, env, admin, password);
+  if (verification.response) return verification.response;
 
   const session = await env.DB.prepare('SELECT id, title FROM discussion_sessions WHERE id = ?')
     .bind(sessionId)

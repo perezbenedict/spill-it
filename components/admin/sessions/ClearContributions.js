@@ -18,6 +18,14 @@ export default function ClearContributions({ sessionId, sessionTitle, count }) {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
 
+  function closeDialog() {
+    setOpen(false);
+    setConfirmName("");
+    setConfirmText("");
+    setPassword("");
+    setError(null);
+  }
+
   async function handleClear() {
     setPending(true);
     setError(null);
@@ -36,9 +44,11 @@ export default function ClearContributions({ sessionId, sessionTitle, count }) {
         router.refresh();
       } else {
         setError(result?.error || "Could not clear contributions.");
+        setPassword("");
       }
     } catch {
       setError("Could not clear contributions.");
+      setPassword("");
     } finally {
       setPending(false);
     }
@@ -59,7 +69,13 @@ export default function ClearContributions({ sessionId, sessionTitle, count }) {
           Permanently delete every contribution in this discussion. This cannot be undone.
         </p>
       </div>
-      <Button variant="danger" onClick={() => setOpen(true)}>
+      <Button
+        variant="danger"
+        onClick={() => {
+          setSuccess(null);
+          setOpen(true);
+        }}
+      >
         Clear session contributions
       </Button>
       {success ? (
@@ -69,44 +85,54 @@ export default function ClearContributions({ sessionId, sessionTitle, count }) {
       ) : null}
       <Dialog
         open={open}
-        onClose={() => {
-          setOpen(false);
-          setError(null);
-        }}
+        onClose={closeDialog}
         title="Clear all contributions?"
         description={`This will permanently delete ${count} contribution${count === 1 ? "" : "s"} from "${sessionTitle}". This cannot be undone.`}
       >
         <div className="flex flex-col gap-3">
-          <Input
-            value={confirmName}
-            onChange={(e) => setConfirmName(e.target.value)}
-            placeholder={sessionTitle}
-            error={undefined}
-          />
-          <p className="text-xs text-muted">Type the discussion name to confirm.</p>
-          <Input
-            type="text"
-            value={confirmText}
-            onChange={(e) => setConfirmText(e.target.value)}
-            placeholder='Type "DELETE"'
-          />
-          <Input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Admin password"
-            autoComplete="current-password"
-          />
+          <div className="rounded-control border border-crimson/30 bg-crimson/5 p-3">
+            <p className="text-sm font-semibold text-ink">{sessionTitle}</p>
+            <p className="mt-1 text-sm text-muted">
+              {count} contribution{count === 1 ? "" : "s"} will be permanently deleted.
+            </p>
+          </div>
+          <label className="flex flex-col gap-1 text-sm font-medium text-ink">
+            Discussion name
+            <Input
+              value={confirmName}
+              onChange={(e) => setConfirmName(e.target.value)}
+              placeholder={sessionTitle}
+              error={undefined}
+            />
+            <span className="text-xs font-normal text-muted">Type the discussion name to confirm.</span>
+          </label>
+          <label className="flex flex-col gap-1 text-sm font-medium text-ink">
+            Type DELETE
+            <Input
+              type="text"
+              value={confirmText}
+              onChange={(e) => setConfirmText(e.target.value)}
+              placeholder="DELETE"
+              autoComplete="off"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-sm font-medium text-ink">
+            Admin password
+            <Input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Admin password"
+              autoComplete="current-password"
+            />
+          </label>
           {error ? (
             <p role="alert" className="text-sm font-medium text-crimson">{error}</p>
           ) : null}
           <div className="flex justify-end gap-2">
             <Button
               variant="ghost"
-              onClick={() => {
-                setOpen(false);
-                setError(null);
-              }}
+              onClick={closeDialog}
             >
               Cancel
             </Button>
@@ -116,7 +142,7 @@ export default function ClearContributions({ sessionId, sessionTitle, count }) {
               disabled={!canSubmit}
               onClick={handleClear}
             >
-              Clear all
+              Permanently clear contributions
             </Button>
           </div>
         </div>
