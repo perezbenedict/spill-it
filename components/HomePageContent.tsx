@@ -66,6 +66,7 @@ export default function HomePageContent({ session, provided }: HomePageContentPr
         {/* Slow-drifting purple layers */}
         <span className="absolute -left-24 top-[8%] h-[32rem] w-[32rem] animate-ambient-a rounded-full bg-[radial-gradient(circle,rgba(124,92,200,0.18),transparent_70%)]" />
         <span className="absolute -right-28 bottom-[10%] h-[28rem] w-[28rem] animate-ambient-b rounded-full bg-[radial-gradient(circle,rgba(196,181,253,0.14),transparent_70%)]" />
+        <span className="absolute left-[18%] top-[38%] h-[24rem] w-[24rem] animate-ambient-c rounded-full bg-[radial-gradient(circle,rgba(109,74,184,0.12),transparent_68%)]" />
         {/* Pointer-following glow, desktop only */}
         <motion.span
           className="glow-pointer absolute top-0 left-0 h-[40rem] w-[40rem] rounded-full bg-[radial-gradient(circle,rgba(167,139,250,0.16),transparent_65%)]"
@@ -150,7 +151,7 @@ export default function HomePageContent({ session, provided }: HomePageContentPr
           />
         </motion.div>
 
-        {/* Headline — two reveal lines composed as one staggered unit */}
+        {/* Editorial headline — three distinct lines in one staggered reveal. */}
         <h1 className="hero-headline w-full">
           <RevealLine delay={0.3} className="thought-line">
             Your thoughts.
@@ -158,25 +159,12 @@ export default function HomePageContent({ session, provided }: HomePageContentPr
           <RevealLine delay={0.48} className="voice-line">
             Your voice.
           </RevealLine>
-        </h1>
-
-        {/* Golden divider */}
-        <motion.div
-          className="mx-auto h-px w-16 bg-gradient-to-r from-transparent via-gold to-transparent opacity-40"
-          initial={{ opacity: 0, scaleX: 0 }}
-          animate={{ opacity: 1, scaleX: 1 }}
-          transition={{ duration: 0.6, delay: 0.7, ease: EASE }}
-          aria-hidden="true"
-        />
-
-        {/* Product identity — animated gold-gradient wordmark */}
-        <AnimatedSection delay={0.85} className="flex justify-center">
-          <RevealLine delay={0} className="block overflow-hidden">
+          <RevealLine delay={0.66} className="wordmark-line">
             <span className="spill-wordmark">
-              <span className="font-display italic">Spill it</span>
+              Spill it
             </span>
           </RevealLine>
-        </AnimatedSection>
+        </h1>
       </div>
 
       {/* Subtitle */}
@@ -195,7 +183,7 @@ export default function HomePageContent({ session, provided }: HomePageContentPr
         <AnimatedSection className="relative z-10 mt-8 flex justify-center" delay={1.0}>
           <MagneticButton
             href={joinHref}
-            className="group inline-flex w-full items-center justify-center gap-2 rounded-control bg-gold px-6 py-3 text-base font-medium text-midnight shadow-[0_0_18px_rgba(167,139,250,0.3)] transition-colors hover:bg-gold-light focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold sm:w-auto"
+            className="group inline-flex w-full items-center justify-center gap-2 rounded-control bg-gold px-6 py-3 text-base font-medium text-midnight shadow-[0_0_18px_rgba(167,139,250,0.3)] transition-[background-color,box-shadow] duration-300 ease-out hover:bg-gold-light hover:shadow-[0_10px_30px_rgba(167,139,250,0.32)] active:shadow-[0_4px_18px_rgba(167,139,250,0.24)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold sm:w-auto"
           >
             Join the conversation
             <motion.span

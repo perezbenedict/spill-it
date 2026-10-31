@@ -1,5 +1,6 @@
 "use client";
 
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
 import {
   ChevronDown,
@@ -20,7 +21,7 @@ import { cn } from "@/lib/cn";
 // Icon-sized chrome: the projector image stays clean, so labels live in
 // aria-label/title rather than on the button face.
 const controlClass =
-  "inline-flex h-10 w-10 items-center justify-center rounded-pill text-muted transition-colors hover:bg-gold/10 hover:text-gold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-transparent disabled:hover:text-muted";
+  "inline-flex h-10 w-10 items-center justify-center rounded-pill text-muted transition-[color,background-color,transform] duration-200 hover:bg-gold/10 hover:text-gold motion-safe:hover:-translate-y-0.5 motion-safe:active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:translate-y-0 disabled:hover:bg-transparent disabled:hover:text-muted disabled:active:scale-100";
 
 export default function RoomControls({
   isAdmin,
@@ -30,6 +31,7 @@ export default function RoomControls({
   onCurrentChange,
   targetRef,
 }) {
+  const reduceMotion = useReducedMotion();
   const [pending, setPending] = useState(null);
   const [error, setError] = useState(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -118,22 +120,35 @@ export default function RoomControls({
 
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex flex-col items-center gap-2 px-4 pb-5">
-      {error ? (
-        <p
-          role="alert"
-          className="pointer-events-auto max-w-xl rounded-control border border-crimson/40 bg-crimson/15 px-3 py-2 text-center text-base text-ink"
-        >
-          {error}
-        </p>
-      ) : null}
-      {showToolbar ? (
-        <div
-          role="toolbar"
-          aria-label="Presentation controls"
-          aria-keyshortcuts="ArrowLeft ArrowRight"
-          className="pointer-events-auto flex items-center gap-1 rounded-pill border border-gold/15 bg-surface/70 p-1.5 text-ink shadow-lg backdrop-blur-md motion-safe:transition-all motion-safe:duration-200"
-        >
-          <button
+      <AnimatePresence initial={false}>
+        {error ? (
+          <motion.p
+            key="room-control-error"
+            role="alert"
+            initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 6 }}
+            transition={{ duration: reduceMotion ? 0 : 0.2 }}
+            className="pointer-events-auto max-w-xl rounded-control border border-crimson/40 bg-crimson/15 px-3 py-2 text-center text-base text-ink"
+          >
+            {error}
+          </motion.p>
+        ) : null}
+      </AnimatePresence>
+      <AnimatePresence initial={false} mode="wait">
+        {showToolbar ? (
+          <motion.div
+            key="room-toolbar"
+            role="toolbar"
+            aria-label="Presentation controls"
+            aria-keyshortcuts="ArrowLeft ArrowRight"
+            initial={reduceMotion ? false : { opacity: 0, y: 10, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 8, scale: 0.98 }}
+            transition={{ duration: reduceMotion ? 0 : 0.2, ease: [0.16, 1, 0.3, 1] }}
+            className="pointer-events-auto flex items-center gap-1 rounded-pill border border-gold/15 bg-surface/70 p-1.5 text-ink shadow-lg backdrop-blur-md"
+          >
+          <motion.button
             type="button"
             className={controlClass}
             onClick={() => run("prev")}
@@ -144,8 +159,8 @@ export default function RoomControls({
             title="Previous contribution (←)"
           >
             <ChevronLeft className="h-5 w-5" aria-hidden="true" />
-          </button>
-          <button
+          </motion.button>
+          <motion.button
             type="button"
             className={controlClass}
             onClick={() => run("next")}
@@ -156,8 +171,8 @@ export default function RoomControls({
             title="Next contribution (→)"
           >
             <ChevronRight className="h-5 w-5" aria-hidden="true" />
-          </button>
-          <button
+          </motion.button>
+          <motion.button
             type="button"
             className={cn(controlClass, current?.is_pinned && "bg-gold/15 text-gold")}
             onClick={() => run("togglePin")}
@@ -171,8 +186,8 @@ export default function RoomControls({
             ) : (
               <Pin className="h-5 w-5" aria-hidden="true" />
             )}
-          </button>
-          <button
+          </motion.button>
+          <motion.button
             type="button"
             className={controlClass}
             onClick={() => run("hide")}
@@ -182,7 +197,7 @@ export default function RoomControls({
             title="Hide from presentation"
           >
             <EyeOff className="h-5 w-5" aria-hidden="true" />
-          </button>
+          </motion.button>
           <span aria-hidden="true" className="mx-1 h-6 w-px bg-gold/15" />
           <Link
             href="/admin"
@@ -192,7 +207,7 @@ export default function RoomControls({
           >
             <LayoutDashboard className="h-5 w-5" aria-hidden="true" />
           </Link>
-          <button
+          <motion.button
             type="button"
             className={controlClass}
             onClick={toggleFullscreen}
@@ -206,8 +221,8 @@ export default function RoomControls({
             ) : (
               <Maximize2 className="h-5 w-5" aria-hidden="true" />
             )}
-          </button>
-          <button
+          </motion.button>
+          <motion.button
             type="button"
             className={controlClass}
             onClick={() => setOpen(false)}
@@ -215,20 +230,26 @@ export default function RoomControls({
             title="Hide controls"
           >
             <ChevronDown className="h-5 w-5" aria-hidden="true" />
-          </button>
-        </div>
-      ) : (
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          aria-label="Show presentation controls"
-          aria-expanded="false"
-          title="Show presentation controls"
-          className="pointer-events-auto inline-flex h-10 w-10 items-center justify-center rounded-pill border border-gold/15 bg-surface/70 text-muted shadow-lg backdrop-blur-md transition-colors hover:bg-gold/10 hover:text-gold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
-        >
-          <SlidersHorizontal className="h-5 w-5" aria-hidden="true" />
-        </button>
-      )}
+          </motion.button>
+          </motion.div>
+        ) : (
+          <motion.button
+            key="room-toolbar-trigger"
+            type="button"
+            onClick={() => setOpen(true)}
+            aria-label="Show presentation controls"
+            aria-expanded="false"
+            title="Show presentation controls"
+            initial={reduceMotion ? false : { opacity: 0, y: 8, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 6, scale: 0.96 }}
+            transition={{ duration: reduceMotion ? 0 : 0.18 }}
+            className="pointer-events-auto inline-flex h-10 w-10 items-center justify-center rounded-pill border border-gold/15 bg-surface/70 text-muted shadow-lg backdrop-blur-md transition-[color,background-color,transform] duration-200 hover:bg-gold/10 hover:text-gold motion-safe:hover:-translate-y-0.5 motion-safe:active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+          >
+            <SlidersHorizontal className="h-5 w-5" aria-hidden="true" />
+          </motion.button>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

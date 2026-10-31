@@ -174,50 +174,43 @@ export default function RoomDisplay({
     session.status === "paused"
       ? "Submissions paused"
       : isClosed
-        ? "This conversation has wrapped"
+        ? "This conversation has been wrapped"
         : null;
 
   return (
     <div ref={screenRef} className="relative flex h-dvh w-full flex-col overflow-hidden bg-midnight text-ink">
-      <style>{`
-        @keyframes ambientGradient {
-          0%, 100% { background-position: 0% 0%; }
-          50% { background-position: 100% 100%; }
-        }
-      `}</style>
-      {/* Slow ambient gradient drift behind the presentation screen. Cheap
-          transform-only motion, gated on prefers-reduced-motion. */}
-      <div
+      {/* Layered ambient light moves on transforms only and becomes static
+          when the viewer prefers reduced motion. */}
+      <motion.div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 opacity-60 motion-safe:animate-[ambientGradient_32s_ease-in-out_infinite]"
+        className="pointer-events-none absolute -inset-[12%] opacity-60"
         style={{
           background:
             "radial-gradient(60% 55% at 22% 18%, rgba(167,139,250,0.20), transparent 60%), radial-gradient(55% 50% at 80% 82%, rgba(109,74,184,0.22), transparent 60%)",
-          backgroundSize: "160% 160%",
         }}
+        animate={
+          reduceMotion
+            ? undefined
+            : { x: ["-2%", "3%", "-2%"], y: ["-1%", "2%", "-1%"], scale: [1, 1.04, 1] }
+        }
+        transition={{ duration: 28, ease: "easeInOut", repeat: Infinity }}
       />
-      {/* Compact icon-only back-to-dashboard control at the top-right,
-          away from the logo. Expands on hover/focus for an accessible label. */}
-      {isAdmin ? (
-        <nav
-          className="pointer-events-auto fixed right-4 top-5 z-40 flex items-center"
-          aria-label="Admin navigation"
-        >
-          <Link
-            href="/admin"
-            className="group inline-flex items-center gap-2 rounded-pill border border-gold/15 bg-surface/60 px-2.5 py-1.5 text-sm text-muted opacity-60 shadow-sm backdrop-blur-md transition-all duration-200 hover:border-gold/30 hover:text-gold hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
-            aria-label="Back to dashboard"
-            title="Back to dashboard"
-          >
-            <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" aria-hidden="true" />
-            <span className="max-w-0 overflow-hidden whitespace-nowrap text-xs transition-all duration-200 group-hover:max-w-[10rem] group-hover:pl-1.5 focus-within:max-w-[10rem] focus-within:pl-1.5">
-              Back to Dashboard
-            </span>
-          </Link>
-        </nav>
-      ) : null}
-      <header className="grid grid-cols-[1fr_auto_1fr] items-start gap-8 px-10 pt-8">
-        <div className="flex items-center gap-3">
+      <motion.div
+        aria-hidden="true"
+        className="pointer-events-none absolute left-[8%] top-[18%] h-48 w-48 rounded-full border border-gold/10 opacity-50 sm:h-72 sm:w-72"
+        animate={reduceMotion ? undefined : { rotate: [0, 360], opacity: [0.28, 0.5, 0.28] }}
+        transition={{ rotate: { duration: 72, ease: "linear", repeat: Infinity }, opacity: { duration: 14, ease: "easeInOut", repeat: Infinity } }}
+      />
+      <motion.div
+        aria-hidden="true"
+        className="pointer-events-none absolute bottom-[12%] right-[7%] h-32 w-32 rounded-full border border-dashed border-gold/10 opacity-40 sm:h-52 sm:w-52"
+        animate={reduceMotion ? undefined : { rotate: [360, 0], y: [0, -10, 0] }}
+        transition={{ rotate: { duration: 88, ease: "linear", repeat: Infinity }, y: { duration: 12, ease: "easeInOut", repeat: Infinity } }}
+      />
+
+      <header className="relative z-10 flex flex-col gap-4 px-5 pt-5 sm:px-8 sm:pt-7 lg:px-10 lg:pt-8">
+        <div className="flex min-w-0 items-center justify-between gap-4">
+          <div className="flex min-w-0 items-center gap-3">
           <span className="text-xl font-bold tracking-tight">Spill It</span>
           <span className="inline-flex h-7 w-7" aria-label="Spill It">
             <svg
@@ -250,28 +243,60 @@ export default function RoomDisplay({
               />
             </svg>
           </span>
-        </div>
-        {/* Middle grid cell always renders so the status column stays right-anchored */}
-        <div className="max-w-[42ch] text-center">
-          {currentRow ? (
-            <motion.div
-              initial={reduceMotion ? false : { opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: reduceMotion ? 0 : 0.6, ease: REVEAL_EASE }}
-            >
-              <p className="text-sm font-semibold uppercase tracking-[0.28em] text-gold">
-                Now discussing
-              </p>
-              <p className="mt-2 font-display text-[clamp(1.25rem,2vw,1.75rem)] leading-snug text-gold-light">
-                {session.title}
-              </p>
-            </motion.div>
+          </div>
+          {isAdmin ? (
+            <nav className="shrink-0" aria-label="Admin navigation">
+              <Link
+                href="/admin"
+                className="group inline-flex min-h-9 items-center rounded-pill border border-gold/15 bg-surface/60 px-2.5 py-1.5 text-muted shadow-sm backdrop-blur-md transition-[border-color,color,background-color,transform] duration-200 hover:border-gold/35 hover:bg-gold/10 hover:text-gold motion-safe:hover:-translate-y-0.5 motion-safe:active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+                aria-label="Back to dashboard"
+                title="Back to dashboard"
+              >
+                <ArrowLeft className="h-4 w-4 transition-transform duration-200 group-hover:-translate-x-0.5" aria-hidden="true" />
+                <span className="hidden whitespace-nowrap pl-1.5 text-xs sm:inline">
+                  Back to Dashboard
+                </span>
+              </Link>
+            </nav>
           ) : null}
         </div>
-        <div className="justify-self-end text-right">
-          {statusLine ? <p className="text-base text-muted">{statusLine}</p> : null}
+
+        <div className="flex min-h-12 flex-col items-center justify-center gap-1.5 text-center sm:min-h-16">
+          <AnimatePresence mode="wait" initial={false}>
+            {currentRow ? (
+              <motion.div
+                key={`topic-${currentRow.id}`}
+                initial={reduceMotion ? false : { opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -8 }}
+                transition={{ duration: reduceMotion ? 0 : 0.45, ease: REVEAL_EASE }}
+                className="max-w-[42ch]"
+              >
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-gold sm:text-sm sm:tracking-[0.28em]">
+                  Now discussing
+                </p>
+                <p className="mt-1.5 font-display text-[clamp(1.125rem,2vw,1.75rem)] leading-snug text-gold-light">
+                  {session.title}
+                </p>
+              </motion.div>
+            ) : null}
+          </AnimatePresence>
+          <AnimatePresence mode="wait" initial={false}>
+            {statusLine ? (
+              <motion.p
+                key={`status-${session.status}`}
+                initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -6 }}
+                transition={{ duration: reduceMotion ? 0 : 0.4, ease: REVEAL_EASE }}
+                className="max-w-[32ch] text-balance text-sm leading-relaxed text-muted sm:text-base"
+              >
+                {statusLine}
+              </motion.p>
+            ) : null}
+          </AnimatePresence>
           {connection === "reconnecting" ? (
-            <p role="status" className="mt-1 inline-flex items-center justify-end gap-2 text-base text-ink">
+            <p role="status" className="mt-1 inline-flex items-center justify-center gap-2 text-sm text-ink">
               <span
                 aria-hidden="true"
                 className="h-2 w-2 rounded-pill bg-crimson-bright motion-safe:animate-pulse"
@@ -282,15 +307,15 @@ export default function RoomDisplay({
         </div>
       </header>
 
-      <main className="flex min-h-0 flex-1 items-center justify-center overflow-y-auto px-10 pb-28 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <main className="relative z-10 flex min-h-0 flex-1 items-center justify-center overflow-y-auto px-5 pb-24 sm:px-8 sm:pb-28 lg:px-10 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <AnimatePresence mode="wait">
           {currentRow ? (
             <motion.div
               key={currentRow.id}
               initial={reduceMotion ? false : { opacity: 0, y: 24, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -20, scale: 0.98 }}
-              transition={{ duration: reduceMotion ? 0 : 0.5, ease: REVEAL_EASE }}
+              exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -14, scale: 0.985 }}
+              transition={{ duration: reduceMotion ? 0 : 0.42, ease: REVEAL_EASE }}
               className="flex w-full flex-col items-center text-center"
             >
               <div className="flex flex-wrap items-center justify-center gap-3">
@@ -334,13 +359,18 @@ export default function RoomDisplay({
               <div className="relative flex flex-col items-center">
                 {isClosed ? (
                   <>
-                    <p className="text-sm font-semibold uppercase tracking-[0.28em] text-gold">
+                    <motion.p
+                      initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: reduceMotion ? 0 : 0.4, ease: REVEAL_EASE }}
+                      className="text-xs font-semibold uppercase tracking-[0.24em] text-gold sm:text-sm sm:tracking-[0.28em]"
+                    >
                       Session closed
-                    </p>
-                    <p className="mt-6 font-display text-[clamp(2.5rem,5vw,4.5rem)] leading-[1.15] text-ink">
+                    </motion.p>
+                    <p className="mt-5 font-display text-[clamp(2.25rem,5vw,4.5rem)] leading-[1.15] text-ink sm:mt-6">
                       That&apos;s a wrap.
                     </p>
-                    <p className="mt-5 text-xl text-muted">
+                    <p className="mt-4 max-w-[34ch] text-balance text-base leading-relaxed text-muted sm:mt-5 sm:text-xl">
                       Thanks for sharing your thinking with the room.
                     </p>
                   </>
@@ -349,7 +379,7 @@ export default function RoomDisplay({
                     <p className="font-display text-[clamp(2rem,4.5vw,3.5rem)] leading-[1.2] text-ink">
                       {session.title}
                     </p>
-                    <p className="mt-5 text-2xl text-muted">Waiting for the next thought…</p>
+                    <p className="mt-5 text-lg text-muted sm:text-2xl">Waiting for the next thought…</p>
                   </>
                 )}
               </div>

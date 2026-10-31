@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Check, Shuffle } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { cn } from "@/lib/cn";
@@ -17,6 +17,8 @@ export default function NicknamePicker({
   const [suggestions, setSuggestions] = useState([]);
   const [picked, setPicked] = useState("");
   const [manualValue, setManualValue] = useState("");
+  const [inputFocused, setInputFocused] = useState(false);
+  const reducedMotion = useReducedMotion();
 
   useEffect(() => {
     setSuggestions(generateSuggestions(3, current ? [current] : []));
@@ -69,7 +71,16 @@ export default function NicknamePicker({
           <label htmlFor="nickname-input" className="mb-1 block text-sm font-medium text-ink">
             Your nickname
           </label>
-          <div className="relative">
+          <motion.div
+            className="relative rounded-control"
+            animate={{
+              boxShadow:
+                inputFocused && !hasError
+                  ? "0 0 0 3px rgba(167,139,250,0.16), 0 12px 30px -18px rgba(167,139,250,0.75)"
+                  : "0 0 0 0 rgba(167,139,250,0)",
+            }}
+            transition={{ duration: reducedMotion ? 0 : 0.2, ease: "easeOut" }}
+          >
             <input
               id="nickname-input"
               type="text"
@@ -79,6 +90,8 @@ export default function NicknamePicker({
               placeholder="Type your name (or click suggestions below)"
               value={manualValue}
               onChange={handleManualChange}
+              onFocus={() => setInputFocused(true)}
+              onBlur={() => setInputFocused(false)}
               maxLength={60}
               className={cn(
                 "w-full rounded-control border bg-surface px-4 py-3 text-base font-medium text-ink",
@@ -89,14 +102,20 @@ export default function NicknamePicker({
                   : "border-white/20 focus-within:border-gold/70"
               )}
             />
-            {activeManual && (
-              <Check
-                aria-hidden="true"
-                className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 flex-shrink-0 text-gold"
-                strokeWidth={activeManual && !hasError ? 3 : 1.5}
-              />
-            )}
-          </div>
+            <AnimatePresence initial={false}>
+              {activeManual && (
+                <motion.span
+                  aria-hidden="true"
+                  initial={{ opacity: 0, scale: reducedMotion ? 1 : 0.75 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: reducedMotion ? 1 : 0.75 }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gold"
+                >
+                  <Check className="h-5 w-5" strokeWidth={!hasError ? 3 : 1.5} />
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </motion.div>
         </div>
       )}
 
@@ -125,11 +144,12 @@ export default function NicknamePicker({
                     setManualValue("");
                   }}
                   layout
-                  initial={{ opacity: 0, y: 8 }}
+                  initial={{ opacity: 0, y: reducedMotion ? 0 : 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-                  whileHover={{ y: -2 }}
+                  exit={{ opacity: 0, y: reducedMotion ? 0 : -8 }}
+                  transition={{ duration: reducedMotion ? 0 : 0.25, ease: [0.16, 1, 0.3, 1] }}
+                  whileHover={reducedMotion ? undefined : { y: -2, scale: 1.005 }}
+                  whileTap={reducedMotion ? undefined : { scale: 0.985 }}
                   className={cn(
                     "flex min-h-12 w-full items-center justify-between gap-3 rounded-control border-2 bg-surface px-4 py-3 text-left text-base font-medium text-ink transition-colors duration-200",
                     "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold",
@@ -143,10 +163,10 @@ export default function NicknamePicker({
                     {isSelected && (
                       <motion.span
                         key="picked"
-                        initial={{ opacity: 0, scale: 0.8 }}
+                        initial={{ opacity: 0, scale: reducedMotion ? 1 : 0.8 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.8 }}
-                        transition={{ duration: 0.2, ease: "easeOut" }}
+                        exit={{ opacity: 0, scale: reducedMotion ? 1 : 0.8 }}
+                        transition={{ duration: reducedMotion ? 0 : 0.2, ease: "easeOut" }}
                         className="flex shrink-0 items-center gap-1.5 text-xs font-semibold text-gold"
                       >
                         <Check aria-hidden="true" className="h-4 w-4" strokeWidth={3} />

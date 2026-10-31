@@ -11,7 +11,7 @@ const IconMap = {
 };
 
 import { useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Check } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Field from "@/components/ui/Field";
@@ -70,7 +70,7 @@ function LoadingSpinner() {
   return (
     <svg
       aria-hidden="true"
-      className="h-4 w-4 animate-spin"
+      className="h-4 w-4 motion-safe:animate-spin"
       viewBox="0 0 24 24"
       fill="none"
     >
@@ -86,7 +86,7 @@ function LoadingSpinner() {
 }
 
 // Animated SVG checkmark using path-length animation.
-function AnimatedCheckmark() {
+function AnimatedCheckmark({ reducedMotion }) {
   return (
     <svg
       aria-hidden="true"
@@ -102,7 +102,7 @@ function AnimatedCheckmark() {
         strokeWidth="2.5"
         initial={{ pathLength: 0, opacity: 0 }}
         animate={{ pathLength: 1, opacity: 1 }}
-        transition={{ duration: 0.45, ease: "easeOut" }}
+        transition={{ duration: reducedMotion ? 0 : 0.45, ease: "easeOut" }}
       />
       <motion.path
         d="M15 27 L23 35 L37 19"
@@ -112,13 +112,14 @@ function AnimatedCheckmark() {
         strokeLinejoin="round"
         initial={{ pathLength: 0 }}
         animate={{ pathLength: 1 }}
-        transition={{ duration: 0.35, delay: 0.3, ease: "easeOut" }}
+        transition={{ duration: reducedMotion ? 0 : 0.35, delay: reducedMotion ? 0 : 0.3, ease: "easeOut" }}
       />
     </svg>
   );
 }
 
 export default function SubmissionForm({ session, nickname, category, onBack, onSuccess }) {
+  const reducedMotion = useReducedMotion();
   const configuration = session.configuration || {};
   const minLength = clampLength(
     configuration.min_content_length,
@@ -133,6 +134,7 @@ export default function SubmissionForm({ session, nickname, category, onBack, on
   const [error, setError] = useState(null);
   const [contentError, setContentError] = useState(null);
   const [status, setStatus] = useState("idle"); // idle | submitting | success | error
+  const [composerFocused, setComposerFocused] = useState(false);
 
   const pending = status === "submitting";
   const nearLimit = content.length >= maxLength * 0.9;
@@ -210,24 +212,24 @@ export default function SubmissionForm({ session, nickname, category, onBack, on
           key="success"
           role="status"
           aria-live="polite"
-          initial={{ opacity: 0, scale: 0.96 }}
+          initial={{ opacity: 0, scale: reducedMotion ? 1 : 0.96 }}
           animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.96 }}
-          transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+          exit={{ opacity: 0, scale: reducedMotion ? 1 : 0.96 }}
+          transition={{ duration: reducedMotion ? 0 : 0.3, ease: [0.16, 1, 0.3, 1] }}
           className="flex flex-col items-center gap-4 py-6 text-center"
         >
           <motion.div
-            initial={{ scale: 0.6, opacity: 0 }}
+            initial={{ scale: reducedMotion ? 1 : 0.72, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            transition={{ type: "spring", stiffness: 320, damping: 18 }}
+            transition={reducedMotion ? { duration: 0 } : { type: "spring", stiffness: 260, damping: 22 }}
             className="flex h-20 w-20 items-center justify-center rounded-pill bg-gold/15 text-gold"
           >
-            <AnimatedCheckmark />
+            <AnimatedCheckmark reducedMotion={reducedMotion} />
           </motion.div>
           <motion.h1
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.45, ease: "easeOut" }}
+            transition={{ duration: reducedMotion ? 0 : 0.3, delay: reducedMotion ? 0 : 0.38, ease: "easeOut" }}
             className="font-display text-2xl font-bold text-ink"
           >
             Your thought is with the moderator.
@@ -235,7 +237,7 @@ export default function SubmissionForm({ session, nickname, category, onBack, on
           <motion.p
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.55, ease: "easeOut" }}
+            transition={{ duration: reducedMotion ? 0 : 0.3, delay: reducedMotion ? 0 : 0.48, ease: "easeOut" }}
             className="text-muted"
           >
             Thanks for adding your voice. Stay curious.
@@ -243,7 +245,7 @@ export default function SubmissionForm({ session, nickname, category, onBack, on
           <motion.p
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.62, ease: "easeOut" }}
+            transition={{ duration: reducedMotion ? 0 : 0.3, delay: reducedMotion ? 0 : 0.56, ease: "easeOut" }}
             className="max-w-sm text-sm text-muted"
           >
             It is not visible to the room yet - nothing shows up until a moderator
@@ -252,7 +254,7 @@ export default function SubmissionForm({ session, nickname, category, onBack, on
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.7, ease: "easeOut" }}
+            transition={{ duration: reducedMotion ? 0 : 0.3, delay: reducedMotion ? 0 : 0.64, ease: "easeOut" }}
             className="mt-2 w-full"
           >
             <Button
@@ -273,7 +275,7 @@ export default function SubmissionForm({ session, nickname, category, onBack, on
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.2, ease: "easeOut" }}
+          transition={{ duration: reducedMotion ? 0 : 0.24, ease: "easeOut" }}
           className="flex flex-col gap-4"
         >
           <div className="flex items-start gap-3">
@@ -316,7 +318,15 @@ export default function SubmissionForm({ session, nickname, category, onBack, on
             </div>
           </div>
 
-          <div>
+          <motion.div
+            animate={{
+              y: composerFocused && !reducedMotion ? -1 : 0,
+              boxShadow: composerFocused
+                ? "0 18px 36px -32px rgba(167,139,250,0.9)"
+                : "0 0 0 0 rgba(167,139,250,0)",
+            }}
+            transition={{ duration: reducedMotion ? 0 : 0.2, ease: "easeOut" }}
+          >
             <Field
               label={CATEGORY_PROMPTS[category] || "What do you want to say?"}
               required
@@ -328,6 +338,8 @@ export default function SubmissionForm({ session, nickname, category, onBack, on
                 rows={3}
                 placeholder={CATEGORY_PLACEHOLDERS[category] || "Type it out - nobody here knows who you are."}
                 disabled={pending}
+                onFocus={() => setComposerFocused(true)}
+                onBlur={() => setComposerFocused(false)}
                 error={contentError ? true : undefined}
                 className="text-base"
                 maxLength={maxLength}
@@ -357,7 +369,7 @@ export default function SubmissionForm({ session, nickname, category, onBack, on
                 <span className="text-muted"> / {maxLength}</span>
               </motion.p>
             </div>
-          </div>
+          </motion.div>
 
           <div className="min-h-[3rem]">
             <AnimatePresence initial={false}>

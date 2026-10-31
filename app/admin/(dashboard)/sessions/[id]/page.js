@@ -8,6 +8,7 @@ import SessionForm from "@/components/admin/sessions/SessionForm";
 import StatusControls from "@/components/admin/sessions/StatusControls";
 import QrPanel from "@/components/admin/sessions/QrPanel";
 import ClearContributions from "@/components/admin/sessions/ClearContributions";
+import DeleteDiscussion from "@/components/admin/sessions/DeleteDiscussion";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -81,6 +82,16 @@ export default async function SessionDetailPage({ params }) {
           sessionTitle={session.title}
           count={contributionCount}
         />
+      </section>
+
+      <section aria-labelledby="discussion-management-heading" className="flex flex-col gap-4">
+        <h2
+          id="discussion-management-heading"
+          className="text-xs font-semibold uppercase tracking-[0.18em] text-muted"
+        >
+          Discussion management
+        </h2>
+        <DeleteDiscussion session={session} contributionCount={contributionCount} />
       </section>
 
       {session.status !== "draft" ? (

@@ -16,11 +16,15 @@ const REVEAL_EASE = [0.16, 1, 0.3, 1];
 
 // Minimal step-back arrow so subsequent steps never repeat a full-width label.
 function BackArrow({ onClick, label }) {
+  const reducedMotion = useReducedMotion();
   return (
     <motion.button
       type="button"
       onClick={onClick}
       aria-label={label || "Back"}
+      whileHover={reducedMotion ? undefined : { x: -2, scale: 1.03 }}
+      whileTap={reducedMotion ? undefined : { scale: 0.96 }}
+      transition={{ duration: 0.18, ease: "easeOut" }}
       className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-control border border-white/10 text-ink/70 hover:border-gold/60 hover:text-gold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
     >
       <ArrowLeft aria-hidden="true" className="h-4 w-4" strokeWidth={2.5} />
@@ -30,12 +34,16 @@ function BackArrow({ onClick, label }) {
 
 // Minimal next-arrow used by steps that previously repeated "Continue".
 function NextArrow({ onClick, label, disabled }) {
+  const reducedMotion = useReducedMotion();
   return (
     <motion.button
       type="button"
       onClick={onClick}
       aria-label={label || "Continue"}
       disabled={disabled || undefined}
+      whileHover={disabled || reducedMotion ? undefined : { x: 2, scale: 1.03 }}
+      whileTap={disabled || reducedMotion ? undefined : { scale: 0.96 }}
+      transition={{ duration: 0.18, ease: "easeOut" }}
       className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-control border border-white/10 text-ink/70 hover:border-gold/60 hover:text-gold disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
     >
       <ArrowRight aria-hidden="true" className="h-4 w-4" strokeWidth={2.5} />
@@ -57,11 +65,13 @@ export default function JoinExperience({ session, usedNicknames = [] }) {
   }, [session.code]);
 
   const status = session.status || "live";
-  const transition = reducedMotion ? { duration: 0 } : { duration: 0.25, ease: "easeOut" };
+  const transition = reducedMotion
+    ? { duration: 0 }
+    : { duration: 0.34, ease: REVEAL_EASE };
   const stepVariants = {
-    initial: { opacity: 0, x: reducedMotion ? 0 : 24 },
-    animate: { opacity: 1, x: 0 },
-    exit: { opacity: 0, x: reducedMotion ? 0 : -24 },
+    initial: { opacity: 0, x: reducedMotion ? 0 : 14, y: reducedMotion ? 0 : 6 },
+    animate: { opacity: 1, x: 0, y: 0 },
+    exit: { opacity: 0, x: reducedMotion ? 0 : -10, y: reducedMotion ? 0 : -4 },
   };
 
   function revealProps(delay) {
@@ -145,7 +155,17 @@ export default function JoinExperience({ session, usedNicknames = [] }) {
         : "You're in - here's the topic";
 
   return (
-    <section>
+    <section className="relative isolate">
+      <motion.div
+        aria-hidden="true"
+        className="pointer-events-none absolute -inset-x-8 -top-10 -z-10 h-56 rounded-full bg-[radial-gradient(circle,rgba(167,139,250,0.10),transparent_68%)]"
+        animate={
+          reducedMotion
+            ? undefined
+            : { x: [0, 10, -6, 0], y: [0, 5, 10, 0], opacity: [0.65, 0.9, 0.7, 0.65] }
+        }
+        transition={{ duration: 14, ease: "easeInOut", repeat: Infinity }}
+      />
       {/* Persistent top chrome: step-back arrow (where it exists) + back-to-home. */}
       <motion.header
         {...revealProps(0)}
@@ -203,7 +223,11 @@ export default function JoinExperience({ session, usedNicknames = [] }) {
               ) : null}
 
               {status === "live" ? (
-                <motion.div {...revealProps(0.36)}>
+                <motion.div
+                  {...revealProps(0.36)}
+                  whileHover={reducedMotion ? undefined : { y: -2 }}
+                  whileTap={reducedMotion ? undefined : { scale: 0.985 }}
+                >
                   <Button
                     size="lg"
                     variant="primary"
@@ -312,7 +336,7 @@ export default function JoinExperience({ session, usedNicknames = [] }) {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -12 }}
-              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: reducedMotion ? 0 : 0.34, ease: REVEAL_EASE }}
             >
               <SubmissionForm
                 session={session}

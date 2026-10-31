@@ -25,10 +25,16 @@ export default function TopicCard({ topic }) {
         transition={timing}
         className="relative overflow-hidden rounded-card border border-gold/30 bg-surface/70 p-6 shadow-[0_10px_45px_-14px_rgba(167,139,250,0.55)] backdrop-blur-sm sm:p-7"
       >
-        {/* Ambient glow */}
-        <span
+        {/* Ambient glow moves independently without affecting card layout. */}
+        <motion.span
           aria-hidden="true"
-          className="pointer-events-none absolute -inset-px bg-[radial-gradient(120%_70%_at_50%_-15%,rgba(196,181,253,0.30),transparent_65%)]"
+          className="pointer-events-none absolute -inset-[18%] bg-[radial-gradient(65%_55%_at_50%_35%,rgba(196,181,253,0.28),transparent_70%)]"
+          animate={
+            reducedMotion
+              ? undefined
+              : { x: ["-3%", "4%", "-3%"], y: ["-2%", "5%", "-2%"], opacity: [0.7, 1, 0.7] }
+          }
+          transition={{ duration: 9, ease: "easeInOut", repeat: Infinity }}
         />
         <span
           aria-hidden="true"

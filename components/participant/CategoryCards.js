@@ -1,6 +1,7 @@
 "use client";
 
 import { Check, Flame, HelpCircle, Lightbulb, MessagesSquare } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { CATEGORIES } from "@/lib/constants";
 import { cn } from "@/lib/cn";
 
@@ -19,6 +20,7 @@ const ACCENTS = {
 };
 
 export default function CategoryCards({ available = [], selected = null, onSelect }) {
+  const reducedMotion = useReducedMotion();
   const categories = CATEGORIES.filter((category) => available.includes(category.key));
 
   if (categories.length === 0) {
@@ -38,11 +40,20 @@ export default function CategoryCards({ available = [], selected = null, onSelec
         const Icon = ICONS[key];
         const isSelected = key === selected;
         return (
-          <li key={key}>
-            <button
+          <motion.li
+            key={key}
+            initial={{ opacity: 0, y: reducedMotion ? 0 : 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: reducedMotion ? 0 : 0.3, delay: reducedMotion ? 0 : categories.findIndex((entry) => entry.key === key) * 0.055, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <motion.button
               type="button"
               onClick={() => onSelect(key)}
               aria-pressed={isSelected}
+              whileHover={reducedMotion ? undefined : { y: -2, scale: 1.006 }}
+              whileTap={reducedMotion ? undefined : { scale: 0.985 }}
+              animate={{ y: 0, scale: 1 }}
+              transition={{ type: "spring", stiffness: 380, damping: 28 }}
               className={cn(
                 "relative flex min-h-16 w-full items-start gap-3 overflow-hidden rounded-card border bg-surface p-4 text-left transition-all duration-200",
                 "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold",
@@ -65,15 +76,23 @@ export default function CategoryCards({ available = [], selected = null, onSelec
                   <span className="block font-semibold text-ink">{label}</span>
                   <span className="mt-0.5 block text-sm text-muted">{hint}</span>
                 </span>
-                {isSelected ? (
-                  <span className="flex shrink-0 items-center gap-1 text-xs font-semibold text-gold">
-                    <Check aria-hidden="true" className="h-4 w-4" strokeWidth={3} />
-                    Picked
-                  </span>
-                ) : null}
+                <AnimatePresence initial={false}>
+                  {isSelected ? (
+                    <motion.span
+                      initial={{ opacity: 0, x: reducedMotion ? 0 : 5, scale: reducedMotion ? 1 : 0.9 }}
+                      animate={{ opacity: 1, x: 0, scale: 1 }}
+                      exit={{ opacity: 0, x: reducedMotion ? 0 : 5, scale: reducedMotion ? 1 : 0.9 }}
+                      transition={{ duration: reducedMotion ? 0 : 0.18, ease: "easeOut" }}
+                      className="flex shrink-0 items-center gap-1 text-xs font-semibold text-gold"
+                    >
+                      <Check aria-hidden="true" className="h-4 w-4" strokeWidth={3} />
+                      Picked
+                    </motion.span>
+                  ) : null}
+                </AnimatePresence>
               </span>
-            </button>
-          </li>
+            </motion.button>
+          </motion.li>
         );
       })}
     </ul>

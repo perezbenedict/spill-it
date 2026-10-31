@@ -989,12 +989,78 @@ async function handleReopenSession(request, env, admin, id) {
   return json({ session: serializeSession(refreshed) });
 }
 
-async function handleDeleteAdminSession(env, id) {
-  const result = await env.DB.prepare('DELETE FROM discussion_sessions WHERE id = ?')
+async function handleDeleteAdminSession(request, env, admin, id) {
+  if (admin.user.role !== 'admin') {
+    return json({ error: 'Administrator access is required.' }, 403);
+  }
+
+  let body = {};
+  try {
+    body = await request.json();
+  } catch {
+    body = {};
+  }
+
+  const current = await env.DB.prepare(
+    'SELECT id, title, public_code, status FROM discussion_sessions WHERE id = ?'
+  )
     .bind(id)
-    .run();
-  if (!result.meta.changes) return json({ error: 'That discussion no longer exists.' }, 404);
-  return json({ ok: true });
+    .first();
+  if (!current) return json({ error: 'That discussion no longer exists.' }, 404);
+  if (current.status === 'live') {
+    return json(
+      {
+        error: 'Close this live discussion before deleting it.',
+        code: 'live_session',
+      },
+      409
+    );
+  }
+
+  const password = typeof body?.password === 'string' ? body.password : '';
+  const verification = await verifyDestructiveAdminPassword(request, env, admin, password);
+  if (verification.response) return verification.response;
+
+  const confirmText = typeof body?.confirm_text === 'string' ? body.confirm_text.trim() : '';
+  if (confirmText !== 'DELETE') return json({ error: 'Type DELETE to confirm.' }, 400);
+
+  // D1 executes a batch atomically. The single conditional parent delete is
+  // the concurrency guard: if the discussion became live after the read, no
+  // row is removed. Schema FKs cascade the same transaction through its
+  // submissions and presentation state without touching any other session.
+  let results;
+  try {
+    results = await env.DB.batch([
+      env.DB.prepare(
+        "DELETE FROM discussion_sessions WHERE id = ? AND status <> 'live'"
+      ).bind(id),
+    ]);
+  } catch {
+    return json({ error: 'Could not delete this discussion. Please try again.' }, 500);
+  }
+
+  if (!results[0]?.meta?.changes) {
+    const refreshed = await env.DB.prepare(
+      'SELECT status FROM discussion_sessions WHERE id = ?'
+    )
+      .bind(id)
+      .first();
+    if (refreshed?.status === 'live') {
+      return json(
+        {
+          error: 'Close this live discussion before deleting it.',
+          code: 'live_session',
+        },
+        409
+      );
+    }
+    return json({ error: 'That discussion no longer exists.' }, 404);
+  }
+
+  return json({
+    ok: true,
+    deleted: { id: current.id, title: current.title, public_code: current.public_code },
+  });
 }
 
 /* ---------- admin: submissions ---------- */
@@ -1377,7 +1443,9 @@ const worker = {
         if (!isUuid(id)) return json({ error: MSG_SESSION_GENERIC }, 400);
         if (method === 'GET') return await handleGetAdminSession(env, id);
         if (method === 'PATCH') return await handleUpdateAdminSession(request, env, admin, id);
-        if (method === 'DELETE') return await handleDeleteAdminSession(env, id);
+        if (method === 'DELETE') {
+          return await handleDeleteAdminSession(request, env, admin, id);
+        }
       }
 
       const statusMatch = path.match(/^\/admin\/sessions\/([^/]+)\/status$/);
