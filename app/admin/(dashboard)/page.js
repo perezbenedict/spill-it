@@ -2,6 +2,7 @@ import Link from "next/link";
 import {
   ExternalLink,
   MessageSquare,
+  Monitor,
   MonitorPlay,
   Plus,
   QrCode,
@@ -168,23 +169,52 @@ export default async function AdminDashboardPage() {
             aria-label="Quick actions"
             className="flex flex-wrap gap-3 border-t border-white/10 pt-4"
           >
-            <Link href={`/admin/sessions/${session.id}`} className={quickLinkClass}>
+            <Link
+              href={`/admin/sessions/${session.id}`}
+              className={quickLinkClass}
+              title="Manage discussion"
+              aria-label="Manage discussion"
+            >
               <Settings className="h-4 w-4" aria-hidden="true" />
               Manage discussion
             </Link>
             {session.status !== "draft" ? (
               <>
-                <Link href={`/admin/sessions/${session.id}/live`} className={quickLinkClass}>
+                <Link
+                  href={`/admin/sessions/${session.id}/live`}
+                  className={quickLinkClass}
+                  title="Live moderation"
+                  aria-label="Live moderation"
+                >
                   <MonitorPlay className="h-4 w-4" aria-hidden="true" />
                   Live moderation
                 </Link>
-                <Link href={`/room/${session.public_code}`} className={quickLinkClass}>
+                <Link
+                  href={`/room/${session.public_code}`}
+                  className={quickLinkClass}
+                  title="Presentation room"
+                  aria-label="Presentation room"
+                >
                   <QrCode className="h-4 w-4" aria-hidden="true" />
                   Presentation room
                 </Link>
+                <Link
+                  href={`/room/${session.public_code}`}
+                  className={quickLinkClass}
+                  title="Room view"
+                  aria-label="Room view"
+                >
+                  <Monitor className="h-4 w-4" aria-hidden="true" />
+                  Room view
+                </Link>
               </>
             ) : null}
-            <Link href={`/join/${session.public_code}`} className={quickLinkClass}>
+            <Link
+              href={`/join/${session.public_code}`}
+              className={quickLinkClass}
+              title="Participant view"
+              aria-label="Participant view"
+            >
               <ExternalLink className="h-4 w-4" aria-hidden="true" />
               Participant view
             </Link>

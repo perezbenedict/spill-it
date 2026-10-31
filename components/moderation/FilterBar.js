@@ -8,11 +8,13 @@ import Input from '@/components/ui/Input';
 import { CATEGORIES } from '@/lib/constants';
 import { cn } from '@/lib/cn';
 
+// The underlying value stays 'hidden' (the rejected/hidden moderation state);
+// only the label is made explicit for the admin.
 const STATUS_OPTIONS = [
   ['all', 'All'],
   ['pending', 'Awaiting review'],
   ['approved', 'Approved'],
-  ['hidden', 'Hidden'],
+  ['hidden', 'Rejected'],
 ];
 
 const SORT_OPTIONS = [

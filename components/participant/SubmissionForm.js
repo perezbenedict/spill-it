@@ -12,6 +12,7 @@ const IconMap = {
 
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { Check } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Field from "@/components/ui/Field";
 import Textarea from "@/components/ui/Textarea";
@@ -23,7 +24,7 @@ const CATEGORY_HEADINGS = {
   question: "What are you wondering?",
   opinion: "State your take.",
   challenge: "Bring something worth arguing about.",
-  twocents: "Join the conversation.",
+  twocents: "Add your two cents.",
 };
 
 const CATEGORY_PROMPTS = {
@@ -276,10 +277,13 @@ export default function SubmissionForm({ session, nickname, category, onBack, on
           className="flex flex-col gap-4"
         >
           <div className="flex items-start gap-3">
-            <span
+            <motion.span
               aria-hidden="true"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
               className={cn(
-                "flex h-10 w-10 shrink-0 items-center justify-center rounded-control",
+                "relative flex h-10 w-10 shrink-0 items-center justify-center rounded-control",
                 CATEGORY_ACCENTS[category] || "bg-gold/20 text-gold"
               )}
             >
@@ -292,7 +296,16 @@ export default function SubmissionForm({ session, nickname, category, onBack, on
               ) : (
                 <IconMap.question className="h-5 w-5" />
               )}
-            </span>
+              <motion.span
+                key={`picked-${category}`}
+                initial={{ opacity: 0, scale: 0.55 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.18, delay: 0.05, ease: "easeOut" }}
+                className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-gold text-midnight shadow-[0_0_8px_rgba(167,139,250,0.4)]"
+              >
+                <Check aria-hidden="true" className="h-2.5 w-2.5" strokeWidth={3.5} />
+              </motion.span>
+            </motion.span>
             <div>
               <p className="text-xs font-semibold uppercase tracking-widest text-gold">
                 {CATEGORIES.find((entry) => entry.key === category)?.label || "Contribution"}

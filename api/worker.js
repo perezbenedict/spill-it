@@ -47,6 +47,7 @@ const MSG_RATE_LIMITED = 'Slow down a moment - try again shortly.';
 const MSG_BAD_BODY = 'Check your submission and try again.';
 const MSG_SESSION_GENERIC = 'Could not save this discussion. Please try again.';
 const MSG_INVALID = 'Invalid contribution.';
+const MSG_NICKNAME_TAKEN = 'That nickname is already taken. Try another one.';
 const MSG_LOGIN_INVALID = 'Incorrect password.';
 const MSG_LOGIN_THROTTLED = 'Too many attempts. Try again shortly.';
 
@@ -320,7 +321,7 @@ async function handleLogout(request, env, admin) {
 async function handleGetSessionByCode(env, code) {
   const row = await env.DB.prepare(
     'SELECT id, public_code, title, description, welcome_message, status, ' +
-      'available_categories, configuration, opens_at, closes_at, created_at, updated_at ' +
+      'available_categories, configuration, opens_at, closes_at, topic, created_at, updated_at ' +
       'FROM discussion_sessions WHERE public_code = ? AND status <> ?'
   )
     .bind(code, 'draft')
@@ -336,7 +337,7 @@ async function handleGetSessionByCode(env, code) {
 async function handleGetLiveSession(env) {
   const row = await env.DB.prepare(
     'SELECT id, public_code, title, description, welcome_message, status, ' +
-      'available_categories, configuration, opens_at, closes_at, created_at, updated_at ' +
+      'available_categories, configuration, opens_at, closes_at, topic, created_at, updated_at ' +
       'FROM discussion_sessions WHERE status = ? ORDER BY updated_at DESC LIMIT 1'
   )
     .bind('live')
@@ -348,7 +349,7 @@ async function handleGetLiveSession(env) {
 async function handleGetRoomByCode(env, code) {
   const session = await env.DB.prepare(
     'SELECT id, public_code, title, description, welcome_message, status, ' +
-      'available_categories, configuration, opens_at, closes_at, created_at, updated_at ' +
+      'available_categories, configuration, opens_at, closes_at, topic, created_at, updated_at ' +
       'FROM discussion_sessions WHERE public_code = ? AND status <> ?'
   )
     .bind(code, 'draft')
@@ -427,6 +428,25 @@ async function handleCreateSubmission(request, env) {
   if (!nickname || nickname.length > MAX_NICKNAME_LENGTH) {
     return json({ error: 'Pick a nickname before sending.' }, 400);
   }
+
+  // Session-scoped nickname uniqueness (authoritative). Compare the trimmed,
+  // lowercased nickname against existing submissions in THIS session only —
+  // not globally. lower(trim(...)) mirrors the client pre-check in
+  // lib/nickname.js; SQLite lower() is ASCII-only, which is the intended
+  // case-folding. The original display capitalization is stored as-is.
+  //
+  // The current participant is excluded so they can keep their own nickname
+  // across the multiple submissions this flow allows (rate limit + "Submit
+  // another"); uniqueness is enforced across distinct participants.
+  const takenRow = await env.DB.prepare(
+    'SELECT COUNT(*) AS n FROM submissions ' +
+      'WHERE session_id = ? AND LOWER(TRIM(nickname)) = ? AND participant_id <> ?'
+  )
+    .bind(session.id, nickname.toLowerCase(), participantId)
+    .first();
+  if ((takenRow?.n ?? 0) > 0) {
+    return json({ error: MSG_NICKNAME_TAKEN, code: 'nickname_taken' }, 409);
+  }
   if (content.length > maxLength) {
     return json({ error: `Keep it under ${maxLength} characters.` }, 400);
   }
@@ -496,6 +516,51 @@ async function handleCreateSubmission(request, env) {
   }
 
   return json({ ok: true });
+}
+
+// Authoritative nickname-availability check for a session. Returns whether the
+// trimmed, lowercased nickname is already in use by a DIFFERENT participant in
+// this session (the caller's own submissions are excluded, matching the
+// uniqueness rule in handleCreateSubmission). The frontend pre-check in
+// lib/nickname.js is a convenience; this endpoint is the source of truth.
+async function handleCheckNickname(request, env) {
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return json({ error: MSG_BAD_BODY }, 400);
+  }
+
+  const sessionCode =
+    typeof body?.sessionCode === 'string' ? body.sessionCode.trim().toUpperCase() : '';
+  if (!CODE_PATTERN.test(sessionCode)) {
+    return json({ error: 'This discussion could not be found.' }, 404);
+  }
+  const nickname = typeof body?.nickname === 'string' ? body.nickname.trim() : '';
+  if (!nickname) return json({ error: 'Pick a nickname before sending.' }, 400);
+  const participantId = typeof body?.participant_id === 'string' ? body.participant_id : '';
+  const participantFilter = participantId && isUuid(participantId) ? participantId : null;
+
+  const session = await env.DB.prepare(
+    'SELECT id FROM discussion_sessions WHERE public_code = ? AND status <> ?'
+  )
+    .bind(sessionCode, 'draft')
+    .first();
+  if (!session) return json({ error: 'This discussion could not be found.' }, 404);
+
+  const takenRow = await env.DB.prepare(
+    'SELECT COUNT(*) AS n FROM submissions ' +
+      'WHERE session_id = ? AND LOWER(TRIM(nickname)) = ?' +
+      (participantFilter ? ' AND participant_id <> ?' : '')
+  )
+    .bind(
+      session.id,
+      nickname.toLowerCase(),
+      ...(participantFilter ? [participantFilter] : [])
+    )
+    .first();
+
+  return json({ available: (takenRow?.n ?? 0) === 0 });
 }
 
 /* ---------- admin: sessions ---------- */
@@ -1092,6 +1157,10 @@ const worker = {
 
       if (path === '/submissions' && method === 'POST') {
         return await handleCreateSubmission(request, env);
+      }
+
+      if (path === '/nickname' && method === 'POST') {
+        return await handleCheckNickname(request, env);
       }
 
       // ----- admin -----

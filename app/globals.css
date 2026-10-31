@@ -94,8 +94,9 @@
 }
 
 .hero-eyebrow {
-  font-size: clamp(0.65rem, 0.85vw, 0.8rem);
-  letter-spacing: 0.22em;
+  font-size: clamp(0.62rem, 0.8vw, 0.75rem);
+  letter-spacing: 0.18em;
+  line-height: 1.2;
   text-transform: uppercase;
 }
 
@@ -104,6 +105,119 @@
   font-weight: 400;
   font-style: italic;
   letter-spacing: -0.035em;
+}
+
+/*
+ * Headline composition — "Your thoughts." / "Your voice." read as one unit.
+ * Grid stacks the two lines; the italic voice line is nudged right so its
+ * overhanging serif overhangs into the gap without colliding with the dot.
+ */
+.hero-headline {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: auto auto;
+  row-gap: clamp(0.2rem, 0.7vw, 0.4rem);
+  text-align: center;
+  line-height: 0.96;
+}
+
+.hero-headline .thought-line {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: clamp(3.4rem, 7.5vw, 8rem);
+  line-height: 0.96;
+  letter-spacing: -0.055em;
+  color: var(--color-ink);
+}
+
+.hero-headline .voice-line {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-style: italic;
+  font-size: clamp(3.1rem, 7vw, 7.4rem);
+  line-height: 0.94;
+  letter-spacing: -0.035em;
+  color: var(--color-gold-light);
+  /* Rightward nudge scales down on narrow screens to avoid dot collision */
+  padding-left: clamp(0.2rem, 1.6vw, 0.9rem);
+}
+
+/* Wordmark — animated "Spill It!" gold gradient */
+.spill-wordmark {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-style: italic;
+  font-size: clamp(1.75rem, 4.5vw, 2.4rem);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  display: inline-block;
+  /* Wide gradient with a luminous band that sweeps once */
+  background: linear-gradient(
+    110deg,
+    var(--color-gold-deep) 0%,
+    var(--color-gold) 30%,
+    var(--color-gold-light) 46%,
+    #ffffff 50%,
+    var(--color-gold-light) 54%,
+    var(--color-gold) 70%,
+    var(--color-gold-deep) 100%
+  );
+  background-size: 220% 100%;
+  background-position: 100% 0;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  /* One-time light sweep, then settles (animation-fill-mode: forwards keeps final) */
+  animation: spill-wordmark-sweep 1.6s cubic-bezier(0.22, 1, 0.36, 1) 0.85s 1
+    forwards;
+}
+
+/* "It!" uses Manrope for the rest of the wordmark */
+.spill-wordmark .font-sans,
+.spill-wordmark .font-sans.font-semibold {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-style: normal;
+  letter-spacing: 0.01em;
+}
+
+/* Gentle hover — desktop (pointer: hover) only, one-shot per hover */
+@media (hover: hover) {
+  .spill-wordmark:hover {
+    animation: spill-wordmark-hover 0.9s cubic-bezier(0.22, 1, 0.36, 1) 1
+      forwards;
+  }
+}
+
+@keyframes spill-wordmark-sweep {
+  0% {
+    background-position: 100% 0;
+    filter: brightness(0.7) saturate(1.1);
+  }
+  45% {
+    background-position: 0% 0;
+    filter: brightness(1.25) saturate(1.4);
+  }
+  100% {
+    background-position: 40% 0;
+    filter: brightness(1) saturate(1);
+  }
+}
+
+@keyframes spill-wordmark-hover {
+  0% {
+    filter: brightness(1) saturate(1);
+    transform: translateY(0);
+  }
+  50% {
+    filter: brightness(1.2) saturate(1.3);
+    transform: translateY(-1px);
+  }
+  100% {
+    filter: brightness(1) saturate(1);
+    transform: translateY(0);
+  }
 }
 
 /* Prevent the grey/black tap highlight on mobile devices */

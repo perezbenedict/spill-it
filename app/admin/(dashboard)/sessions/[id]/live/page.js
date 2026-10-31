@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { getAdminToken } from "@/lib/auth";
-import { getAdminSession, listAdminSubmissions } from "@/lib/spill-api";
+import { getAdminSession, getPresentation, listAdminSubmissions } from "@/lib/spill-api";
 import { CATEGORIES, MODERATION_STATUSES } from "@/lib/constants";
 import ErrorState from "@/components/ui/ErrorState";
 import Spinner from "@/components/ui/Spinner";
@@ -167,6 +167,11 @@ async function FeedSection({
     );
   }
 
+  // Seed the "On screen" indicator from the live presentation pointer so the
+  // admin sees which submission is currently displayed on load.
+  const pointerResult = await getPresentation(adminToken, session.id);
+  const currentId = pointerResult.ok ? pointerResult.body?.currentId ?? null : null;
+
   return (
     <SubmissionFeed
       sessionId={session.id}
@@ -180,6 +185,7 @@ async function FeedSection({
       sort={sort}
       filters={{ status, category, q }}
       hasFilters={hasFilters}
+      currentId={currentId}
     />
   );
 }

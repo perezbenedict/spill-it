@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import ErrorState from "@/components/ui/ErrorState";
 import JoinExperience from "@/components/participant/JoinExperience";
 import { isValidPublicCode } from "@/lib/session-code";
-import { getPublicSession } from "@/lib/spill-api";
+import { getPublicSession, getRoom } from "@/lib/spill-api";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +14,17 @@ async function fetchSession(code) {
     return { queryError: true };
   }
   return { session: result.body.session ?? null };
+}
+
+// Pre-fetches the nicknames already in use in this session so the nickname
+// picker can do a client-side collision check before advancing. This is a UX
+// convenience only — the worker (api/worker.js) is authoritative on
+// uniqueness and rejects a taken nickname at submit time.
+async function fetchUsedNicknames(code) {
+  const result = await getRoom(code);
+  if (result.status === 0 || !result.ok) return [];
+  const submissions = result.body?.submissions ?? [];
+  return submissions.map((row) => row.nickname).filter(Boolean);
 }
 
 function normalizeCode(params) {
@@ -57,6 +68,12 @@ export default async function JoinPage({ params }) {
   }
   if (!session || session.status === "draft") notFound();
 
+  // Nicknames already in use in this session (from approved submissions) — used
+  // by the picker for an inline collision pre-check; the worker still enforces
+  // uniqueness at submit time. Failures here degrade gracefully to an empty
+  // list so the join flow never hard-blocks on a side lookup.
+  const usedNicknames = await fetchUsedNicknames(code);
+
   // Live, paused and closed sessions all render JoinExperience, which shows the
   // topic plus an honest notice for the non-live states.
   return (
@@ -66,11 +83,13 @@ export default async function JoinPage({ params }) {
           code: session.public_code,
           status: session.status,
           title: session.title,
+          topic: session.topic,
           description: session.description,
           welcome_message: session.welcome_message,
           available_categories: session.available_categories,
           configuration: session.configuration,
         }}
+        usedNicknames={usedNicknames}
       />
     </main>
   );
