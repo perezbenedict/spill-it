@@ -204,6 +204,13 @@ function isUuid(value) {
   );
 }
 
+function uniqueUuidArray(value, maxLength) {
+  if (!Array.isArray(value) || value.length < 1 || value.length > maxLength) return null;
+  if (!value.every(isUuid)) return null;
+  const unique = [...new Set(value)];
+  return unique.length === value.length ? unique : null;
+}
+
 function randomHex(bytesLength) {
   const bytes = crypto.getRandomValues(new Uint8Array(bytesLength));
   return [...bytes].map((b) => b.toString(16).padStart(2, '0')).join('');
@@ -1172,6 +1179,81 @@ async function handleDeleteAdminSession(request, env, admin, id) {
   });
 }
 
+async function handleBulkDeleteAdminSessions(request, env, admin) {
+  let body = {};
+  try {
+    body = await request.json();
+  } catch {
+    return json({ error: MSG_BAD_BODY }, 400);
+  }
+
+  const sessionIds = uniqueUuidArray(body?.session_ids, 50);
+  if (!sessionIds) {
+    return json({ error: 'Select between 1 and 50 valid discussions.' }, 400);
+  }
+  if (typeof body?.confirm_text !== 'string' || body.confirm_text.trim() !== 'DELETE') {
+    return json({ error: 'Type DELETE to confirm.' }, 400);
+  }
+
+  const password = typeof body?.password === 'string' ? body.password : '';
+  const verification = await verifyDestructiveAdminPassword(request, env, admin, password);
+  if (verification.response) return verification.response;
+
+  const placeholders = sessionIds.map(() => '?').join(', ');
+  let result;
+  try {
+    // Materialize the complete selection before deleting. The count and live
+    // guards are evaluated from that immutable snapshot, so a missing row or
+    // concurrent transition to live makes the one DELETE affect zero rows.
+    result = await env.DB.prepare(
+      `WITH selection AS MATERIALIZED (` +
+        `SELECT id, status FROM discussion_sessions WHERE id IN (${placeholders})` +
+      `) DELETE FROM discussion_sessions ` +
+      `WHERE id IN (SELECT id FROM selection) ` +
+      `AND (SELECT COUNT(*) FROM selection) = ? ` +
+      `AND NOT EXISTS (SELECT 1 FROM selection WHERE status = 'live') ` +
+      `RETURNING id`
+    )
+      .bind(...sessionIds, sessionIds.length)
+      .all();
+  } catch {
+    return json({ error: 'Could not delete those discussions. Please try again.' }, 500);
+  }
+
+  const deletedIds = Array.isArray(result?.results)
+    ? result.results.map((row) => row.id)
+    : [];
+  const deleted = deletedIds.length;
+  if (deleted !== sessionIds.length) {
+    const state = await env.DB.prepare(
+      `SELECT COUNT(*) AS total, ` +
+        `SUM(CASE WHEN status = 'live' THEN 1 ELSE 0 END) AS live ` +
+        `FROM discussion_sessions WHERE id IN (${placeholders})`
+    )
+      .bind(...sessionIds)
+      .first()
+      .catch(() => null);
+    if ((state?.live ?? 0) > 0) {
+      return json(
+        {
+          error: 'Close every live discussion before deleting the selection.',
+          code: 'live_sessions',
+        },
+        409
+      );
+    }
+    return json(
+      {
+        error: 'The discussion selection changed. Refresh and try again.',
+        code: 'selection_changed',
+      },
+      409
+    );
+  }
+
+  return json({ ok: true, deleted, deleted_ids: deletedIds, requested: sessionIds.length });
+}
+
 /* ---------- admin: submissions ---------- */
 
 async function listAdminSubmissions(env, url) {
@@ -1371,6 +1453,64 @@ async function handleDeleteAdminSubmission(request, env, admin, id) {
   return json({ ok: true, row: serializeSubmission(row) });
 }
 
+async function handleBulkDeleteAdminSubmissions(request, env, admin) {
+  let body = {};
+  try {
+    body = await request.json();
+  } catch {
+    return json({ error: MSG_BAD_BODY }, 400);
+  }
+
+  const sessionId = typeof body?.session_id === 'string' ? body.session_id : '';
+  const submissionIds = uniqueUuidArray(body?.submission_ids, 200);
+  if (!isUuid(sessionId) || !submissionIds) {
+    return json({ error: 'Select between 1 and 200 valid contributions.' }, 400);
+  }
+  if (typeof body?.confirm_text !== 'string' || body.confirm_text.trim() !== 'DELETE') {
+    return json({ error: 'Type DELETE to confirm.' }, 400);
+  }
+
+  const password = typeof body?.password === 'string' ? body.password : '';
+  const verification = await verifyDestructiveAdminPassword(request, env, admin, password);
+  if (verification.response) return verification.response;
+
+  const placeholders = submissionIds.map(() => '?').join(', ');
+  let result;
+  try {
+    // The materialized selection is scoped to exactly one session. Its count
+    // guard turns a stale/mixed selection into a zero-row delete, while the FK
+    // clears a matching presentation pointer in the same database statement.
+    result = await env.DB.prepare(
+      `WITH selection AS MATERIALIZED (` +
+        `SELECT id FROM submissions WHERE session_id = ? AND id IN (${placeholders})` +
+      `) DELETE FROM submissions ` +
+      `WHERE session_id = ? AND id IN (SELECT id FROM selection) ` +
+      `AND (SELECT COUNT(*) FROM selection) = ? ` +
+      `RETURNING id`
+    )
+      .bind(sessionId, ...submissionIds, sessionId, submissionIds.length)
+      .all();
+  } catch {
+    return json({ error: 'Could not delete those contributions. Please try again.' }, 500);
+  }
+
+  const deletedIds = Array.isArray(result?.results)
+    ? result.results.map((row) => row.id)
+    : [];
+  const deleted = deletedIds.length;
+  if (deleted !== submissionIds.length) {
+    return json(
+      {
+        error: 'The contribution selection changed. Refresh and try again.',
+        code: 'selection_changed',
+      },
+      409
+    );
+  }
+
+  return json({ ok: true, deleted, deleted_ids: deletedIds, requested: submissionIds.length });
+}
+
 async function handleClearSessionContributions(request, env, admin, sessionId) {
   let body = {};
   try {
@@ -1544,6 +1684,14 @@ const worker = {
 
       if (path === '/admin/submissions' && method === 'GET') {
         return await listAdminSubmissions(env, url);
+      }
+
+      // Collection actions must precede the /:id matchers below.
+      if (path === '/admin/sessions/bulk-delete' && method === 'POST') {
+        return await handleBulkDeleteAdminSessions(request, env, admin);
+      }
+      if (path === '/admin/submissions/bulk-delete' && method === 'POST') {
+        return await handleBulkDeleteAdminSubmissions(request, env, admin);
       }
 
       const sessionMatch = path.match(/^\/admin\/sessions\/([^/]+)$/);

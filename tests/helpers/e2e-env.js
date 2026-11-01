@@ -9,8 +9,11 @@ export const E2E = Object.freeze({
   closedCode: process.env.SPILL_E2E_CLOSED_SESSION_CODE || '',
   roomCode: process.env.SPILL_E2E_ROOM_CODE || '',
   presentedText: process.env.SPILL_E2E_PRESENTED_TEXT || '',
+  projectionIds: (process.env.SPILL_E2E_PROJECTION_IDS || '').split(',').filter(Boolean),
   adminPassword: process.env.SPILL_E2E_ADMIN_PASSWORD || '',
   adminSessionId: process.env.SPILL_E2E_ADMIN_SESSION_ID || '',
+  bulkSubmissionIds: (process.env.SPILL_E2E_BULK_SUBMISSION_IDS || '').split(',').filter(Boolean),
+  bulkSessionIds: (process.env.SPILL_E2E_BULK_SESSION_IDS || '').split(',').filter(Boolean),
   runLifecycle: process.env.SPILL_E2E_RUN_LIFECYCLE === '1',
 });
 

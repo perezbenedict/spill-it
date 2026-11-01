@@ -124,7 +124,7 @@ test('long nickname and contribution text remain usable on a narrow mobile scree
 
   await page.goto(`/join/${E2E.liveCode}`);
   const nicknameInput = await enterNicknameStep(page);
-  const nickname = `LongName${'x'.repeat(52)}`;
+  const nickname = `${uniqueNickname('LongName')}${'x'.repeat(60)}`.slice(0, 60);
   await nicknameInput.fill(nickname);
   await expect(nicknameInput).toHaveValue(nickname);
   await page.getByRole('button', { name: 'Continue', exact: true }).click();

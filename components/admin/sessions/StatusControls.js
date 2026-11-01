@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useActionState } from "react";
-import { useFormStatus } from "react-dom";
 import { Pause, Play, RotateCcw, XCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { setSessionStatus, reopenSession } from "@/lib/actions/sessions";
@@ -24,12 +23,11 @@ const ACTIONS = {
   closed: [{ next: "reopen", label: "Reopen", icon: RotateCcw, variant: "primary" }],
 };
 
-function StatusActionForm({ next, label, icon: Icon, variant, disabled, onSubmitted }) {
-  const { pending } = useFormStatus();
+function StatusActionForm({ next, label, icon: Icon, variant, pending, onSubmitted }) {
   return (
     <form action={onSubmitted} className="inline-flex">
       <input type="hidden" name="next" value={next} />
-      <Button type="submit" variant={variant} loading={pending} disabled={disabled}>
+      <Button type="submit" variant={variant} loading={pending} disabled={pending}>
         <Icon className="h-4 w-4" aria-hidden="true" />
         {label}
       </Button>
@@ -59,14 +57,13 @@ export default function StatusControls({ sessionId, status }) {
         router.refresh();
       }
     }
-  }, [state]);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state, router]);
 
   const actions = ACTIONS[status] ?? [];
   const isClosed = status === "closed";
 
   return (
-    <Card className="flex flex-col gap-4">
+    <Card className="flex flex-col gap-5 border-white/10 bg-[linear-gradient(145deg,rgba(42,24,70,0.96),rgba(27,16,48,0.96))] shadow-[0_20px_60px_-38px_rgba(167,139,250,0.75)]">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">Status</h2>
         <div className="flex items-center gap-2">
@@ -78,18 +75,18 @@ export default function StatusControls({ sessionId, status }) {
       </div>
 
       {isClosed ? (
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <StatusActionForm
             next="reopen"
             label="Reopen discussion"
             icon={RotateCcw}
             variant="primary"
-            disabled={pending}
+            pending={pending}
             onSubmitted={formAction}
           />
         </div>
       ) : (
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           {actions.map((action) =>
             action.next === "closed" ? (
               <Button
@@ -105,7 +102,7 @@ export default function StatusControls({ sessionId, status }) {
               <StatusActionForm
                 key={action.next}
                 {...action}
-                disabled={pending}
+                pending={pending}
                 onSubmitted={formAction}
               />
             )
@@ -114,28 +111,35 @@ export default function StatusControls({ sessionId, status }) {
       )}
 
       {state?.error ? (
-        <p role="alert" className="text-sm font-medium text-crimson">
+        <p role="alert" className="rounded-control border border-crimson/25 bg-crimson/10 px-3 py-2 text-sm font-medium text-crimson-bright">
           {state.error}
         </p>
       ) : null}
       {state?.ok ? (
-        <p role="status" className="text-sm font-medium text-gold">
+        <p role="status" className="rounded-control border border-gold/25 bg-gold/10 px-3 py-2 text-sm font-medium text-gold">
           Status updated to {state.status}.
         </p>
       ) : null}
 
       <Dialog
         open={confirmClose}
-        onClose={() => setConfirmClose(false)}
+        onClose={() => {
+          if (!pending) setConfirmClose(false);
+        }}
         title="Close this discussion?"
         description="Participants will no longer be able to submit. Everything already contributed is kept - closing never deletes submissions."
       >
-        <form action={formAction} className="flex flex-wrap gap-3">
+        <form action={formAction} className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <input type="hidden" name="next" value="closed" />
           <Button type="submit" variant="danger" loading={pending}>
             Close discussion
           </Button>
-          <Button type="button" variant="secondary" onClick={() => setConfirmClose(false)}>
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={pending}
+            onClick={() => setConfirmClose(false)}
+          >
             Keep it open
           </Button>
         </form>

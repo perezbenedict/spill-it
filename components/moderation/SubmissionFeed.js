@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { Check, EyeOff, Monitor, Pin, Radio } from "lucide-react";
+import { Check, EyeOff, Monitor, Pin, Radio, Trash2 } from "lucide-react";
 import { CATEGORIES } from "@/lib/constants";
 import { cn } from "@/lib/cn";
 import Badge from "@/components/ui/Badge";
@@ -14,6 +14,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import ErrorState from "@/components/ui/ErrorState";
 import {
   approve,
+  bulkDeleteSubmissions,
   hide,
   removeSubmission,
   toggleDiscussed,
@@ -144,9 +145,24 @@ export default function SubmissionFeed({
   const [deletePassword, setDeletePassword] = useState("");
   const [deleteError, setDeleteError] = useState(null);
   const [expandedIds, setExpandedIds] = useState(() => new Set());
+  const [selectedIds, setSelectedIds] = useState(() => new Set());
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const [bulkPassword, setBulkPassword] = useState("");
+  const [bulkConfirmText, setBulkConfirmText] = useState("");
+  const [bulkError, setBulkError] = useState(null);
+  const [bulkPending, setBulkPending] = useState(false);
 
   function toggleExpanded(id) {
     setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelected(id) {
+    setSelectedIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
@@ -163,6 +179,8 @@ export default function SubmissionFeed({
 
   const busyRef = useRef(new Set());
   const [, setBusyTick] = useState(0);
+  const presentationBusyRef = useRef(false);
+  const [presentationBusy, setPresentationBusy] = useState(false);
   function beginBusy(key) {
     busyRef.current.add(key);
     setBusyTick((tick) => tick + 1);
@@ -179,6 +197,10 @@ export default function SubmissionFeed({
     }
     return false;
   };
+  function setPresentationActionBusy(value) {
+    presentationBusyRef.current = value;
+    setPresentationBusy(value);
+  }
 
   // Polling replaces Supabase realtime: fetch the current filter/page window
   // every few seconds, pause while the tab is hidden, and only report a live
@@ -215,11 +237,17 @@ export default function SubmissionFeed({
       inFlight = true;
       controller = new AbortController();
       try {
-        const response = await fetch(pollUrl, {
-          cache: "no-store",
-          signal: controller.signal,
-        });
-        const data = await response.json().catch(() => null);
+        const [response, roomResponse] = await Promise.all([
+          fetch(pollUrl, { cache: "no-store", signal: controller.signal }),
+          fetch(`/api/room/${encodeURIComponent(sessionCode)}`, {
+            cache: "no-store",
+            signal: controller.signal,
+          }),
+        ]);
+        const [data, roomData] = await Promise.all([
+          response.json().catch(() => null),
+          roomResponse.json().catch(() => null),
+        ]);
         if (disposed) return;
         if (!response.ok || !Array.isArray(data?.items)) throw new Error("poll failed");
         setConnection("live");
@@ -227,8 +255,20 @@ export default function SubmissionFeed({
         // The fetched window is authoritative for the current filters/page:
         // new and changed rows merge in, rows that left the window drop out.
         const next = new Map();
-        for (const row of data.items) next.set(row.id, row);
+        for (const row of data.items) {
+          const prefix = `${row.id}|`;
+          const isBeingUpdated = [...busyRef.current].some((key) => key.startsWith(prefix));
+          if (isBeingUpdated) {
+            const optimistic = rowsRef.current.get(row.id);
+            if (optimistic) next.set(row.id, optimistic);
+          } else {
+            next.set(row.id, row);
+          }
+        }
         updateRows(() => next);
+        if (roomResponse.ok && !presentationBusyRef.current && busyRef.current.size === 0) {
+          setCurrentId(roomData?.currentId ?? null);
+        }
       } catch {
         if (!disposed) setConnection("reconnecting");
       } finally {
@@ -265,7 +305,7 @@ export default function SubmissionFeed({
       if (timeoutId !== null) clearTimeout(timeoutId);
       controller?.abort();
     };
-  }, [sessionId, filters, sort, page, pageSize, updateRows]);
+  }, [sessionId, sessionCode, filters, sort, page, pageSize, updateRows, setCurrentId]);
 
   async function perform({ id, actionKey, patch, remove = false, clearCurrent = false, action }) {
     if (cardBusy(id)) return { error: "That contribution is already being updated." };
@@ -329,7 +369,7 @@ export default function SubmissionFeed({
       return next;
     });
     setCurrentId(beforeCurrent);
-    setError(result?.error || FALLBACK_ERROR);
+    if (actionKey !== "delete") setError(result?.error || FALLBACK_ERROR);
     return result;
   }
 
@@ -382,8 +422,9 @@ export default function SubmissionFeed({
   };
 
   async function sendToScreen(id) {
-    if (cardBusy(id)) return;
+    if (cardBusy(id) || presentationBusyRef.current) return;
     const beforeCurrent = currentIdRef.current;
+    setPresentationActionBusy(true);
     beginBusy(`${id}|screen`);
     setError(null);
     try {
@@ -405,6 +446,7 @@ export default function SubmissionFeed({
       setError("Could not send that to the screen. Please try again.");
     } finally {
       endBusy(`${id}|screen`);
+      setPresentationActionBusy(false);
     }
   }
 
@@ -412,8 +454,9 @@ export default function SubmissionFeed({
   // submission or changing its approval status. Mirrors sendToScreen's
   // mechanism: POSTs /api/presentation with action "clear".
   async function removeFromScreen() {
-    if (currentIdRef.current == null) return;
+    if (currentIdRef.current == null || presentationBusyRef.current) return;
     const beforeCurrent = currentIdRef.current;
+    setPresentationActionBusy(true);
     beginBusy(`${beforeCurrent}|clear`);
     setError(null);
     try {
@@ -435,12 +478,13 @@ export default function SubmissionFeed({
       setError("Could not remove that from the screen. Please try again.");
     } finally {
       endBusy(`${beforeCurrent}|clear`);
+      setPresentationActionBusy(false);
     }
   }
 
   async function confirmDelete() {
     const id = confirmId;
-    if (!id) return;
+    if (!id || !deletePassword || isBusy(id, "delete")) return;
     const password = deletePassword;
     const result = await handleDelete(id, password);
     if (result?.ok) {
@@ -450,7 +494,6 @@ export default function SubmissionFeed({
     } else {
       // Keep the dialog open so a mistyped password can be corrected without
       // making the administrator find the contribution again.
-      setDeletePassword("");
       setDeleteError(result?.error || FALLBACK_ERROR);
     }
   }
@@ -463,6 +506,77 @@ export default function SubmissionFeed({
     list.sort(compareFor(sort));
     return list;
   }, [rows, filters, sort]);
+
+  useEffect(() => {
+    const allowed = new Set(visible.map((row) => row.id));
+    setSelectedIds((prev) => {
+      const next = new Set([...prev].filter((id) => allowed.has(id)));
+      if (next.size === prev.size && [...next].every((id) => prev.has(id))) return prev;
+      return next;
+    });
+  }, [visible]);
+
+  const selectedVisibleIds = visible
+    .map((row) => row.id)
+    .filter((id) => selectedIds.has(id));
+  const allVisibleSelected = visible.length > 0 && selectedVisibleIds.length === visible.length;
+  const selectionHasBusyRow = selectedVisibleIds.some((id) => cardBusy(id));
+  const bulkCanSubmit =
+    selectedVisibleIds.length > 0 &&
+    bulkPassword.length > 0 &&
+    bulkConfirmText === "DELETE" &&
+    !bulkPending;
+
+  function closeBulkDialog() {
+    if (bulkPending) return;
+    setBulkOpen(false);
+    setBulkPassword("");
+    setBulkConfirmText("");
+    setBulkError(null);
+  }
+
+  async function confirmBulkDelete() {
+    const ids = [...selectedVisibleIds];
+    if (!bulkCanSubmit || ids.length === 0) return;
+    setBulkPending(true);
+    setBulkError(null);
+    for (const id of ids) beginBusy(`${id}|bulk-delete`);
+    let result;
+    try {
+      result = await bulkDeleteSubmissions(sessionId, {
+        submission_ids: ids,
+        password: bulkPassword,
+        confirm_text: bulkConfirmText,
+      });
+    } catch {
+      result = { error: "Could not delete the selected contributions." };
+    }
+
+    if (result?.ok) {
+      const deletedIds = new Set(result.deletedIds ?? ids);
+      updateRows((prev) => {
+        const next = new Map(prev);
+        for (const id of deletedIds) next.delete(id);
+        return next;
+      });
+      if (currentIdRef.current && deletedIds.has(currentIdRef.current)) setCurrentId(null);
+      setLiveTotal((value) => Math.max(0, value - (result.deleted ?? deletedIds.size)));
+      setSelectedIds(new Set());
+      setBulkOpen(false);
+      setBulkPassword("");
+      setBulkConfirmText("");
+      setBulkError(null);
+      showConfirmation(
+        `Deleted ${result.deleted ?? deletedIds.size} contribution${
+          (result.deleted ?? deletedIds.size) === 1 ? "" : "s"
+        }.`
+      );
+    } else {
+      setBulkError(result?.error || "Could not delete the selected contributions.");
+    }
+    for (const id of ids) endBusy(`${id}|bulk-delete`);
+    setBulkPending(false);
+  }
 
   const totalPages = Math.max(1, Math.ceil(liveTotal / pageSize));
   const deleteTarget = confirmId ? rows.get(confirmId) ?? null : null;
@@ -478,7 +592,7 @@ export default function SubmissionFeed({
   }
 
   function renderCard(row) {
-    const busy = cardBusy(row.id);
+    const busy = cardBusy(row.id) || bulkPending;
     const onScreen = currentId === row.id;
     const statusLabel = STATUS_LABELS[row.moderation_status] ?? row.moderation_status;
     const statusVariant = STATUS_VARIANTS[row.moderation_status] ?? "neutral";
@@ -498,9 +612,24 @@ export default function SubmissionFeed({
         <article
           aria-labelledby={`submission-${row.id}-author`}
           aria-busy={busy || undefined}
-          className="rounded-card border border-white/10 bg-surface p-4 shadow-sm transition hover:border-gold/30 sm:p-5"
+          className={cn(
+            "rounded-card border bg-[linear-gradient(145deg,rgba(42,24,70,0.94),rgba(27,16,48,0.96))] p-4 shadow-[0_18px_50px_-36px_rgba(167,139,250,0.7)] transition-[border-color,box-shadow,transform] duration-200 sm:p-5",
+            onScreen
+              ? "border-gold/45 shadow-[0_22px_65px_-34px_rgba(167,139,250,0.9)]"
+              : "border-white/10 hover:border-gold/30 hover:shadow-[0_22px_60px_-38px_rgba(167,139,250,0.7)]"
+          )}
         >
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            <label className="inline-flex min-h-9 min-w-9 shrink-0 cursor-pointer items-center justify-center rounded-control border border-white/10 bg-midnight/50 transition-colors hover:border-gold/50 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-gold">
+              <input
+                type="checkbox"
+                className="h-4 w-4 accent-[#A78BFA]"
+                checked={selectedIds.has(row.id)}
+                disabled={busy}
+                onChange={() => toggleSelected(row.id)}
+                aria-label={`Select contribution from ${row.nickname}`}
+              />
+            </label>
             <h3
               id={`submission-${row.id}-author`}
               className="font-display text-base font-semibold text-ink"
@@ -569,7 +698,7 @@ export default function SubmissionFeed({
                 size="sm"
                 className={cardActionClassName}
                 loading={isBusy(row.id, "approve")}
-                disabled={busy}
+                disabled={busy || presentationBusy}
                 onClick={() => handleApprove(row.id)}
                 title="Mark this submission as approved and eligible for presentation"
                 aria-label="Approve submission"
@@ -610,7 +739,7 @@ export default function SubmissionFeed({
                 variant="secondary"
                 className={cardActionClassName}
                 loading={isBusy(row.id, "clear")}
-                disabled={busy || row.moderation_status !== "approved"}
+                disabled={busy || presentationBusy || row.moderation_status !== "approved"}
                 onClick={removeFromScreen}
                 title="Clear the presentation screen (keeps submission approved)"
                 aria-label="Remove from screen"
@@ -660,6 +789,7 @@ export default function SubmissionFeed({
               </Button>
             ) : null}
             <Button
+              id={`delete-submission-${row.id}`}
               size="sm"
               variant="danger"
               className={cardActionClassName}
@@ -750,7 +880,7 @@ export default function SubmissionFeed({
               variant="secondary"
               className={cardActionClassName}
               loading={isBusy(currentId, "clear")}
-              disabled={cardBusy(currentId)}
+              disabled={presentationBusy || cardBusy(currentId)}
               onClick={removeFromScreen}
               title="Clear the presentation screen without deleting the submission"
               aria-label="Remove from screen"
@@ -791,11 +921,59 @@ export default function SubmissionFeed({
         />
       ) : null}
 
+      {visible.length > 0 ? (
+        <div className="flex flex-col gap-3 rounded-card border border-white/10 bg-surface/70 p-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={() =>
+                setSelectedIds(
+                  allVisibleSelected ? new Set() : new Set(visible.map((row) => row.id))
+                )
+              }
+              disabled={bulkPending}
+            >
+              {allVisibleSelected ? "Deselect all" : "Select all visible"}
+            </Button>
+            {selectedVisibleIds.length > 0 ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={() => setSelectedIds(new Set())}
+                disabled={bulkPending}
+              >
+                Clear selection
+              </Button>
+            ) : null}
+            <span role="status" aria-live="polite" className="text-sm font-medium text-muted">
+              {selectedVisibleIds.length} selected on this page
+            </span>
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            variant="danger"
+            className="w-full sm:w-auto"
+            disabled={selectedVisibleIds.length === 0 || selectionHasBusyRow || bulkPending}
+            onClick={() => {
+              setBulkError(null);
+              setBulkOpen(true);
+            }}
+          >
+            <Trash2 className="h-4 w-4" aria-hidden="true" />
+            Delete selected
+          </Button>
+        </div>
+      ) : null}
+
       {confirmed ? (
         <p
           role="status"
           aria-live="polite"
-          className="inline-flex items-center gap-2 rounded-pill border border-gold/40 bg-gold/15 px-3 py-1.5 text-xs font-semibold text-gold"
+            className="inline-flex items-center gap-2 self-start rounded-pill border border-gold/40 bg-gold/15 px-3 py-1.5 text-xs font-semibold text-gold shadow-[0_10px_30px_-22px_rgba(167,139,250,0.9)]"
         >
           <Check className="h-3.5 w-3.5" aria-hidden="true" />
           {confirmed}
@@ -839,6 +1017,7 @@ export default function SubmissionFeed({
       <Dialog
         open={confirmId != null}
         onClose={() => {
+          if (confirmId && isBusy(confirmId, "delete")) return;
           setConfirmId(null);
           setDeletePassword("");
           setDeleteError(null);
@@ -850,7 +1029,13 @@ export default function SubmissionFeed({
             : "Permanently delete this contribution. This cannot be undone."
         }
       >
-        <div className="flex flex-col gap-3">
+        <form
+          className="flex flex-col gap-3"
+          onSubmit={(event) => {
+            event.preventDefault();
+            confirmDelete();
+          }}
+        >
           {deleteTarget ? (
             <div className="rounded-control border border-white/10 bg-midnight/40 p-3">
               <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted">
@@ -865,6 +1050,7 @@ export default function SubmissionFeed({
             Admin password
             <Input
               type="password"
+              data-dialog-autofocus
               value={deletePassword}
               onChange={(event) => {
                 setDeletePassword(event.target.value);
@@ -880,11 +1066,12 @@ export default function SubmissionFeed({
               {deleteError}
             </p>
           ) : null}
-          <div className="flex justify-end gap-2">
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button
               type="button"
               variant="ghost"
               className={cardActionClassName}
+              disabled={confirmId ? isBusy(confirmId, "delete") : false}
               onClick={() => {
                 setConfirmId(null);
                 setDeletePassword("");
@@ -894,17 +1081,88 @@ export default function SubmissionFeed({
               Cancel
             </Button>
             <Button
-              type="button"
+              type="submit"
               variant="danger"
               className={cardActionClassName}
               loading={confirmId ? isBusy(confirmId, "delete") : false}
-              onClick={confirmDelete}
               disabled={!deletePassword}
             >
               Delete
             </Button>
           </div>
-        </div>
+        </form>
+      </Dialog>
+
+      <Dialog
+        open={bulkOpen}
+        onClose={closeBulkDialog}
+        title="Delete selected contributions?"
+        description={`Permanently delete ${selectedVisibleIds.length} selected contribution${
+          selectedVisibleIds.length === 1 ? "" : "s"
+        } from session ${sessionCode}. This cannot be undone.`}
+      >
+        <form
+          className="flex flex-col gap-3"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (bulkCanSubmit) confirmBulkDelete();
+          }}
+        >
+          <div className="rounded-control border border-crimson/30 bg-crimson/10 p-3">
+            <p className="text-sm font-semibold text-ink">Session {sessionCode}</p>
+            <p className="mt-1 text-sm text-muted">
+              {selectedVisibleIds.length} selected contribution{
+                selectedVisibleIds.length === 1 ? "" : "s"
+              } will be permanently deleted.
+            </p>
+          </div>
+          <label className="flex flex-col gap-1 text-sm font-medium text-ink">
+            Type DELETE
+            <Input
+              value={bulkConfirmText}
+              onChange={(event) => {
+                setBulkConfirmText(event.target.value);
+                setBulkError(null);
+              }}
+              placeholder="DELETE"
+              autoComplete="off"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-sm font-medium text-ink">
+            Admin password
+            <Input
+              type="password"
+              data-dialog-autofocus
+              value={bulkPassword}
+              onChange={(event) => {
+                setBulkPassword(event.target.value);
+                setBulkError(null);
+              }}
+              placeholder="Admin password"
+              autoComplete="current-password"
+            />
+          </label>
+          {bulkError ? (
+            <p role="alert" className="rounded-control border border-crimson/25 bg-crimson/10 px-3 py-2 text-sm font-medium text-crimson-bright">
+              {bulkError}
+            </p>
+          ) : null}
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button type="button" variant="ghost" disabled={bulkPending} onClick={closeBulkDialog}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="danger"
+              loading={bulkPending}
+              disabled={!bulkCanSubmit}
+            >
+              Delete {selectedVisibleIds.length} contribution{
+                selectedVisibleIds.length === 1 ? "" : "s"
+              }
+            </Button>
+          </div>
+        </form>
       </Dialog>
     </section>
   );

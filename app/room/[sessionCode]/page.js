@@ -44,6 +44,7 @@ export default async function RoomPage({ params }) {
     <RoomDisplay
       session={{
         title: body.session.title,
+        topic: body.session.topic,
         status: body.session.status,
         public_code: body.session.public_code,
       }}

@@ -25,8 +25,9 @@ export default function DeleteDiscussion({ session, contributionCount }) {
     setError(null);
   }
 
-  async function handleDelete() {
-    if (pending || isLive) return;
+  async function handleDelete(event) {
+    event?.preventDefault();
+    if (pending || isLive || !canDelete) return;
     setPending(true);
     setError(null);
     try {
@@ -36,7 +37,6 @@ export default function DeleteDiscussion({ session, contributionCount }) {
       });
       if (!result?.ok) {
         setError(result?.error || "Could not delete this discussion.");
-        setPassword("");
         return;
       }
 
@@ -47,7 +47,6 @@ export default function DeleteDiscussion({ session, contributionCount }) {
       router.refresh();
     } catch {
       setError("Could not delete this discussion. Please try again.");
-      setPassword("");
     } finally {
       setPending(false);
     }
@@ -88,7 +87,7 @@ export default function DeleteDiscussion({ session, contributionCount }) {
         title="Permanently delete this discussion?"
         description="This action cannot be undone. Other discussions will not be affected."
       >
-        <div className="flex flex-col gap-4">
+        <form onSubmit={handleDelete} className="flex flex-col gap-4">
           <dl className="rounded-control border border-crimson/30 bg-crimson/5 p-3 text-sm">
             <div className="flex items-start justify-between gap-4">
               <dt className="text-muted">Discussion</dt>
@@ -133,6 +132,7 @@ export default function DeleteDiscussion({ session, contributionCount }) {
             Admin password
             <Input
               type="password"
+              data-dialog-autofocus
               value={password}
               onChange={(event) => {
                 setPassword(event.target.value);
@@ -151,19 +151,19 @@ export default function DeleteDiscussion({ session, contributionCount }) {
           ) : null}
 
           <div className="flex flex-wrap justify-end gap-2">
-            <Button variant="ghost" disabled={pending} onClick={closeDialog}>
+            <Button type="button" variant="ghost" disabled={pending} onClick={closeDialog}>
               Cancel
             </Button>
             <Button
               variant="danger"
+              type="submit"
               loading={pending}
               disabled={!canDelete}
-              onClick={handleDelete}
             >
               Permanently delete discussion
             </Button>
           </div>
-        </div>
+        </form>
       </Dialog>
     </Card>
   );

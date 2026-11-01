@@ -53,13 +53,34 @@ export default function RoomDisplay({
   const [currentRow, setCurrentRow] = useState(() =>
     isVisible(initialCurrentSubmission) ? initialCurrentSubmission : null
   );
+  // `currentRow` is the latest server-confirmed pointer target. `displayedRow`
+  // is deliberately separate so a short exit/anticipation/reveal sequence can
+  // run without delaying or mutating the underlying presentation state.
+  const [displayedRow, setDisplayedRow] = useState(() =>
+    isVisible(initialCurrentSubmission) ? initialCurrentSubmission : null
+  );
+  const [presentationPhase, setPresentationPhase] = useState("settled");
+  const [transitionVersion, setTransitionVersion] = useState(0);
   const [connection, setConnection] = useState("connecting");
   const [sessionStatus, setSessionStatus] = useState(session.status);
   const currentIdRef = useRef(currentId);
+  const displayedIdRef = useRef(displayedRow?.id ?? null);
+  const transitionRef = useRef({ version: 0, timers: [] });
 
   useEffect(() => {
     currentIdRef.current = currentId;
   }, [currentId]);
+
+  useEffect(() => {
+    displayedIdRef.current = displayedRow?.id ?? null;
+  }, [displayedRow]);
+
+  useEffect(
+    () => () => {
+      for (const timer of transitionRef.current.timers) clearTimeout(timer);
+    },
+    []
+  );
 
   const handleCurrentChange = useCallback(
     (nextId) => {
@@ -91,24 +112,83 @@ export default function RoomDisplay({
       setCurrentRow(null);
       return undefined;
     }
-    const cached = rowsRef.current.get(currentId);
-    if (cached) {
-      setCurrentRow(isVisible(cached) ? cached : null);
+    if (currentRow?.id === currentId && isVisible(currentRow)) {
       return undefined;
     }
+    // Never carry a previous contribution across a pointer change while the
+    // authoritative row is being refetched.
+    setCurrentRow(null);
     fetch(pollUrl, { cache: "no-store" })
       .then((response) => (response.ok ? response.json() : null))
       .then((data) => {
         if (cancelled) return;
+        if (data?.currentId !== currentId) return;
         const row = data?.submission ?? null;
         if (row) rowsRef.current.set(row.id, row);
-        setCurrentRow(isVisible(row) ? row : null);
+        setCurrentRow(row?.id === currentId && isVisible(row) ? row : null);
       })
       .catch(() => {});
     return () => {
       cancelled = true;
     };
-  }, [currentId, pollUrl]);
+  }, [currentId, currentRow, pollUrl]);
+
+  const currentRowId = currentRow?.id ?? null;
+
+  // A monotonic version invalidates every older timer. Rapid Send to Screen
+  // actions therefore collapse to the newest server-confirmed ID instead of
+  // queueing obsolete reveals.
+  useEffect(() => {
+    const nextId = currentRowId;
+    if (nextId === displayedIdRef.current) {
+      if (nextId) setDisplayedRow(currentRow);
+      return undefined;
+    }
+
+    const version = transitionRef.current.version + 1;
+    transitionRef.current.version = version;
+    for (const timer of transitionRef.current.timers) clearTimeout(timer);
+    transitionRef.current.timers = [];
+    setTransitionVersion(version);
+
+    if (reduceMotion) {
+      setDisplayedRow(currentRow);
+      setPresentationPhase("settled");
+      return undefined;
+    }
+
+    const hadPrevious = Boolean(displayedIdRef.current);
+    setPresentationPhase(hadPrevious ? "exiting" : nextId ? "anticipating" : "settled");
+    setDisplayedRow(null);
+
+    if (!nextId) {
+      const settleTimer = setTimeout(() => {
+        if (transitionRef.current.version === version) setPresentationPhase("settled");
+      }, hadPrevious ? 320 : 0);
+      transitionRef.current.timers = [settleTimer];
+      return undefined;
+    }
+
+    const anticipationAt = hadPrevious ? 300 : 0;
+    const revealAt = anticipationAt + 220;
+    const anticipationTimer = setTimeout(() => {
+      if (transitionRef.current.version === version) setPresentationPhase("anticipating");
+    }, anticipationAt);
+    const revealTimer = setTimeout(() => {
+      if (transitionRef.current.version !== version) return;
+      setPresentationPhase("revealing");
+      setDisplayedRow(currentRow);
+    }, revealAt);
+    const settleTimer = setTimeout(() => {
+      if (transitionRef.current.version === version) setPresentationPhase("settled");
+    }, revealAt + 620);
+    transitionRef.current.timers = [anticipationTimer, revealTimer, settleTimer];
+
+    return () => {
+      // The next effect invocation owns cancellation through the version and
+      // timer list. Unmount cleanup is handled separately above.
+    };
+  }, [currentRowId, currentRow, reduceMotion]);
 
   // Polling replaces Supabase realtime: the pointer plus its submission are
   // refetched every few seconds, paused while the tab is hidden. The
@@ -150,6 +230,7 @@ export default function RoomDisplay({
         setCurrentId(nextId);
         if (!nextId) setCurrentRow(null);
         else if (row && row.id === nextId) setCurrentRow(isVisible(row) ? row : null);
+        else setCurrentRow(null);
       } catch {
         if (!disposed) setConnection("reconnecting");
       } finally {
@@ -196,7 +277,14 @@ export default function RoomDisplay({
         : null;
 
   return (
-    <div ref={screenRef} className="relative flex h-dvh w-full flex-col overflow-hidden bg-midnight text-ink">
+    <div
+      ref={screenRef}
+      className="relative flex h-dvh w-full flex-col overflow-hidden bg-midnight text-ink"
+      data-presentation-phase={presentationPhase}
+      data-presentation-transition-version={transitionVersion}
+      data-current-contribution-id={displayedRow?.id ?? ""}
+      data-server-contribution-id={currentId ?? ""}
+    >
       {/* Layered ambient light moves on transforms only and becomes static
           when the viewer prefers reduced motion. */}
       <motion.div
@@ -212,6 +300,20 @@ export default function RoomDisplay({
             : { x: ["-2%", "3%", "-2%"], y: ["-1%", "2%", "-1%"], scale: [1, 1.04, 1] }
         }
         transition={{ duration: 28, ease: "easeInOut", repeat: Infinity }}
+      />
+      <motion.div
+        aria-hidden="true"
+        className="pointer-events-none absolute left-1/2 top-1/2 h-[min(76vh,52rem)] w-[min(90vw,72rem)] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-30"
+        style={{
+          background:
+            "radial-gradient(closest-side, rgba(196,181,253,0.12), rgba(109,74,184,0.05) 52%, transparent 76%)",
+        }}
+        animate={
+          reduceMotion
+            ? undefined
+            : { opacity: [0.2, 0.34, 0.2], scale: [0.98, 1.035, 0.98] }
+        }
+        transition={{ duration: 16, ease: "easeInOut", repeat: Infinity }}
       />
       <motion.div
         aria-hidden="true"
@@ -281,9 +383,9 @@ export default function RoomDisplay({
 
         <div className="flex min-h-12 flex-col items-center justify-center gap-1.5 text-center sm:min-h-16">
           <AnimatePresence mode="wait" initial={false}>
-            {currentRow ? (
+            {displayedRow ? (
               <motion.div
-                key={`topic-${currentRow.id}`}
+                key={`topic-${displayedRow.id}`}
                 initial={reduceMotion ? false : { opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -8 }}
@@ -294,7 +396,7 @@ export default function RoomDisplay({
                   Now discussing
                 </p>
                 <p className="mt-1.5 font-display text-[clamp(1.125rem,2vw,1.75rem)] leading-snug text-gold-light">
-                  {session.title}
+                  {session.topic?.trim() || session.title}
                 </p>
               </motion.div>
             ) : null}
@@ -326,21 +428,48 @@ export default function RoomDisplay({
       </header>
 
       <main className="relative z-10 flex min-h-0 flex-1 items-center justify-center overflow-y-auto px-5 pb-24 sm:px-8 sm:pb-28 lg:px-10 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        <AnimatePresence mode="wait">
-          {currentRow ? (
+        <AnimatePresence initial={false}>
+          {(presentationPhase === "anticipating" || presentationPhase === "revealing") && !reduceMotion ? (
             <motion.div
-              key={currentRow.id}
-              initial={reduceMotion ? false : { opacity: 0, y: 24, scale: 0.98 }}
+              key={`sweep-${transitionVersion}`}
+              aria-hidden="true"
+              data-presentation-sweep="true"
+              className="pointer-events-none absolute inset-y-[16%] left-0 z-0 w-1/3 bg-gradient-to-r from-transparent via-gold/15 to-transparent blur-2xl"
+              initial={{ opacity: 0, x: "-130%" }}
+              animate={{ opacity: [0, 0.9, 0], x: "430%" }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.58, ease: REVEAL_EASE }}
+            />
+          ) : null}
+        </AnimatePresence>
+
+        <AnimatePresence mode="wait" initial={false}>
+          {displayedRow ? (
+            <motion.div
+              key={displayedRow.id}
+              initial={reduceMotion ? false : { opacity: 0, y: 28, scale: 0.965 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -14, scale: 0.985 }}
-              transition={{ duration: reduceMotion ? 0 : 0.42, ease: REVEAL_EASE }}
-              className="flex w-full flex-col items-center text-center"
+              exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -22, scale: 0.985 }}
+              transition={{ duration: reduceMotion ? 0 : 0.58, ease: REVEAL_EASE }}
+              className="relative z-10 flex w-full flex-col items-center text-center"
+              data-presented-contribution={displayedRow.id}
             >
+              <motion.div
+                aria-hidden="true"
+                className="pointer-events-none absolute left-1/2 top-1/2 -z-10 h-[140%] w-[min(92vw,64rem)] -translate-x-1/2 -translate-y-1/2 rounded-full"
+                style={{
+                  background:
+                    "radial-gradient(closest-side, rgba(167,139,250,0.18), rgba(109,74,184,0.06) 52%, transparent 76%)",
+                }}
+                initial={reduceMotion ? false : { opacity: 0, scale: 0.92 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: reduceMotion ? 0 : 0.72, ease: REVEAL_EASE }}
+              />
               <div className="flex flex-wrap items-center justify-center gap-3">
                 <Badge variant="info" className="px-3 py-1 text-sm uppercase tracking-[0.2em]">
-                  {categoryLabel(currentRow.category)}
+                  {categoryLabel(displayedRow.category)}
                 </Badge>
-                {currentRow.is_pinned ? (
+                {displayedRow.is_pinned ? (
                   <span className="inline-flex items-center gap-1.5 text-sm uppercase tracking-[0.2em] text-gold">
                     <Pin className="h-4 w-4" aria-hidden="true" />
                     Pinned for discussion
@@ -348,16 +477,16 @@ export default function RoomDisplay({
                 ) : null}
               </div>
               <p className="mt-6 text-[clamp(0.9375rem,1.4vw,1.25rem)] font-semibold uppercase tracking-[0.24em] text-gold">
-                {currentRow.nickname}
+                {displayedRow.nickname}
               </p>
               <blockquote
                 className="mt-8 text-balance font-display text-ink"
-                style={quoteStyle(currentRow.content)}
+                style={quoteStyle(displayedRow.content)}
               >
-                {currentRow.content}
+                {displayedRow.content}
               </blockquote>
             </motion.div>
-          ) : (
+          ) : presentationPhase === "settled" ? (
             <motion.div
               key={isClosed ? "ended" : "waiting"}
               initial={reduceMotion ? false : { opacity: 0, y: 20, scale: 0.98 }}
@@ -395,14 +524,14 @@ export default function RoomDisplay({
                 ) : (
                   <>
                     <p className="font-display text-[clamp(2rem,4.5vw,3.5rem)] leading-[1.2] text-ink">
-                      {session.title}
+                      {session.topic?.trim() || session.title}
                     </p>
                     <p className="mt-5 text-lg text-muted sm:text-2xl">Waiting for the next thought…</p>
                   </>
                 )}
               </div>
             </motion.div>
-          )}
+          ) : null}
         </AnimatePresence>
       </main>
 
@@ -410,7 +539,7 @@ export default function RoomDisplay({
         isAdmin={isAdmin}
         sessionCode={session.public_code}
         currentId={currentId}
-        current={currentRow}
+        current={displayedRow}
         onCurrentChange={handleCurrentChange}
         targetRef={screenRef}
       />

@@ -19,6 +19,7 @@ export default function ClearContributions({ sessionId, sessionTitle, count }) {
   const [success, setSuccess] = useState(null);
 
   function closeDialog() {
+    if (pending) return;
     setOpen(false);
     setConfirmName("");
     setConfirmText("");
@@ -27,6 +28,7 @@ export default function ClearContributions({ sessionId, sessionTitle, count }) {
   }
 
   async function handleClear() {
+    if (pending || !canSubmit) return;
     setPending(true);
     setError(null);
     try {
@@ -44,11 +46,9 @@ export default function ClearContributions({ sessionId, sessionTitle, count }) {
         router.refresh();
       } else {
         setError(result?.error || "Could not clear contributions.");
-        setPassword("");
       }
     } catch {
       setError("Could not clear contributions.");
-      setPassword("");
     } finally {
       setPending(false);
     }
@@ -89,7 +89,13 @@ export default function ClearContributions({ sessionId, sessionTitle, count }) {
         title="Clear all contributions?"
         description={`This will permanently delete ${count} contribution${count === 1 ? "" : "s"} from "${sessionTitle}". This cannot be undone.`}
       >
-        <div className="flex flex-col gap-3">
+        <form
+          className="flex flex-col gap-3"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (canSubmit && !pending) handleClear();
+          }}
+        >
           <div className="rounded-control border border-crimson/30 bg-crimson/5 p-3">
             <p className="text-sm font-semibold text-ink">{sessionTitle}</p>
             <p className="mt-1 text-sm text-muted">
@@ -120,6 +126,7 @@ export default function ClearContributions({ sessionId, sessionTitle, count }) {
             Admin password
             <Input
               type="password"
+              data-dialog-autofocus
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Admin password"
@@ -129,23 +136,25 @@ export default function ClearContributions({ sessionId, sessionTitle, count }) {
           {error ? (
             <p role="alert" className="text-sm font-medium text-crimson">{error}</p>
           ) : null}
-          <div className="flex justify-end gap-2">
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button
+              type="button"
               variant="ghost"
+              disabled={pending}
               onClick={closeDialog}
             >
               Cancel
             </Button>
             <Button
+              type="submit"
               variant="danger"
               loading={pending}
               disabled={!canSubmit}
-              onClick={handleClear}
             >
               Permanently clear contributions
             </Button>
           </div>
-        </div>
+        </form>
       </Dialog>
     </Card>
   );
