@@ -8,6 +8,41 @@ import { cn } from "@/lib/cn";
 const FOCUSABLE =
   "a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex='-1'])";
 
+const activeDialogs = [];
+const originalInert = new Map();
+let originalOverflow;
+
+function updateBackground() {
+  const top = activeDialogs.at(-1);
+  if (!top) {
+    for (const [element, inert] of originalInert) {
+      if (inert) element.setAttribute("inert", "");
+      else element.removeAttribute("inert");
+    }
+    originalInert.clear();
+    document.body.style.overflow = originalOverflow;
+    return;
+  }
+  for (const element of document.body.children) {
+    if (!originalInert.has(element)) originalInert.set(element, element.hasAttribute("inert"));
+    if (element.contains(top)) element.removeAttribute("inert");
+    else element.setAttribute("inert", "");
+  }
+}
+
+function canFocus(element) {
+  if (!(element instanceof HTMLElement) || element.matches(":disabled, input[type='hidden']")) return false;
+  for (let ancestor = element; ancestor; ancestor = ancestor.parentElement) {
+    const style = window.getComputedStyle(ancestor);
+    if (ancestor.hidden || ancestor.hasAttribute("inert") || style.display === "none" || style.visibility === "hidden" || style.visibility === "collapse") return false;
+  }
+  return true;
+}
+
+function focusableElements(node) {
+  return Array.from(node.querySelectorAll(FOCUSABLE)).filter((element) => element.tabIndex >= 0 && canFocus(element));
+}
+
 export default function Dialog({ open, onClose, title, description, className, children }) {
   const reduceMotion = useReducedMotion();
   const dialogRef = useRef(null);
@@ -45,52 +80,69 @@ export default function Dialog({ open, onClose, title, description, className, c
   }, [open]);
 
   useEffect(() => {
-    if (!open) return undefined;
+    if (!open || !mounted) return undefined;
 
     const previouslyFocused = returnFocusRef.current || document.activeElement;
     const previouslyFocusedId =
       previouslyFocused instanceof HTMLElement ? previouslyFocused.id : "";
     const node = dialogRef.current;
+    if (!node) return undefined;
+    if (activeDialogs.length === 0) originalOverflow = document.body.style.overflow;
+    activeDialogs.push(node);
+    updateBackground();
+    document.body.style.overflow = "hidden";
     const focusFrame = window.requestAnimationFrame(() => {
+      if (activeDialogs.at(-1) !== node) return;
       const preferredInput = node?.querySelector("[data-dialog-autofocus]");
-      const firstInput = node?.querySelector(
-        "input:not([disabled]), textarea:not([disabled]), select:not([disabled])"
-      );
-      const firstFocusable = node?.querySelector(FOCUSABLE);
-      (preferredInput || firstInput || firstFocusable || node)?.focus();
+      const focusables = focusableElements(node);
+      const firstInput = focusables.find((element) => element.matches("input, textarea, select"));
+      (preferredInput && canFocus(preferredInput) ? preferredInput : firstInput || focusables[0] || node).focus();
     });
 
     function onKeyDown(event) {
+      if (activeDialogs.at(-1) !== node) return;
       if (event.key === "Escape") {
+        event.preventDefault();
         event.stopPropagation();
         onCloseRef.current?.();
         return;
       }
       if (event.key !== "Tab") return;
 
-      const focusables = node?.querySelectorAll(FOCUSABLE);
-      if (!focusables || focusables.length === 0) return;
+      const focusables = focusableElements(node);
+      if (focusables.length === 0) {
+        event.preventDefault();
+        node.focus();
+        return;
+      }
 
       const first = focusables[0];
       const last = focusables[focusables.length - 1];
 
-      if (event.shiftKey && document.activeElement === first) {
+      if (event.shiftKey && (document.activeElement === first || !focusables.includes(document.activeElement))) {
         event.preventDefault();
         last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
+      } else if (!event.shiftKey && (document.activeElement === last || !focusables.includes(document.activeElement))) {
         event.preventDefault();
         first.focus();
       }
     }
 
+    function onFocusIn(event) {
+      if (activeDialogs.at(-1) === node && !node.contains(event.target)) {
+        (focusableElements(node)[0] || node).focus();
+      }
+    }
+
     document.addEventListener("keydown", onKeyDown);
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    document.addEventListener("focusin", onFocusIn);
 
     return () => {
       document.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("focusin", onFocusIn);
       window.cancelAnimationFrame(focusFrame);
-      document.body.style.overflow = previousOverflow;
+      activeDialogs.splice(activeDialogs.indexOf(node), 1);
+      updateBackground();
       window.setTimeout(() => {
         const focusTarget =
           previouslyFocused instanceof HTMLElement && previouslyFocused.isConnected
@@ -99,15 +151,17 @@ export default function Dialog({ open, onClose, title, description, className, c
               ? document.getElementById(previouslyFocusedId)
               : null;
         if (
-          !openRef.current &&
+          (!openRef.current || !node.isConnected) &&
           focusTarget instanceof HTMLElement &&
-          focusTarget.isConnected
+          focusTarget.isConnected &&
+          canFocus(focusTarget) &&
+          (!activeDialogs.length || activeDialogs.at(-1).contains(focusTarget))
         ) {
           focusTarget.focus();
         }
       }, reduceMotionRef.current ? 0 : 220);
     };
-  }, [open]);
+  }, [open, mounted]);
 
   if (!mounted) return null;
 

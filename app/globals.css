@@ -19,7 +19,7 @@
   --color-warning: #6D4AB8;
 
   /* Typography */
-  --font-display: var(--font-display), "Instrument Serif", serif;
+  --font-display: var(--font-instrument-serif), "Instrument Serif", serif;
   --font-body: var(--font-sans), "Manrope", sans-serif;
 
   /* Spacing */

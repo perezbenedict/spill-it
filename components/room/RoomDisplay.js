@@ -39,6 +39,7 @@ export default function RoomDisplay({
 }) {
   const reduceMotion = useReducedMotion();
   const screenRef = useRef(null);
+  const contentRef = useRef(null);
   const rowsRef = useRef(null);
   if (rowsRef.current === null) {
     rowsRef.current = new Map();
@@ -74,6 +75,11 @@ export default function RoomDisplay({
   useEffect(() => {
     displayedIdRef.current = displayedRow?.id ?? null;
   }, [displayedRow]);
+
+  const displayedRowId = displayedRow?.id ?? null;
+  useEffect(() => {
+    if (contentRef.current) contentRef.current.scrollTop = 0;
+  }, [displayedRowId]);
 
   useEffect(
     () => () => {
@@ -390,7 +396,7 @@ export default function RoomDisplay({
                 animate={{ opacity: 1, y: 0 }}
                 exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -8 }}
                 transition={{ duration: reduceMotion ? 0 : 0.45, ease: REVEAL_EASE }}
-                className="max-w-[42ch]"
+                className="min-w-0 max-w-[42ch] [overflow-wrap:anywhere]"
               >
                 <p className="text-xs font-semibold uppercase tracking-[0.24em] text-gold sm:text-sm sm:tracking-[0.28em]">
                   Now discussing
@@ -427,7 +433,7 @@ export default function RoomDisplay({
         </div>
       </header>
 
-      <main className="relative z-10 flex min-h-0 flex-1 items-center justify-center overflow-y-auto px-5 pb-24 sm:px-8 sm:pb-28 lg:px-10 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <main ref={contentRef} className="relative z-10 flex min-h-0 flex-1 flex-col items-center overflow-y-auto px-5 pb-36 sm:px-8 sm:pb-28 lg:px-10 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <AnimatePresence initial={false}>
           {(presentationPhase === "anticipating" || presentationPhase === "revealing") && !reduceMotion ? (
             <motion.div
@@ -451,7 +457,7 @@ export default function RoomDisplay({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -22, scale: 0.985 }}
               transition={{ duration: reduceMotion ? 0 : 0.58, ease: REVEAL_EASE }}
-              className="relative z-10 flex w-full flex-col items-center text-center"
+              className="relative z-10 my-auto flex w-full shrink-0 flex-col items-center text-center"
               data-presented-contribution={displayedRow.id}
             >
               <motion.div
@@ -476,11 +482,11 @@ export default function RoomDisplay({
                   </span>
                 ) : null}
               </div>
-              <p className="mt-6 text-[clamp(0.9375rem,1.4vw,1.25rem)] font-semibold uppercase tracking-[0.24em] text-gold">
+              <p className="mt-6 max-w-full text-[clamp(0.9375rem,1.4vw,1.25rem)] font-semibold uppercase tracking-[0.24em] text-gold [overflow-wrap:anywhere]">
                 {displayedRow.nickname}
               </p>
               <blockquote
-                className="mt-8 text-balance font-display text-ink"
+                className="mt-8 w-full text-balance font-display text-ink [overflow-wrap:anywhere]"
                 style={quoteStyle(displayedRow.content)}
               >
                 {displayedRow.content}
@@ -493,7 +499,7 @@ export default function RoomDisplay({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -14, scale: 0.98 }}
               transition={{ duration: reduceMotion ? 0 : 0.5, ease: REVEAL_EASE }}
-              className="relative flex w-full flex-col items-center text-center"
+              className="relative my-auto flex w-full shrink-0 flex-col items-center text-center [overflow-wrap:anywhere]"
             >
               <div
                 aria-hidden="true"

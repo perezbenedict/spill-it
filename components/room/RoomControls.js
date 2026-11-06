@@ -84,10 +84,11 @@ export default function RoomControls({
   useEffect(() => {
     if (!isAdmin) return undefined;
     const onKeyDown = (event) => {
-      if (event.metaKey || event.ctrlKey || event.altKey) return;
-      if (pending) return;
-      const tag = event.target?.tagName;
-      if (tag === "INPUT" || tag === "TEXTAREA" || event.target?.isContentEditable) return;
+      if (event.defaultPrevented || event.repeat || event.isComposing) return;
+      if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey || pending) return;
+      const target = event.target instanceof Element ? event.target : null;
+      if (document.querySelector('dialog[open], [role="dialog"][aria-modal="true"]')) return;
+      if (target?.closest('input, textarea, select, button, a, [role="button"], [role="dialog"], [contenteditable]:not([contenteditable="false"]), [tabindex]:not([tabindex="-1"])')) return;
       if (event.key === "ArrowLeft") {
         if (!currentId) return;
         event.preventDefault();
@@ -146,7 +147,7 @@ export default function RoomControls({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 8, scale: 0.98 }}
             transition={{ duration: reduceMotion ? 0 : 0.2, ease: [0.16, 1, 0.3, 1] }}
-            className="pointer-events-auto flex items-center gap-1 rounded-pill border border-gold/15 bg-surface/70 p-1.5 text-ink shadow-lg backdrop-blur-md"
+            className="pointer-events-auto flex max-w-full flex-wrap items-center justify-center gap-1 rounded-3xl border border-gold/15 bg-surface/70 p-1.5 text-ink shadow-lg backdrop-blur-md sm:rounded-pill [&>button]:shrink-0 [&>a]:shrink-0"
           >
           <motion.button
             type="button"

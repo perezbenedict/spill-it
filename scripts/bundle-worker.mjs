@@ -1,5 +1,5 @@
 import esbuild from 'esbuild';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const outputDir = '.open-next';

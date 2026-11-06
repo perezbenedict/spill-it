@@ -2,15 +2,15 @@ import { cn } from "@/lib/cn";
 import Spinner from "@/components/ui/Spinner";
 
 const base =
-  "inline-flex items-center justify-center gap-2 rounded-control font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold disabled:cursor-not-allowed disabled:opacity-50";
+  "inline-flex min-h-11 min-w-0 items-center justify-center gap-2 rounded-control text-center font-medium leading-snug [overflow-wrap:anywhere] transition-[color,background-color,border-color,box-shadow,opacity] duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold disabled:cursor-not-allowed disabled:opacity-60";
 
 const variants = {
   primary:
-    "relative overflow-hidden bg-[linear-gradient(135deg,#C4B5FD,#A78BFA_55%,#6D4AB8)] text-[#1B1030] shadow-[0_0_14px_rgba(167,139,250,0.2)] hover:shadow-[0_0_22px_rgba(167,139,250,0.4)] hover:opacity-90 active:opacity-80 focus-visible:shadow-[0_0_24px_rgba(167,139,250,0.5)]",
+    "relative overflow-hidden bg-[linear-gradient(135deg,#C4B5FD,#A78BFA_55%,#6D4AB8)] text-[#1B1030] shadow-[0_4px_14px_-6px_rgba(167,139,250,0.45)] hover:shadow-[0_6px_20px_-7px_rgba(167,139,250,0.55)] hover:opacity-95 active:opacity-85",
   gold:
-    "relative overflow-hidden bg-[linear-gradient(135deg,#C4B5FD,#A78BFA_55%,#6D4AB8)] text-[#1B1030] shadow-[0_0_14px_rgba(167,139,250,0.2)] hover:shadow-[0_0_22px_rgba(167,139,250,0.4)] hover:opacity-90 active:opacity-80 focus-visible:shadow-[0_0_24px_rgba(167,139,250,0.5)]",
+    "relative overflow-hidden bg-[linear-gradient(135deg,#C4B5FD,#A78BFA_55%,#6D4AB8)] text-[#1B1030] shadow-[0_4px_14px_-6px_rgba(167,139,250,0.45)] hover:shadow-[0_6px_20px_-7px_rgba(167,139,250,0.55)] hover:opacity-95 active:opacity-85",
   secondary:
-    "border border-white/15 bg-midnight text-ink hover:bg-white/10 active:bg-white/5",
+    "border border-white/15 bg-midnight text-ink shadow-sm hover:border-gold/35 hover:bg-white/10 active:bg-white/5",
   ghost:
     "bg-transparent text-ink hover:bg-white/10 active:bg-white/5",
   danger:
@@ -43,7 +43,6 @@ export default function Button({
         base,
         variants[variant],
         sizes[size],
-        (disabled || loading) && "pointer-events-none opacity-60",
         className
       )}
       {...props}
