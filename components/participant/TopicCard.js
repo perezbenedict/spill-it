@@ -50,7 +50,7 @@ export default function TopicCard({ topic }) {
             initial={{ opacity: 0, y: reducedMotion ? 0 : 6 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ ...timing, delay: 0.06 }}
-            className="font-display text-3xl leading-[1.12] text-ink sm:text-4xl"
+            className="break-words [overflow-wrap:anywhere] font-display text-3xl leading-[1.12] text-ink sm:text-4xl"
           >
             {text}
           </motion.p>

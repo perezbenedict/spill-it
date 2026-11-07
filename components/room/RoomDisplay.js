@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import RoomControls from "@/components/room/RoomControls";
+import RoomEngagement from "@/components/platform/RoomEngagement";
 import Badge from "@/components/ui/Badge";
 import { CATEGORIES } from "@/lib/constants";
 
@@ -64,6 +65,7 @@ export default function RoomDisplay({
   const [transitionVersion, setTransitionVersion] = useState(0);
   const [connection, setConnection] = useState("connecting");
   const [sessionStatus, setSessionStatus] = useState(session.status);
+  const [pollPresented, setPollPresented] = useState(false);
   const currentIdRef = useRef(currentId);
   const displayedIdRef = useRef(displayedRow?.id ?? null);
   const transitionRef = useRef({ version: 0, timers: [] });
@@ -433,7 +435,9 @@ export default function RoomDisplay({
         </div>
       </header>
 
-      <main ref={contentRef} className="relative z-10 flex min-h-0 flex-1 flex-col items-center overflow-y-auto px-5 pb-36 sm:px-8 sm:pb-28 lg:px-10 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <main ref={contentRef} tabIndex={0} aria-label="Presentation content. Scroll to read long contributions." style={{ marginBottom: isAdmin ? 'var(--room-controls-height, 5rem)' : 0 }} className="relative z-10 flex min-h-0 flex-1 flex-col items-center overflow-y-auto px-5 pb-6 sm:px-8 lg:px-10 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <RoomEngagement sessionCode={sessionCode} onPollChange={setPollPresented} />
+        <div className={pollPresented ? 'hidden' : 'contents'}>
         <AnimatePresence initial={false}>
           {(presentationPhase === "anticipating" || presentationPhase === "revealing") && !reduceMotion ? (
             <motion.div
@@ -539,9 +543,11 @@ export default function RoomDisplay({
             </motion.div>
           ) : null}
         </AnimatePresence>
+        </div>
       </main>
 
       <RoomControls
+        sessionId={session.id}
         isAdmin={isAdmin}
         sessionCode={session.public_code}
         currentId={currentId}

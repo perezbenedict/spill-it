@@ -1,6 +1,6 @@
 # Deploying the SPILL API
 
-The API is a single-file Cloudflare Worker (`api/worker.js`) backed by a D1 database. No npm dependencies, no build step. The D1 database already exists (`spill`); the id is wired up in `api/wrangler.toml`.
+The API is a Cloudflare Worker (`api/worker.js`, with the platform module) backed by D1. The existing database is `spill`; its binding is in `api/wrangler.toml`. Follow [the release and recovery runbook](../docs/RELEASE_RECOVERY.md) before remote changes.
 
 > **Always pass `-c wrangler.toml`.** The repo root also has a `wrangler.jsonc` (for Pages), and wrangler walks *up* the directory tree, so running these commands from `api/` without `-c` silently configures itself from the root file and fails with "Couldn't find a D1 DB".
 
@@ -20,13 +20,7 @@ npx wrangler d1 execute spill -c wrangler.toml --remote --file schema.sql
 
 Safe to re-run (`CREATE ... IF NOT EXISTS` everywhere).
 
-> If you applied an **older copy of this schema** (one whose `public_code` CHECK used the long 8x repeated GLOB), drop the tables first - `IF NOT EXISTS` will not repair a table that already exists, and that constraint rejected every INSERT with "LIKE or GLOB pattern too complex":
->
-> ```sh
-> npx wrangler d1 execute spill -c wrangler.toml --remote \
->   --command "DROP TABLE IF EXISTS presentation_state; DROP TABLE IF EXISTS submissions; DROP TABLE IF EXISTS admin_sessions; DROP TABLE IF EXISTS admin_users; DROP TABLE IF EXISTS discussion_sessions;"
-> npx wrangler d1 execute spill -c wrangler.toml --remote --file schema.sql
-> ```
+Do not repair existing production tables by dropping them. Export and verify a backup, inspect the deployed schema, and rehearse a data-preserving migration in an isolated database first. `schema.sql` is for fresh databases; existing databases use reviewed versioned migrations. Historical ALTER migrations must not be replayed on a fresh current schema.
 
 
 ## 3. Set the secrets
@@ -46,11 +40,7 @@ npx wrangler secret put SPILL_ADMIN_PASSWORD -c wrangler.toml
 
 There is **no default password** - nothing ships with a working admin login, and every attempt at `/admin/login` fails until this secret is set on the Worker.
 
-To **change** the password, update the secret (`npx wrangler secret put SPILL_ADMIN_PASSWORD -c wrangler.toml` again): the next successful login with the new password re-hashes and stores it in `admin_users`. Until that first login, the previously stored password still works too. To rotate immediately, delete the `admin_users` row and let the next login re-bootstrap from the secret:
-
-```sh
-npx wrangler d1 execute spill -c wrangler.toml --remote --command "DELETE FROM admin_users;"
-```
+To change the password, update the existing encrypted `SPILL_ADMIN_PASSWORD` secret. The environment credential is authoritative. The upgraded authentication path invalidates old tokens when the credential changes; verify this using an existing logged-in browser and a fresh login. Never delete admin or event rows to rotate credentials. Schedule rotation outside a live event because moderators will need to sign in again.
 
 `SPILL_ADMIN_EMAIL` is no longer read and can be removed (`npx wrangler secret delete SPILL_ADMIN_EMAIL`). Never put the password in `wrangler.toml` `[vars]` - it must only ever be an encrypted secret.
 

@@ -1,0 +1,363 @@
+{
+  "isolation": "loopback Worker, disposable D1, generated local credentials",
+  "output": "/Users/perezbenedict/Documents/SPILL/artifacts/isolated-2026-11-07T08-11-32-660Z-85dbd7be",
+  "tests": [
+    {
+      "spec": "admin-bulk-delete.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-07T08:11:43.104Z",
+        "duration": 5824.254,
+        "expected": 3,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      }
+    },
+    {
+      "spec": "admin-room-recovery.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-07T08:11:50.589Z",
+        "duration": 17392.281000000003,
+        "expected": 6,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      }
+    },
+    {
+      "spec": "fullscreen-projection.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-07T08:12:09.926Z",
+        "duration": 15688.669,
+        "expected": 3,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      }
+    },
+    {
+      "spec": "nickname-reservation.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-07T08:12:27.433Z",
+        "duration": 537.9949999999999,
+        "expected": 1,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      }
+    },
+    {
+      "spec": "platform.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-07T08:12:29.718Z",
+        "duration": 66546.388,
+        "expected": 19,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      }
+    },
+    {
+      "spec": "public-journey.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-07T08:13:38.370Z",
+        "duration": 6342.536,
+        "expected": 5,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      }
+    },
+    {
+      "spec": "qr-responsive.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-07T08:13:46.387Z",
+        "duration": 9074.21,
+        "expected": 7,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      }
+    },
+    {
+      "spec": "zz-auth-throttle.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-07T08:13:57.292Z",
+        "duration": 539.356,
+        "expected": 2,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      }
+    }
+  ],
+  "loads": [
+    {
+      "concurrency": 10,
+      "passed": true,
+      "report": {
+        "concurrency": 10,
+        "requests": 10,
+        "successes": 10,
+        "errors": 0,
+        "successRate": 100,
+        "wallTimeMs": 84.8,
+        "throughputPerSecond": 117.89,
+        "latency": {
+          "minMs": 78.8,
+          "p50Ms": 79.6,
+          "p95Ms": 82.5,
+          "p99Ms": 82.5,
+          "maxMs": 82.5
+        },
+        "statusCounts": {
+          "200": 10
+        },
+        "errorSamples": [],
+        "database": {
+          "before": 3,
+          "after": 14,
+          "expectedDelta": 11,
+          "actualDelta": 11,
+          "countMatches": true
+        },
+        "duplicateProbe": {
+          "statuses": [
+            200,
+            200
+          ],
+          "allSuccessful": true,
+          "replayRecognized": true,
+          "exactlyOneRow": true
+        },
+        "concurrentRoomPolling": {
+          "requests": 30,
+          "errors": 0,
+          "p50Ms": 34.1,
+          "p95Ms": 62.6
+        },
+        "moderationAndProjection": {
+          "status": 200,
+          "moderationStatus": 200,
+          "moderationLatencyMs": 53.5,
+          "moderationResponseMs": 151.5,
+          "projectionObservedMs": 222.1,
+          "correctPointer": true
+        },
+        "browserProjection": {
+          "observedMs": 3524.8,
+          "correctPointer": true,
+          "reducedMotion": true
+        }
+      }
+    },
+    {
+      "concurrency": 25,
+      "passed": true,
+      "report": {
+        "concurrency": 25,
+        "requests": 25,
+        "successes": 25,
+        "errors": 0,
+        "successRate": 100,
+        "wallTimeMs": 250.5,
+        "throughputPerSecond": 99.82,
+        "latency": {
+          "minMs": 245.2,
+          "p50Ms": 246.8,
+          "p95Ms": 249.5,
+          "p99Ms": 250.4,
+          "maxMs": 250.4
+        },
+        "statusCounts": {
+          "200": 25
+        },
+        "errorSamples": [],
+        "database": {
+          "before": 3,
+          "after": 29,
+          "expectedDelta": 26,
+          "actualDelta": 26,
+          "countMatches": true
+        },
+        "duplicateProbe": {
+          "statuses": [
+            200,
+            200
+          ],
+          "allSuccessful": true,
+          "replayRecognized": true,
+          "exactlyOneRow": true
+        },
+        "concurrentRoomPolling": {
+          "requests": 75,
+          "errors": 0,
+          "p50Ms": 74.4,
+          "p95Ms": 244
+        },
+        "moderationAndProjection": {
+          "status": 200,
+          "moderationStatus": 200,
+          "moderationLatencyMs": 145.6,
+          "moderationResponseMs": 418.5,
+          "projectionObservedMs": 426.4,
+          "correctPointer": true
+        },
+        "browserProjection": {
+          "observedMs": 3550.3,
+          "correctPointer": true,
+          "reducedMotion": true
+        }
+      }
+    },
+    {
+      "concurrency": 50,
+      "passed": true,
+      "report": {
+        "concurrency": 50,
+        "requests": 50,
+        "successes": 50,
+        "errors": 0,
+        "successRate": 100,
+        "wallTimeMs": 516.1,
+        "throughputPerSecond": 96.89,
+        "latency": {
+          "minMs": 406.6,
+          "p50Ms": 407.5,
+          "p95Ms": 506.5,
+          "p99Ms": 506.8,
+          "maxMs": 506.8
+        },
+        "statusCounts": {
+          "200": 50
+        },
+        "errorSamples": [],
+        "database": {
+          "before": 3,
+          "after": 54,
+          "expectedDelta": 51,
+          "actualDelta": 51,
+          "countMatches": true
+        },
+        "duplicateProbe": {
+          "statuses": [
+            200,
+            200
+          ],
+          "allSuccessful": true,
+          "replayRecognized": true,
+          "exactlyOneRow": true
+        },
+        "concurrentRoomPolling": {
+          "requests": 150,
+          "errors": 0,
+          "p50Ms": 122.3,
+          "p95Ms": 413.1
+        },
+        "moderationAndProjection": {
+          "status": 200,
+          "moderationStatus": 200,
+          "moderationLatencyMs": 231.4,
+          "moderationResponseMs": 698.7,
+          "projectionObservedMs": 703,
+          "correctPointer": true
+        },
+        "browserProjection": {
+          "observedMs": 3543.3,
+          "correctPointer": true,
+          "reducedMotion": true
+        }
+      }
+    },
+    {
+      "concurrency": 100,
+      "passed": true,
+      "report": {
+        "concurrency": 100,
+        "requests": 100,
+        "successes": 100,
+        "errors": 0,
+        "successRate": 100,
+        "wallTimeMs": 1054.9,
+        "throughputPerSecond": 94.8,
+        "latency": {
+          "minMs": 642.3,
+          "p50Ms": 1034.6,
+          "p95Ms": 1052.3,
+          "p99Ms": 1053,
+          "maxMs": 1054
+        },
+        "statusCounts": {
+          "200": 100
+        },
+        "errorSamples": [],
+        "database": {
+          "before": 3,
+          "after": 104,
+          "expectedDelta": 101,
+          "actualDelta": 101,
+          "countMatches": true
+        },
+        "duplicateProbe": {
+          "statuses": [
+            200,
+            200
+          ],
+          "allSuccessful": true,
+          "replayRecognized": true,
+          "exactlyOneRow": true
+        },
+        "concurrentRoomPolling": {
+          "requests": 300,
+          "errors": 0,
+          "p50Ms": 241.5,
+          "p95Ms": 1032.5
+        },
+        "moderationAndProjection": {
+          "status": 200,
+          "moderationStatus": 200,
+          "moderationLatencyMs": 354.4,
+          "moderationResponseMs": 1306.7,
+          "projectionObservedMs": 1400.3,
+          "correctPointer": true
+        },
+        "browserProjection": {
+          "observedMs": 3532.7,
+          "correctPointer": true,
+          "reducedMotion": true
+        }
+      }
+    }
+  ],
+  "previewAssets": 8,
+  "preview": [
+    {
+      "route": "/",
+      "status": 200
+    },
+    {
+      "route": "/admin/login",
+      "status": 200
+    },
+    {
+      "route": "/join/ABCDEFGH",
+      "status": 200
+    },
+    {
+      "route": "/qr/ABCDEFGH",
+      "status": 200
+    },
+    {
+      "route": "/room/ABCDEFGH",
+      "status": 200
+    }
+  ]
+}

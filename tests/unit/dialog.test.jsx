@@ -36,6 +36,17 @@ function Example({ children, onClose = () => {} }) {
 }
 
 describe('Dialog keyboard accessibility', () => {
+  it('does not steal focus when entry begins before the autofocus frame', () => {
+    let initialFocus;
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation(callback => { initialFocus = callback; return 1; });
+    render(<Dialog open title="Confirmation" onClose={() => {}}><input aria-label="Type DELETE" /><input aria-label="Admin password" data-dialog-autofocus /></Dialog>);
+    const confirmation = screen.getByLabelText('Type DELETE');
+    confirmation.focus();
+    fireEvent.change(confirmation, { target: { value: 'DELETE' } });
+    initialFocus();
+    expect(confirmation).toHaveFocus();
+    expect(confirmation).toHaveValue('DELETE');
+  });
   it('closes on Escape and restores the opener', async () => {
     const onClose = vi.fn();
     const { container } = render(<Example onClose={onClose}><button>Confirm</button></Example>);

@@ -1,7 +1,8 @@
-# Spill It 2.0: audit and staged delivery
+# Spill It 2.0: initial audit and foundation record
 
 Audit date: 2026-11-06. The current purple production identity is authoritative.
 This is a delivery record, not a claim that all five milestones are complete.
+The continuing integrated upgrade is recorded in [SPILL_2_RELEASE.md](SPILL_2_RELEASE.md).
 
 ## Architecture and foundations to retain
 

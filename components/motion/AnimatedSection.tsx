@@ -8,6 +8,7 @@ export function AnimatedSection({ children, className = "", delay = 0 }) {
   return (
     <motion.section
       initial={reducedMotion ? false : { opacity: 0, y: 24 }}
+      animate={reducedMotion ? { opacity: 1, y: 0 } : undefined}
       whileInView={reducedMotion ? undefined : { opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.2 }}
       transition={{

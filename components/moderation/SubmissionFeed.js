@@ -12,6 +12,7 @@ import Button from "@/components/ui/Button";
 import Dialog from "@/components/ui/Dialog";
 import EmptyState from "@/components/ui/EmptyState";
 import ErrorState from "@/components/ui/ErrorState";
+import AdminPlatform from "@/components/platform/AdminPlatform";
 import {
   approve,
   bulkDeleteSubmissions,
@@ -331,7 +332,7 @@ export default function SubmissionFeed({
 
     let result = null;
     try {
-      result = await action(id);
+      result = await action(id, rows.get(id)?.revision);
     } catch {
       result = { error: FALLBACK_ERROR };
     }
@@ -857,6 +858,7 @@ export default function SubmissionFeed({
 
   return (
     <section aria-labelledby="feed-heading" className="flex flex-col gap-4">
+      <AdminPlatform sessionId={sessionId} approved={Array.from(rows.values()).filter(row => row.moderation_status === 'approved' && !row.hidden_from_presentation)} />
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 id="feed-heading" className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
           Contributions

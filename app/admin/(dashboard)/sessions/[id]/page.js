@@ -60,6 +60,9 @@ export default async function SessionDetailPage({ params }) {
       </div>
 
       <StatusControls sessionId={session.id} status={session.status} />
+      <Link href={`/admin/sessions/${session.id}/insights`} className={linkClass}>
+        Event insights, activity and exports
+      </Link>
 
       <section aria-labelledby="session-details-heading" className="flex flex-col gap-4">
         <h2 id="session-details-heading" className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, startTransition } from "react";
+import { useEffect, useRef, startTransition } from "react";
 import { useActionState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,6 +16,7 @@ import Field from "@/components/ui/Field";
 import Input from "@/components/ui/Input";
 import Textarea from "@/components/ui/Textarea";
 import { cn } from "@/lib/cn";
+import { DISCUSSION_TEMPLATES, templateSettings } from "@/lib/discussion-templates";
 
 const CATEGORY_KEYS = CATEGORIES.map((category) => category.key);
 
@@ -129,6 +130,8 @@ function SubmitButton({ mode, pending }) {
 }
 
 export default function SessionForm({ mode, session }) {
+  // A status refresh must not advance the version of unsaved form fields.
+  const editRevision = useRef(session?.revision ?? 0);
   const action = mode === "edit" ? updateSession.bind(null, session.id) : createSession;
   const [state, formAction, pending] = useActionState(action, { error: null });
 
@@ -137,6 +140,7 @@ export default function SessionForm({ mode, session }) {
     register,
     handleSubmit,
     setError,
+    setValue,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(formSchema),
@@ -158,6 +162,7 @@ export default function SessionForm({ mode, session }) {
   });
 
   useEffect(() => {
+    if (state?.ok && Number.isInteger(state.revision)) editRevision.current = state.revision;
     if (!state?.fieldErrors) return;
     for (const [name, message] of Object.entries(state.fieldErrors)) {
       setError(name, { type: "server", message });
@@ -166,11 +171,24 @@ export default function SessionForm({ mode, session }) {
 
   const onSubmit = handleSubmit((data, event) => {
     event?.preventDefault();
-    startTransition(() => formAction(toFormData(data)));
+    const payload = toFormData(data);
+    if (mode === "edit") payload.set("expectedRevision", String(editRevision.current));
+    startTransition(() => formAction(payload));
   });
 
   return (
     <form onSubmit={onSubmit} noValidate className="flex flex-col gap-6">
+      <Card className="space-y-3">
+        <Field label="Discussion template" hint="Optional. Applies welcome copy, categories and contribution settings. Your title, topic, schedule and status stay unchanged.">
+          <select defaultValue="" className="min-h-11 w-full rounded-control border border-white/15 bg-surface px-3 text-base text-ink" onChange={(event) => {
+            const template = DISCUSSION_TEMPLATES.find(item => item.id === event.target.value);
+            if (template) for (const [key, value] of Object.entries(templateSettings(template))) setValue(key, value, { shouldDirty: true, shouldValidate: true });
+          }}>
+            <option value="">Choose a template</option>
+            {DISCUSSION_TEMPLATES.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
+          </select>
+        </Field>
+      </Card>
       <Card className="flex flex-col gap-4">
         <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
           Discussion

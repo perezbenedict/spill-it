@@ -27,6 +27,9 @@ export function isLoopbackTarget(value = configuredBaseURL) {
 }
 
 export function requireFixture(test, value, variableName) {
+  if (!value && process.env.SPILL_E2E_REQUIRED === '1') {
+    throw new Error(`${variableName} is required; isolated release tests must not skip.`);
+  }
   test.skip(!value, `${variableName} is required for this disposable-fixture test.`);
 }
 

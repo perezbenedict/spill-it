@@ -93,6 +93,8 @@ export default function Dialog({ open, onClose, title, description, className, c
     document.body.style.overflow = "hidden";
     const focusFrame = window.requestAnimationFrame(() => {
       if (activeDialogs.at(-1) !== node) return;
+      // The user may already be filling a different field before this frame.
+      if (node.contains(document.activeElement) && document.activeElement !== node) return;
       const preferredInput = node?.querySelector("[data-dialog-autofocus]");
       const focusables = focusableElements(node);
       const firstInput = focusables.find((element) => element.matches("input, textarea, select"));

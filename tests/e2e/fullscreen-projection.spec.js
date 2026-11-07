@@ -54,6 +54,7 @@ test('QR stage explains when the Fullscreen API is unavailable', async ({ page }
 });
 
 test('room transition runs only for pointer changes and the latest rapid update wins', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
   requireFixture(test, E2E.liveCode, 'SPILL_E2E_SESSION_CODE');
   requireFixture(test, E2E.adminPassword, 'SPILL_E2E_ADMIN_PASSWORD');
   requireFixture(test, E2E.projectionIds.length >= 3, 'SPILL_E2E_PROJECTION_IDS');

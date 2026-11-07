@@ -9,6 +9,7 @@ import CategoryCards from "@/components/participant/CategoryCards";
 import NicknamePicker from "@/components/participant/NicknamePicker";
 import SubmissionForm from "@/components/participant/SubmissionForm";
 import TopicCard from "@/components/participant/TopicCard";
+import ParticipantEngagement from "@/components/platform/ParticipantEngagement";
 import { readNicknameCookie, writeNicknameCookie } from "@/components/participant/cookies";
 
 // GNWY-style reveal: short 10px travel with a long ease-out tail.
@@ -76,7 +77,7 @@ export default function JoinExperience({ session, usedNicknames = [] }) {
   };
 
   function revealProps(delay) {
-    if (reducedMotion) return {};
+    if (reducedMotion) return { initial: false, animate: { opacity: 1, y: 0 }, transition: { duration: 0 } };
     return {
       initial: { opacity: 0, y: 10 },
       animate: { opacity: 1, y: 0 },
@@ -355,6 +356,7 @@ export default function JoinExperience({ session, usedNicknames = [] }) {
 
         </motion.div>
       </AnimatePresence>
+      <ParticipantEngagement sessionCode={session.code} />
     </section>
   );
 }

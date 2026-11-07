@@ -1,6 +1,6 @@
 # Database
 
-Cloudflare D1 (SQLite) schema for SPILL. Source of truth: `api/schema.sql`. Data access goes through the single-file Worker API in `api/worker.js` (see `api/DEPLOY.md`); the Next.js app never talks to the database directly.
+Cloudflare D1 (SQLite) schema for SPILL. Fresh-install source: `api/schema.sql`; existing installations use reviewed versioned migrations. Data access goes through `api/worker.js` and `api/platform.js` (see `api/DEPLOY.md`); Next.js never talks to the database directly. See `SPILL_2_RELEASE.md` for the platform additions and migration safeguards.
 
 ## Entity-relationship summary
 
@@ -101,10 +101,10 @@ discussion_sessions 1 ───── 1 presentation_state ──> submissions (
 
 ```bash
 cd api
-npx wrangler d1 execute spill --remote --file schema.sql
+npx wrangler d1 execute spill --config wrangler.toml --remote --file schema.sql
 ```
 
-Written to be safe to re-apply (`CREATE TABLE/INDEX IF NOT EXISTS`). Local development uses `--local` against the `wrangler dev` database.
+This installs a fresh schema; `IF NOT EXISTS` does not upgrade existing columns or constraints. Back up existing data and use the pending migration instead. Local tests use `--local` with an explicit disposable `--persist-to` directory. Never apply historical ALTER migrations after installing the current full schema.
 
 ## Provisioning the first administrator
 

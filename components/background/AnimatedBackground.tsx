@@ -140,6 +140,12 @@ const CSS = `
   z-index: 10;
 }
 
+.ab-quiet .ab-ambient, .ab-quiet .ab-svg-orbit {
+  animation: none !important;
+  will-change: auto;
+}
+.ab-quiet .ab-pointer { display: none; }
+
 @media (prefers-reduced-motion: reduce) {
   .ab-ambient,
   .ab-svg-orbit {
@@ -151,7 +157,16 @@ const CSS = `
 export default function AnimatedBackground({ children, className }: AnimatedBackgroundProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const [isTouch, setIsTouch] = useState(false);
+  const [quiet, setQuiet] = useState(true);
   const rafRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    const preference = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => setQuiet(preference.matches || Boolean((navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData));
+    update();
+    preference.addEventListener("change", update);
+    return () => preference.removeEventListener("change", update);
+  }, []);
 
   useEffect(() => {
     const mq = window.matchMedia("(pointer: coarse)");
@@ -173,7 +188,7 @@ export default function AnimatedBackground({ children, className }: AnimatedBack
   }, []);
 
   useEffect(() => {
-    if (isTouch) return;
+    if (isTouch || quiet) return;
     const root = rootRef.current;
     if (!root) return;
 
@@ -205,7 +220,7 @@ export default function AnimatedBackground({ children, className }: AnimatedBack
       document.removeEventListener("mouseleave", onLeave);
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
     };
-  }, [isTouch]);
+  }, [isTouch, quiet]);
 
   const uid = React.useId();
   const gradId = `ab-grad-${uid.replace(/:/g, "")}`;
@@ -213,7 +228,7 @@ export default function AnimatedBackground({ children, className }: AnimatedBack
   return (
     <div
       ref={rootRef}
-      className={`ab-root ${className ?? ""}`.trim()}
+      className={`ab-root ${quiet ? "ab-quiet" : ""} ${className ?? ""}`.trim()}
       style={{ "--px": "50%", "--py": "50%" } as React.CSSProperties}
     >
       <style>{CSS}</style>

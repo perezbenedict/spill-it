@@ -32,5 +32,6 @@ yarn-error.log*
 /test-results/
 /playwright-report/
 /coverage/
+/artifacts/isolated-*/
 .open-next/
 .playwright-mcp/

@@ -26,6 +26,7 @@ const controlClass =
 export default function RoomControls({
   isAdmin,
   sessionCode,
+  sessionId,
   currentId,
   current,
   onCurrentChange,
@@ -37,6 +38,18 @@ export default function RoomControls({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [open, setOpen] = useState(false);
   const mountedRef = useRef(true);
+  const controlsRef = useRef(null);
+
+  useEffect(() => {
+    const controls = controlsRef.current;
+    const stage = targetRef?.current;
+    if (!isAdmin || !controls || !stage) return undefined;
+    const reserve = () => stage.style.setProperty('--room-controls-height', `${Math.ceil(controls.getBoundingClientRect().height) + 12}px`);
+    reserve();
+    const observer = new ResizeObserver(reserve);
+    observer.observe(controls);
+    return () => { observer.disconnect(); stage.style.removeProperty('--room-controls-height'); };
+  }, [isAdmin, targetRef]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -81,6 +94,29 @@ export default function RoomControls({
     }
   }
 
+  async function advanceQueued() {
+    if (pending || !sessionId) return;
+    setPending("advance");
+    setError(null);
+    try {
+      const url = `/api/platform/admin/${encodeURIComponent(sessionId)}`;
+      const response = await fetch(url, { cache: "no-store" });
+      const state = await response.json();
+      if (!response.ok) throw new Error("Could not synchronize the queue.");
+      const next = await fetch(url, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "advance", expectedRevision: state.revision }),
+      });
+      if (!next.ok) throw new Error(next.status === 409
+        ? "Another moderator changed the queue. Try again after synchronization."
+        : "Could not project the next queued contribution.");
+    } catch (error) {
+      setError(error.message || "Could not reach the server.");
+    } finally {
+      if (mountedRef.current) setPending(null);
+    }
+  }
+
   useEffect(() => {
     if (!isAdmin) return undefined;
     const onKeyDown = (event) => {
@@ -89,6 +125,19 @@ export default function RoomControls({
       const target = event.target instanceof Element ? event.target : null;
       if (document.querySelector('dialog[open], [role="dialog"][aria-modal="true"]')) return;
       if (target?.closest('input, textarea, select, button, a, [role="button"], [role="dialog"], [contenteditable]:not([contenteditable="false"]), [tabindex]:not([tabindex="-1"])')) return;
+      if (event.key.toLowerCase() === "n") {
+        event.preventDefault();
+        advanceQueued();
+      } else if (event.key.toLowerCase() === "h") {
+        event.preventDefault();
+        run("clear");
+      } else if (event.key.toLowerCase() === "c") {
+        event.preventDefault();
+        setOpen(value => !value);
+      } else if (event.key.toLowerCase() === "f") {
+        event.preventDefault();
+        toggleFullscreen();
+      }
       if (event.key === "ArrowLeft") {
         if (!currentId) return;
         event.preventDefault();
@@ -101,7 +150,7 @@ export default function RoomControls({
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAdmin, pending, sessionCode, currentId]);
+  }, [isAdmin, pending, sessionCode, sessionId, currentId]);
 
   async function toggleFullscreen() {
     try {
@@ -120,7 +169,7 @@ export default function RoomControls({
   const showToolbar = open || Boolean(error);
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex flex-col items-center gap-2 px-4 pb-5">
+    <div ref={controlsRef} data-presenter-controls className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex flex-col items-center gap-2 px-4 pb-5">
       <AnimatePresence initial={false}>
         {error ? (
           <motion.p
@@ -149,6 +198,9 @@ export default function RoomControls({
             transition={{ duration: reduceMotion ? 0 : 0.2, ease: [0.16, 1, 0.3, 1] }}
             className="pointer-events-auto flex max-w-full flex-wrap items-center justify-center gap-1 rounded-3xl border border-gold/15 bg-surface/70 p-1.5 text-ink shadow-lg backdrop-blur-md sm:rounded-pill [&>button]:shrink-0 [&>a]:shrink-0"
           >
+          <button type="button" className={controlClass} onClick={advanceQueued} disabled={busy || !sessionId} aria-label="Project next queued contribution" title="Next queued (N)" aria-keyshortcuts="N">
+            <span aria-hidden="true" className="text-xs font-semibold">Next</span>
+          </button>
           <motion.button
             type="button"
             className={controlClass}

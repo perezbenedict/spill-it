@@ -7,6 +7,7 @@ import { cn } from "@/lib/cn";
 const LINKS = [
   { href: "/admin", label: "Dashboard" },
   { href: "/admin/sessions", label: "Sessions" },
+  { href: "/admin/activity", label: "Activity" },
 ];
 
 function isActive(pathname, href) {

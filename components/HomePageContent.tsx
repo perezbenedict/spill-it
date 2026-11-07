@@ -56,6 +56,7 @@ export default function HomePageContent({ session, provided }: HomePageContentPr
   });
 
   function handlePointerMove(e) {
+    if (reducedMotion || e.pointerType !== "mouse") return;
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     pointerX.set(Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width)));
     pointerY.set(Math.min(1, Math.max(0, (e.clientY - rect.top) / rect.height)));
@@ -128,9 +129,9 @@ export default function HomePageContent({ session, provided }: HomePageContentPr
         {/* Emblem / Logo */}
         <motion.div
           className="flex justify-center"
-          initial={{ opacity: 0, y: 20 }}
+          initial={reducedMotion ? false : { opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: EASE }}
+          transition={{ duration: reducedMotion ? 0 : 0.8, ease: EASE }}
         >
           <span
             className="mb-2 inline-flex h-20 w-20 drop-shadow-[0_0_18px_rgba(167,139,250,0.25)] sm:h-24 sm:w-24 animate-emblem-drift"
@@ -143,9 +144,9 @@ export default function HomePageContent({ session, provided }: HomePageContentPr
         {/* Brand signature — uppercase Manrope eyebrow with champagne-gold accent line */}
         <motion.div
           className="flex w-full max-w-full items-center justify-center gap-2 sm:gap-3"
-          initial={{ opacity: 0, y: 16 }}
+          initial={reducedMotion ? false : { opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: EASE }}
+          transition={{ duration: reducedMotion ? 0 : 0.8, ease: EASE }}
         >
           <span
             className="h-px w-5 shrink-0 bg-gradient-to-r from-transparent via-gold to-transparent opacity-60 sm:w-8"
@@ -222,7 +223,7 @@ export default function HomePageContent({ session, provided }: HomePageContentPr
               className="inline-block"
               aria-hidden="true"
               initial={false}
-              whileHover={{ x: 3 }}
+              whileHover={reducedMotion ? undefined : { x: 3 }}
               transition={{ type: "spring", stiffness: 320, damping: 24 }}
             >
               →

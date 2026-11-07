@@ -4,16 +4,15 @@ import {
   getAdminSubmission,
   getPresentation,
   listAdminSessions,
-  listAdminSubmissions,
   patchAdminSubmission,
   setPresentation,
 } from '@/lib/spill-api';
 import { isValidPublicCode } from '@/lib/session-code';
+import { isSameOriginRequest } from '@/lib/request-origin';
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ACTIONS = ['set', 'clear', 'next', 'prev', 'togglePin', 'hide'];
 const ACTIONS_NEEDING_ID = ['set', 'togglePin', 'hide'];
-const QUEUE_LIMIT = 200;
 
 // Fixed copy: row ids, worker messages and stacks never leave this process.
 const MSG_UNAUTHORIZED = 'Not authorized.';
@@ -46,6 +45,7 @@ export async function GET() {
 }
 
 export async function POST(request) {
+  if (!isSameOriginRequest(request)) return fail(403, MSG_UNAUTHORIZED);
   const auth = await requireAdminApi();
   if (!auth) return fail(401, MSG_UNAUTHORIZED);
 
@@ -83,6 +83,12 @@ export async function POST(request) {
     return fail(500, MSG_GENERIC);
   }
 
+  const pointer = await getPresentation(adminToken, session.id);
+  if (!pointer.ok) return fail(503, 'Could not synchronize the screen. Try again.');
+  const revision = pointer.body?.revision;
+  const projectionFailure = (result) => fail(result.status === 409 ? 409 : 503,
+    result.status === 409 ? 'Another moderator changed the screen. Synchronize and try again.' : MSG_GENERIC);
+
   if (action === 'set') {
     const result = await getAdminSubmission(adminToken, submissionId);
     if (result.status === 0) return fail(500, MSG_GENERIC);
@@ -95,50 +101,21 @@ export async function POST(request) {
     ) {
       return fail(400, MSG_NOT_ON_SCREEN);
     }
-    const pointerResult = await setPresentation(adminToken, session.id, submissionId);
-    if (!pointerResult.ok) return fail(500, MSG_GENERIC);
+    const pointerResult = await setPresentation(adminToken, session.id, submissionId, revision);
+    if (!pointerResult.ok) return projectionFailure(pointerResult);
     return ok(submissionId);
   }
 
   if (action === 'clear') {
-    const pointerResult = await setPresentation(adminToken, session.id, null);
-    if (!pointerResult.ok) return fail(500, MSG_GENERIC);
+    const pointerResult = await setPresentation(adminToken, session.id, null, revision);
+    if (!pointerResult.ok) return projectionFailure(pointerResult);
     return ok(null);
   }
 
   if (action === 'next' || action === 'prev') {
-    // Queue: approved, not hidden from the screen, pinned first then oldest.
-    const queueResult = await listAdminSubmissions(adminToken, {
-      session_id: session.id,
-      status: 'approved',
-      sort: 'queue',
-      limit: QUEUE_LIMIT,
-    });
-    if (queueResult.status === 0) return fail(500, MSG_GENERIC);
-    if (!queueResult.ok) return fail(500, MSG_GENERIC);
-    const queue = queueResult.body?.items ?? [];
-    if (queue.length === 0) {
-      const pointerResult = await setPresentation(adminToken, session.id, null);
-      if (!pointerResult.ok) return fail(500, MSG_GENERIC);
-      return ok(null);
-    }
-
-    const pointerResult = await getPresentation(adminToken, session.id);
-    if (!pointerResult.ok) return fail(500, MSG_GENERIC);
-    const currentId = pointerResult.body?.currentId ?? null;
-
-    const index = queue.findIndex((row) => row.id === currentId);
-    // Nothing on screen (or it left the queue): enter at the top. Otherwise
-    // step one position and clamp at the ends.
-    const targetIndex =
-      index === -1
-        ? 0
-        : Math.min(Math.max(index + (action === 'next' ? 1 : -1), 0), queue.length - 1);
-    const targetId = queue[targetIndex].id;
-
-    const setResult = await setPresentation(adminToken, session.id, targetId);
-    if (!setResult.ok) return fail(500, MSG_GENERIC);
-    return ok(targetId);
+    const setResult = await setPresentation(adminToken, session.id, null, revision, action);
+    if (!setResult.ok) return projectionFailure(setResult);
+    return ok(setResult.body?.currentId);
   }
 
   // togglePin and hide: the contribution must exist inside this session.
@@ -152,6 +129,7 @@ export async function POST(request) {
   if (action === 'togglePin') {
     const patchResult = await patchAdminSubmission(adminToken, submission.id, {
       is_pinned: !submission.is_pinned,
+      expectedRevision: submission.revision,
     });
     if (!patchResult.ok) return fail(500, MSG_GENERIC);
     const pointerResult = await getPresentation(adminToken, session.id);
@@ -162,6 +140,7 @@ export async function POST(request) {
   // hide: the worker clears the pointer when it points at this row.
   const patchResult = await patchAdminSubmission(adminToken, submission.id, {
     hidden_from_presentation: true,
+    expectedRevision: submission.revision,
   });
   if (!patchResult.ok) return fail(500, MSG_GENERIC);
   const pointerResult = await getPresentation(adminToken, session.id);

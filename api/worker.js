@@ -5,6 +5,8 @@
    row. Fixed friendly error messages only — SQL, ids and stacks never leave
    this process. */
 
+import { handlePlatform, handleEngagement, exportSession, credentialVersion, authAdmission, clearAuthAdmission } from './platform.js';
+
 const KNOWN_CATEGORIES = ['question', 'opinion', 'challenge', 'twocents'];
 const SESSION_STATUSES = ['draft', 'live', 'paused', 'closed'];
 const MODERATION_STATUSES = ['pending', 'approved', 'hidden'];
@@ -56,7 +58,6 @@ const MSG_SESSION_GENERIC = 'Could not save this discussion. Please try again.';
 const MSG_INVALID = 'Invalid contribution.';
 const MSG_NICKNAME_TAKEN = "That nickname's already taken. Try another one.";
 const MSG_LOGIN_INVALID = 'Incorrect password.';
-const MSG_LOGIN_THROTTLED = 'Too many attempts. Try again shortly.';
 
 function json(body, status = 200, headers) {
   return new Response(JSON.stringify(body), {
@@ -115,18 +116,20 @@ async function reserveSessionNickname(env, { sessionId, participantId, nickname 
     .bind(sessionId, now)
     .run();
 
-  // The migration backfills existing submissions, but normalize those rows in
-  // JavaScript as well so legacy Unicode and repeated-whitespace spellings use
-  // exactly the same comparison as new reservations.
-  const { results: legacyNames } = await env.DB.prepare(
-    'SELECT participant_id, nickname FROM submissions WHERE session_id = ?'
-  )
-    .bind(sessionId)
-    .all();
-  const legacyOwner = legacyNames.find(
-    (row) => normalizeNickname(row.nickname) === normalized && row.participant_id !== participantId
-  );
-  if (legacyOwner) return { ok: false, taken: true };
+  // Normalize legacy spellings once per session. Thereafter the reservation
+  // index owns lookups; event growth no longer adds a submission scan per send.
+  const backfilled = await env.DB.prepare('SELECT session_id FROM nickname_backfills WHERE session_id=?').bind(sessionId).first();
+  if (!backfilled) {
+    const { results: legacyNames } = await env.DB.prepare('SELECT participant_id,nickname FROM submissions WHERE session_id=? ORDER BY created_at,id').bind(sessionId).all();
+    const statements = legacyNames.flatMap(row => [
+      env.DB.prepare('INSERT OR IGNORE INTO nickname_reservations(session_id,normalized_nickname,participant_id,display_nickname,reserved_at,refreshed_at,expires_at) VALUES(?,?,?,?,?,?,?)').bind(sessionId, normalizeNickname(row.nickname), row.participant_id, displayNickname(row.nickname), now, now, expiresAt),
+      env.DB.prepare('INSERT OR IGNORE INTO legacy_nickname_claims(session_id,normalized_nickname,participant_id) VALUES(?,?,?)').bind(sessionId, normalizeNickname(row.nickname), row.participant_id),
+    ]);
+    for (let index = 0; index < statements.length; index += 100) await env.DB.batch(statements.slice(index, index + 100));
+    await env.DB.prepare('INSERT OR IGNORE INTO nickname_backfills(session_id) VALUES(?)').bind(sessionId).run();
+  }
+  const historicalOwner = await env.DB.prepare('SELECT participant_id FROM legacy_nickname_claims WHERE session_id=? AND normalized_nickname=? AND participant_id<>? LIMIT 1').bind(sessionId, normalized, participantId).first();
+  if (historicalOwner) return { ok: false, taken: true };
 
   try {
     await env.DB.prepare(
@@ -190,8 +193,10 @@ function serializeSession(row) {
 
 function serializeSubmission(row) {
   if (!row) return null;
+  const { participant_id: _participantId, request_id: _requestId, ...publicRow } = row;
+  void _participantId; void _requestId;
   return {
-    ...row,
+    ...publicRow,
     is_pinned: row.is_pinned === 1,
     hidden_from_presentation: row.hidden_from_presentation === 1,
   };
@@ -280,7 +285,7 @@ async function requireAdminUser(request, env) {
   const token = request.headers.get('X-Admin-Token');
   if (!token) return null;
   const row = await env.DB.prepare(
-    'SELECT t.token AS token, t.expires_at AS expires_at, ' +
+    'SELECT t.token AS token, t.expires_at AS expires_at, t.credential_version, ' +
       'u.id AS id, u.email AS email, u.role AS role ' +
       'FROM admin_sessions t JOIN admin_users u ON u.id = t.user_id ' +
       'WHERE t.token = ?'
@@ -288,73 +293,13 @@ async function requireAdminUser(request, env) {
     .bind(token)
     .first();
   if (!row) return null;
-  if (row.expires_at <= nowIso()) {
+  if (row.expires_at <= nowIso() || row.credential_version !== await credentialVersion(env)) {
     await env.DB.prepare('DELETE FROM admin_sessions WHERE token = ?').bind(token).run();
     return null;
   }
   return { token: row.token, user: { id: row.id, email: row.email, role: row.role } };
 }
 
-// In-memory login throttle keyed by client IP - per worker isolate, no DB
-// table. Failed attempts count toward LOGIN_MAX_FAILURES inside a fixed
-// window that starts at the first failure.
-const loginFailures = new Map();
-// Destructive password checks have a tighter, independent throttle. The key
-// combines the authenticated admin with the connecting IP so a stolen session
-// token cannot be used for an unbounded password-guessing loop.
-const destructiveAuthFailures = new Map();
-
-function loginThrottleFor(ip) {
-  const entry = loginFailures.get(ip);
-  if (!entry) return null;
-  if (entry.resetAt <= Date.now()) {
-    loginFailures.delete(ip);
-    return null;
-  }
-  if (entry.count < LOGIN_MAX_FAILURES) return null;
-  const retryAfter = Math.max(1, Math.ceil((entry.resetAt - Date.now()) / 1000));
-  return json({ error: MSG_LOGIN_THROTTLED }, 429, { 'Retry-After': String(retryAfter) });
-}
-
-function recordLoginFailure(ip) {
-  const now = Date.now();
-  const entry = loginFailures.get(ip);
-  if (!entry || entry.resetAt <= now) {
-    loginFailures.set(ip, { count: 1, resetAt: now + LOGIN_FAILURE_WINDOW_SECONDS * 1000 });
-    return;
-  }
-  entry.count += 1;
-}
-
-function destructiveAuthKey(request, admin) {
-  const ip = request.headers.get('CF-Connecting-IP') || 'local';
-  return `${admin.user.id}:${ip}`;
-}
-
-function destructiveAuthThrottleFor(key) {
-  const entry = destructiveAuthFailures.get(key);
-  if (!entry) return null;
-  if (entry.resetAt <= Date.now()) {
-    destructiveAuthFailures.delete(key);
-    return null;
-  }
-  if (entry.count < DESTRUCTIVE_AUTH_MAX_FAILURES) return null;
-  const retryAfter = Math.max(1, Math.ceil((entry.resetAt - Date.now()) / 1000));
-  return json({ error: MSG_LOGIN_THROTTLED }, 429, { 'Retry-After': String(retryAfter) });
-}
-
-function recordDestructiveAuthFailure(key) {
-  const now = Date.now();
-  const entry = destructiveAuthFailures.get(key);
-  if (!entry || entry.resetAt <= now) {
-    destructiveAuthFailures.set(key, {
-      count: 1,
-      resetAt: now + DESTRUCTIVE_AUTH_FAILURE_WINDOW_SECONDS * 1000,
-    });
-    return;
-  }
-  entry.count += 1;
-}
 
 // Password equality that walks every byte: both sides are encoded to bytes
 // and XOR-compared over the full (padded) length, with the length difference
@@ -375,37 +320,33 @@ async function verifyDestructiveAdminPassword(request, env, admin, password) {
     return { response: json({ error: 'Administrator access is required.' }, 403) };
   }
 
-  const throttleKey = destructiveAuthKey(request, admin);
-  const throttled = destructiveAuthThrottleFor(throttleKey);
-  if (throttled) return { response: throttled };
+  const distributedLimit = await authAdmission(env, `destructive:${admin.user.id}`, DESTRUCTIVE_AUTH_MAX_FAILURES, DESTRUCTIVE_AUTH_FAILURE_WINDOW_SECONDS);
+  if (distributedLimit) return { response: distributedLimit };
 
   if (!password) {
-    recordDestructiveAuthFailure(throttleKey);
     return { response: json({ error: 'Admin password is required.' }, 401) };
   }
 
   const user = await env.DB.prepare('SELECT id, password_hash FROM admin_users WHERE id = ?')
     .bind(admin.user.id)
     .first();
-  const matchesHash = user ? await verifyPassword(password, user.password_hash) : false;
+  const matchesHash = !env.SPILL_ADMIN_PASSWORD && user ? await verifyPassword(password, user.password_hash) : false;
   const matchesSecret =
     !matchesHash &&
     !!env.SPILL_ADMIN_PASSWORD &&
     constantTimeEquals(password, env.SPILL_ADMIN_PASSWORD);
 
   if (!user || (!matchesHash && !matchesSecret)) {
-    recordDestructiveAuthFailure(throttleKey);
     return { response: json({ error: 'Incorrect admin password.' }, 401) };
   }
 
-  destructiveAuthFailures.delete(throttleKey);
+  await clearAuthAdmission(env, `destructive:${admin.user.id}`, DESTRUCTIVE_AUTH_FAILURE_WINDOW_SECONDS);
   return { ok: true };
 }
 
 async function handleLogin(request, env) {
-  const ip = request.headers.get('CF-Connecting-IP') || 'local';
-  const throttled = loginThrottleFor(ip);
-  if (throttled) return throttled;
+  const distributedLimit = await authAdmission(env, 'admin-login', LOGIN_MAX_FAILURES, LOGIN_FAILURE_WINDOW_SECONDS);
+  if (distributedLimit) return distributedLimit;
 
   let body;
   try {
@@ -416,7 +357,6 @@ async function handleLogin(request, env) {
   // Single shared admin password - no email or username is accepted.
   const password = typeof body?.password === 'string' ? body.password : '';
   if (!password) {
-    recordLoginFailure(ip);
     return json({ error: MSG_LOGIN_INVALID }, 401);
   }
 
@@ -445,28 +385,28 @@ async function handleLogin(request, env) {
     'SELECT id, email, password_hash, role FROM admin_users ORDER BY created_at ASC LIMIT 1'
   ).first();
 
-  const matchesHash = user ? await verifyPassword(password, user.password_hash) : false;
+  const matchesHash = !env.SPILL_ADMIN_PASSWORD && user ? await verifyPassword(password, user.password_hash) : false;
   const matchesSecret =
     !matchesHash && !!env.SPILL_ADMIN_PASSWORD && constantTimeEquals(password, env.SPILL_ADMIN_PASSWORD);
 
   if (!user || (!matchesHash && !matchesSecret)) {
-    recordLoginFailure(ip);
     return json({ error: MSG_LOGIN_INVALID }, 401);
   }
 
-  if (matchesSecret) {
+  if (matchesSecret && !(await verifyPassword(password, user.password_hash))) {
     // Accepted via the env secret while the stored hash differs: rotate the
     // stored hash to the presented password with a fresh random salt.
     try {
-      await env.DB.prepare('UPDATE admin_users SET password_hash = ? WHERE id = ?')
-        .bind(await hashPassword(password, randomHex(16), PBKDF2_ITERATIONS), user.id)
-        .run();
+      await env.DB.batch([
+        env.DB.prepare('UPDATE admin_users SET password_hash = ? WHERE id = ?').bind(await hashPassword(password, randomHex(16), PBKDF2_ITERATIONS), user.id),
+        env.DB.prepare('DELETE FROM admin_sessions WHERE user_id = ?').bind(user.id),
+      ]);
     } catch {
-      // Non-fatal: this attempt is still valid via the env secret.
+      return json({ error: 'Could not rotate administrator credentials. Try again.' }, 503);
     }
   }
 
-  loginFailures.delete(ip);
+  await clearAuthAdmission(env, 'admin-login', LOGIN_FAILURE_WINDOW_SECONDS);
 
   const token = randomHex(32); // 256-bit random admin session token
   const createdAt = nowIso();
@@ -474,8 +414,8 @@ async function handleLogin(request, env) {
   await env.DB.batch([
     env.DB.prepare('DELETE FROM admin_sessions WHERE expires_at <= ?').bind(createdAt),
     env.DB.prepare(
-      'INSERT INTO admin_sessions (token, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)'
-    ).bind(token, user.id, createdAt, expiresAt),
+      'INSERT INTO admin_sessions (token, user_id, created_at, expires_at, credential_version) VALUES (?, ?, ?, ?, ?)'
+    ).bind(token, user.id, createdAt, expiresAt, await credentialVersion(env)),
   ]);
 
   return json({ token, expiresAt, user: { id: user.id, email: user.email, role: user.role } });
@@ -529,10 +469,10 @@ async function handleGetRoomByCode(env, code) {
   const { results } = await env.DB.prepare(
     'SELECT id, nickname, category, content, moderation_status, is_pinned, ' +
       'hidden_from_presentation, created_at ' +
-      'FROM submissions WHERE session_id = ? AND moderation_status = ? ' +
-      'ORDER BY is_pinned DESC, created_at DESC, id DESC'
+    'FROM submissions WHERE session_id = ? AND moderation_status = ? ' +
+      'AND hidden_from_presentation=0 AND id=(SELECT current_submission_id FROM presentation_state WHERE session_id=?) LIMIT 1'
   )
-    .bind(session.id, 'approved')
+    .bind(session.id, 'approved', session.id)
     .all();
 
   const submissions = results.map(serializeSubmission);
@@ -669,10 +609,10 @@ async function handleCreateSubmission(request, env) {
   if (isDuplicate) return json({ ok: true, duplicate: true });
 
   try {
-    await env.DB.prepare(
+    const inserted = await env.DB.prepare(
       'INSERT INTO submissions (id, session_id, participant_id, request_id, nickname, category, content, ' +
         'moderation_status, is_pinned, hidden_from_presentation, created_at, updated_at) ' +
-        'VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?)'
+      "SELECT ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ? FROM discussion_sessions ds WHERE ds.id=? AND ds.status='live' AND (ds.closes_at IS NULL OR ds.closes_at>?) AND (SELECT COUNT(*) FROM submissions WHERE session_id=ds.id AND participant_id=? AND created_at>=?) < ? AND NOT EXISTS(SELECT 1 FROM submissions WHERE session_id=ds.id AND participant_id=? AND trim(content)=? AND created_at>=?) RETURNING id"
     )
       .bind(
         crypto.randomUUID(),
@@ -684,9 +624,18 @@ async function handleCreateSubmission(request, env) {
         content,
         'pending',
         nowIso(),
-        nowIso()
+        nowIso(),
+        session.id, nowIso(), participantId, windowStart, RATE_LIMIT_MAX_SUBMISSIONS,
+        participantId, content, duplicateCutoff
       )
-      .run();
+      .first();
+    if (!inserted) {
+      const duplicate = await env.DB.prepare('SELECT id FROM submissions WHERE session_id=? AND participant_id=? AND ((request_id=?) OR (trim(content)=? AND created_at>=?)) LIMIT 1').bind(session.id, participantId, requestId, content, duplicateCutoff).first();
+      if (duplicate) return json({ ok: true, duplicate: true });
+      const active = await env.DB.prepare("SELECT id FROM discussion_sessions WHERE id=? AND status='live' AND (closes_at IS NULL OR closes_at>?)").bind(session.id, nowIso()).first();
+      if (!active) return json({ error: 'Submissions are currently closed for this discussion.' }, 409);
+      return json({ error: MSG_RATE_LIMITED }, 429, { 'Retry-After': String(RATE_LIMIT_WINDOW_SECONDS) });
+    }
   } catch {
     // Concurrent copies of the same request can both miss the fast lookup,
     // but only one can satisfy submissions_request_id_idx. Treat the losing
@@ -969,10 +918,12 @@ async function handleUpdateAdminSession(request, env, admin, id) {
   const { values, fieldErrors } = validateSessionValues(body, { partial: true });
   if (fieldErrors) return json({ error: 'Please fix the highlighted fields.', fieldErrors }, 400);
 
-  const current = await env.DB.prepare('SELECT id FROM discussion_sessions WHERE id = ?')
+  if (!Number.isInteger(body.expectedRevision)) return json({ error: 'Refresh before saving.', code: 'revision_required' }, 400);
+  const current = await env.DB.prepare('SELECT id, revision FROM discussion_sessions WHERE id = ?')
     .bind(id)
     .first();
   if (!current) return json({ error: 'That discussion no longer exists.' }, 404);
+  if (current.revision !== body.expectedRevision) return json({ error: 'Another moderator updated this discussion. Refresh before saving.', code: 'concurrent_change' }, 409);
   if (Object.keys(values).length === 0) return json({ error: MSG_SESSION_GENERIC }, 400);
 
   if (values.public_code) {
@@ -984,13 +935,14 @@ async function handleUpdateAdminSession(request, env, admin, id) {
 
   const columns = Object.keys(values);
   try {
-    await env.DB.prepare(
+    const updated = await env.DB.prepare(
       'UPDATE discussion_sessions SET ' +
         columns.map((c) => `${c} = ?`).join(', ') +
-        ', updated_at = ? WHERE id = ?'
+        ', updated_at = ?, revision = revision + 1 WHERE id = ? AND revision = ?'
     )
-      .bind(...columns.map((c) => values[c]), nowIso(), id)
+      .bind(...columns.map((c) => values[c]), nowIso(), id, body.expectedRevision)
       .run();
+    if (!updated.meta.changes) return json({ error: 'Another moderator updated this discussion. Refresh before saving.', code: 'concurrent_change' }, 409);
   } catch {
     return json({ error: MSG_SESSION_GENERIC }, 500);
   }
@@ -1042,7 +994,7 @@ async function handleSetSessionStatus(request, env, admin, id) {
   try {
     const results = await env.DB.batch([
       env.DB.prepare(
-        'UPDATE discussion_sessions SET status = ?, updated_at = ? WHERE id = ? AND status = ?'
+        'UPDATE discussion_sessions SET status = ?, updated_at = ?, revision=revision+1 WHERE id = ? AND status = ?'
       ).bind(next, nowIso(), id, current.status),
     ]);
     if (!results[0]?.meta?.changes) {
@@ -1083,7 +1035,7 @@ async function handleReopenSession(request, env, admin, id) {
   try {
     const results = await env.DB.batch([
       env.DB.prepare(
-        'UPDATE discussion_sessions SET status = ?, updated_at = ? WHERE id = ? AND status = ?'
+        'UPDATE discussion_sessions SET status = ?, updated_at = ?, revision=revision+1 WHERE id = ? AND status = ?'
       ).bind('live', nowIso(), id, 'closed'),
     ]);
     if (!results[0]?.meta?.changes) {
@@ -1353,12 +1305,14 @@ async function handlePatchAdminSubmission(request, env, admin, id) {
   }
 
   const current = await env.DB.prepare(
-    'SELECT id, moderation_status, is_pinned, hidden_from_presentation, discussed_at ' +
+    'SELECT id, session_id, revision, moderation_status, is_pinned, hidden_from_presentation, discussed_at ' +
       'FROM submissions WHERE id = ?'
   )
     .bind(id)
     .first();
   if (!current) return json({ error: MSG_INVALID }, 404);
+  if (!Number.isInteger(body.expectedRevision)) return json({ error: 'Refresh before moderating.', code: 'revision_required' }, 400);
+  if (body.expectedRevision !== current.revision) return json({ error: 'Another moderator changed this contribution. Refresh and try again.', code: 'concurrent_change' }, 409);
 
   const updates = {};
   let invalid = false;
@@ -1397,21 +1351,22 @@ async function handlePatchAdminSubmission(request, env, admin, id) {
     env.DB.prepare(
       'UPDATE submissions SET ' +
         columns.map((c) => `${c} = ?`).join(', ') +
-        ', updated_at = ? WHERE id = ?'
-    ).bind(...columns.map((c) => updates[c]), now, id),
+        ', updated_at = ?, revision = revision + 1 WHERE id = ? AND revision = ? RETURNING id'
+    ).bind(...columns.map((c) => updates[c]), now, id, body.expectedRevision),
   ];
   if (mustClearPointer) {
     statements.push(
       env.DB.prepare(
         'UPDATE presentation_state SET current_submission_id = NULL, updated_at = ?, updated_by = ? ' +
           'WHERE session_id = (SELECT session_id FROM submissions WHERE id = ?) ' +
-          'AND current_submission_id = ?'
+          'AND current_submission_id = ? AND changes() > 0'
       ).bind(now, admin.user.id, id, id)
     );
   }
 
   try {
-    await env.DB.batch(statements);
+    const changed = await env.DB.batch(statements);
+    if (!changed[0].results?.length) return json({ error: 'Another moderator changed this contribution. Refresh and try again.', code: 'concurrent_change' }, 409);
   } catch {
     return json({ error: 'Could not update that contribution. Please try again.' }, 500);
   }
@@ -1569,11 +1524,11 @@ async function handleGetPresentation(env, sessionId) {
     .first();
   if (!session) return json({ error: 'This discussion could not be found.' }, 404);
   const row = await env.DB.prepare(
-    'SELECT current_submission_id FROM presentation_state WHERE session_id = ?'
+    'SELECT current_submission_id, revision FROM presentation_state WHERE session_id = ?'
   )
     .bind(sessionId)
     .first();
-  return json({ currentId: row?.current_submission_id ?? null });
+  return json({ currentId: row?.current_submission_id ?? null, revision: row?.revision ?? 0 });
 }
 
 async function handlePutPresentation(request, env, admin, sessionId) {
@@ -1583,7 +1538,8 @@ async function handlePutPresentation(request, env, admin, sessionId) {
   } catch {
     return json({ error: MSG_BAD_BODY }, 400);
   }
-  const currentId =
+  if (!Number.isInteger(body.expectedRevision)) return json({ error: 'Refresh presentation controls before continuing.', code: 'revision_required' }, 400);
+  let currentId =
     body?.current_submission_id == null ? null : String(body.current_submission_id);
   if (currentId !== null && !isUuid(currentId)) {
     return json({ error: 'Invalid contribution.' }, 400);
@@ -1593,6 +1549,21 @@ async function handlePutPresentation(request, env, admin, sessionId) {
     .bind(sessionId)
     .first();
   if (!session) return json({ error: 'This discussion could not be found.' }, 404);
+
+  await env.DB.prepare('INSERT OR IGNORE INTO presentation_state(session_id) VALUES(?)').bind(sessionId).run();
+  await env.DB.prepare('INSERT OR IGNORE INTO platform_state(session_id) VALUES(?)').bind(sessionId).run();
+  const pointer = await env.DB.prepare('SELECT revision,current_submission_id FROM presentation_state WHERE session_id=?').bind(sessionId).first();
+  const platform = await env.DB.prepare('SELECT revision FROM platform_state WHERE session_id=?').bind(sessionId).first();
+  if (pointer.revision !== body.expectedRevision) return json({ error: 'The screen changed in another moderator tab. Refresh and try again.', code: 'concurrent_change' }, 409);
+  if (body.action === 'next' || body.action === 'prev') {
+    const { results: eligible } = await env.DB.prepare("SELECT id FROM submissions WHERE session_id=? AND moderation_status='approved' AND hidden_from_presentation=0 ORDER BY is_pinned DESC,created_at ASC,id ASC").bind(sessionId).all();
+    if (!eligible.length) currentId = null;
+    else {
+      const index = eligible.findIndex(item => item.id === pointer.current_submission_id);
+      const next = index < 0 ? (body.action === 'prev' ? eligible.length - 1 : 0) : (index + (body.action === 'prev' ? -1 : 1) + eligible.length) % eligible.length;
+      currentId = eligible[next].id;
+    }
+  }
 
   if (currentId !== null) {
     // Only approved, presentation-visible contributions reach the screen.
@@ -1608,16 +1579,19 @@ async function handlePutPresentation(request, env, admin, sessionId) {
   }
 
   const now = nowIso();
-  await env.DB.prepare(
-    'INSERT INTO presentation_state (session_id, current_submission_id, updated_at, updated_by) ' +
-      'VALUES (?, ?, ?, ?) ON CONFLICT(session_id) DO UPDATE SET ' +
-      'current_submission_id = excluded.current_submission_id, ' +
-      'updated_at = excluded.updated_at, updated_by = excluded.updated_by'
-  )
-    .bind(sessionId, currentId, now, admin.user.id)
-    .run();
-
-  return json({ ok: true, currentId });
+  const mutationId = crypto.randomUUID();
+  let results;
+  try {
+    results = await env.DB.batch([
+    env.DB.prepare('UPDATE platform_state SET revision=revision+1,mutation_id=?,projected_poll_id=NULL WHERE session_id=? AND revision=? AND EXISTS(SELECT 1 FROM presentation_state WHERE session_id=? AND revision=?) RETURNING revision').bind(mutationId, sessionId, platform.revision, sessionId, body.expectedRevision),
+    env.DB.prepare('UPDATE presentation_state SET current_submission_id=?,updated_at=?,updated_by=?,revision=revision+1 WHERE session_id=? AND revision=? AND EXISTS(SELECT 1 FROM platform_state WHERE session_id=? AND mutation_id=?) RETURNING revision').bind(currentId, now, admin.user.id, sessionId, body.expectedRevision, sessionId, mutationId),
+    env.DB.prepare("INSERT INTO admin_activity(id,session_id,actor_id,action,target_id,created_at) SELECT ?,?,?,'project',?,? WHERE EXISTS(SELECT 1 FROM platform_state WHERE session_id=? AND mutation_id=?)").bind(crypto.randomUUID(), sessionId, admin.user.id, currentId, now, sessionId, mutationId),
+    ]);
+  } catch {
+    return json({ error: 'The screen or contribution changed. Synchronize and try again.', code: 'concurrent_change' }, 409);
+  }
+  if (!results[1].results?.length) return json({ error: 'The screen changed in another moderator tab. Refresh and try again.', code: 'concurrent_change' }, 409);
+  return json({ ok: true, currentId, revision: results[1].results[0].revision });
 }
 
 /* ---------- router ---------- */
@@ -1661,6 +1635,11 @@ const worker = {
         return await handleCheckNickname(request, env);
       }
 
+      const engagementMatch = path.match(/^\/sessions\/([^/]+)\/(engagement|vote|reactions)$/);
+      if (engagementMatch && ((engagementMatch[2] === 'engagement' && method === 'GET') || (engagementMatch[2] !== 'engagement' && method === 'POST'))) {
+        return await handleEngagement(request, env, engagementMatch[1].toUpperCase(), engagementMatch[2]);
+      }
+
       // ----- admin -----
 
       if (path === '/admin/auth/login' && method === 'POST') {
@@ -1675,6 +1654,16 @@ const worker = {
       }
       if (path === '/admin/auth/me' && method === 'GET') {
         return json({ user: admin.user });
+      }
+      if (path === '/admin/activity' && method === 'GET') {
+        const { results } = await env.DB.prepare('SELECT action,session_id,created_at FROM admin_activity ORDER BY created_at DESC LIMIT 200').all();
+        return json({ items: results });
+      }
+
+      const platformMatch = path.match(/^\/admin\/sessions\/([^/]+)\/(platform|export)$/);
+      if (platformMatch && isUuid(platformMatch[1])) {
+        if (platformMatch[2] === 'export' && method === 'GET') return await exportSession(env, platformMatch[1]);
+        if (platformMatch[2] === 'platform') return await handlePlatform(request, env, admin, platformMatch[1], verifyDestructiveAdminPassword);
       }
 
       if (path === '/admin/sessions') {

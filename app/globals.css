@@ -35,6 +35,7 @@
 @layer base {
   html {
     -webkit-text-size-adjust: 100%;
+    scrollbar-gutter: stable;
   }
 
   body {
@@ -83,6 +84,19 @@
   ::selection {
     @apply bg-gold/30 text-midnight;
   }
+}
+
+.font-display {
+  font-synthesis: none;
+}
+
+main h1, main h2, main h3 {
+  overflow-wrap: anywhere;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .glow-pointer { display: none; }
 }
 
 

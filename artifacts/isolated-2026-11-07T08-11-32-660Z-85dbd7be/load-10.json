@@ -1,0 +1,55 @@
+{
+  "concurrency": 10,
+  "requests": 10,
+  "successes": 10,
+  "errors": 0,
+  "successRate": 100,
+  "wallTimeMs": 84.8,
+  "throughputPerSecond": 117.89,
+  "latency": {
+    "minMs": 78.8,
+    "p50Ms": 79.6,
+    "p95Ms": 82.5,
+    "p99Ms": 82.5,
+    "maxMs": 82.5
+  },
+  "statusCounts": {
+    "200": 10
+  },
+  "errorSamples": [],
+  "database": {
+    "before": 3,
+    "after": 14,
+    "expectedDelta": 11,
+    "actualDelta": 11,
+    "countMatches": true
+  },
+  "duplicateProbe": {
+    "statuses": [
+      200,
+      200
+    ],
+    "allSuccessful": true,
+    "replayRecognized": true,
+    "exactlyOneRow": true
+  },
+  "concurrentRoomPolling": {
+    "requests": 30,
+    "errors": 0,
+    "p50Ms": 34.1,
+    "p95Ms": 62.6
+  },
+  "moderationAndProjection": {
+    "status": 200,
+    "moderationStatus": 200,
+    "moderationLatencyMs": 53.5,
+    "moderationResponseMs": 151.5,
+    "projectionObservedMs": 222.1,
+    "correctPointer": true
+  },
+  "browserProjection": {
+    "observedMs": 3524.8,
+    "correctPointer": true,
+    "reducedMotion": true
+  }
+}
