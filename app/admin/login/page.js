@@ -12,7 +12,7 @@ export default async function AdminLoginPage() {
         <div className="flex flex-col items-center gap-4">
           <span
             className="inline-flex h-28 w-28 animate-emblem-drift drop-shadow-[0_0_18px_rgba(167,139,250,0.25)] sm:h-32 sm:w-32"
-            aria-label="Spill It"
+            role="img" aria-label="Spill It"
           >
             <Emblem className="h-full w-full" />
           </span>

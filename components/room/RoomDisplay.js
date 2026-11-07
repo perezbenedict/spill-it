@@ -362,7 +362,7 @@ export default function RoomDisplay({
           <div className="flex min-w-0 items-center gap-3">
           <span className="text-xl font-bold tracking-tight">Spill It</span>
           <span className="stage-eyebrow hidden sm:inline">{sessionStatus === 'live' ? 'Live' : sessionStatus}</span>
-          <span className="inline-flex h-7 w-7" aria-label="Spill It">
+          <span className="inline-flex h-7 w-7" role="img" aria-label="Spill It">
             <svg
               viewBox="0 0 120 120"
               xmlns="http://www.w3.org/2000/svg"

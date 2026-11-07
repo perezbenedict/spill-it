@@ -1,0 +1,197 @@
+{
+  "tests": [
+    {
+      "spec": "admin-bulk-delete.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-07T22:23:39.507Z",
+        "duration": 5224.66,
+        "expected": 3,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "run": "isolated-2026-11-07T22-23-06-844Z-301afb78"
+    },
+    {
+      "spec": "admin-room-recovery.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-07T22:23:46.857Z",
+        "duration": 17699.762000000002,
+        "expected": 6,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "run": "isolated-2026-11-07T22-23-06-844Z-301afb78"
+    },
+    {
+      "spec": "fullscreen-projection.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-07T22:24:07.243Z",
+        "duration": 14889.199999999999,
+        "expected": 3,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "run": "isolated-2026-11-07T22-23-06-844Z-301afb78"
+    },
+    {
+      "spec": "nickname-reservation.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-07T22:24:24.058Z",
+        "duration": 579.831,
+        "expected": 1,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "run": "isolated-2026-11-07T22-23-06-844Z-301afb78"
+    },
+    {
+      "spec": "platform.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-07T22:33:40.253Z",
+        "duration": 80489.859,
+        "expected": 20,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "run": "isolated-2026-11-07T22-33-30-327Z-ef5c1e6e"
+    },
+    {
+      "spec": "public-journey.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-07T22:25:47.684Z",
+        "duration": 6496.822,
+        "expected": 5,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "run": "isolated-2026-11-07T22-23-06-844Z-301afb78"
+    },
+    {
+      "spec": "qr-responsive.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-07T22:25:56.100Z",
+        "duration": 8191.527,
+        "expected": 7,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "run": "isolated-2026-11-07T22-23-06-844Z-301afb78"
+    },
+    {
+      "spec": "zz-auth-throttle.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-07T22:26:08.949Z",
+        "duration": 432.811,
+        "expected": 2,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "run": "isolated-2026-11-07T22-23-06-844Z-301afb78"
+    },
+    {
+      "spec": "stage-verification.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-07T22:27:49.967Z",
+        "duration": 268701.481,
+        "expected": 32,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "run": "isolated-2026-11-07T22-27-44-147Z-775ae723"
+    },
+    {
+      "spec": "accessibility.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-07T22:33:12.202Z",
+        "duration": 17406.103,
+        "expected": 12,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "run": "isolated-2026-11-07T22-33-05-651Z-1bc8b266"
+    }
+  ],
+  "browserTests": 91,
+  "unitTests": 42,
+  "profiles": [
+    {
+      "stageFrameProfile": "no-preference",
+      "durationMs": 2016.6,
+      "frames": 63,
+      "intervalP50Ms": 33.30000000000007,
+      "intervalP95Ms": 33.40000000000009,
+      "intervalsOver50Ms": 0,
+      "longestIntervalMs": 33.5,
+      "longTaskSupported": true,
+      "longTasksMs": [],
+      "note": "Headless browser requestAnimationFrame scheduling measurement; does not certify physical projector GPU frame rate."
+    },
+    {
+      "stageFrameProfile": "reduce",
+      "durationMs": 2016.6,
+      "frames": 121,
+      "intervalP50Ms": 16.69999999999999,
+      "intervalP95Ms": 16.799999999999955,
+      "intervalsOver50Ms": 0,
+      "longestIntervalMs": 16.800000000000182,
+      "longTaskSupported": true,
+      "longTasksMs": [],
+      "note": "Headless browser requestAnimationFrame scheduling measurement; does not certify physical projector GPU frame rate."
+    }
+  ],
+  "backupSHA256": "1ffd8f9f8140385334219792ff2f386d491b5cf4595cbf2a41beb910008ce0ac",
+  "rollback": {
+    "oldApplication": "199684a",
+    "schema": "005_stage",
+    "checks": [
+      {
+        "route": "/health",
+        "status": 200
+      },
+      {
+        "route": "/sessions",
+        "status": 200
+      },
+      {
+        "route": "/rooms",
+        "status": 200
+      },
+      {
+        "route": "/sessions/:code/engagement",
+        "status": 200
+      }
+    ],
+    "pointersPreserved": true,
+    "contributions": 18,
+    "integrity": "ok"
+  },
+  "activityObservation": {
+    "started": "2026-11-07T22:30:45.237Z",
+    "ended": "2026-11-07T22:31:42.397Z",
+    "probeStatus": 200,
+    "probeObserved": true,
+    "counts": {
+      "GET /health": 1
+    }
+  }
+}

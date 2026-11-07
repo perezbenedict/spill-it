@@ -895,7 +895,7 @@ export default function SubmissionFeed({
             aria-live="polite"
             className={cn(
               "inline-flex items-center gap-1.5 rounded-pill px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.14em]",
-              connection === "live" ? "bg-gold/40 text-gold-deep" : "bg-crimson/10 text-crimson-bright"
+              connection === "live" ? "bg-gold/15 text-gold-light" : "bg-crimson/10 text-crimson-bright"
             )}
           >
             <Radio className="h-3.5 w-3.5" aria-hidden="true" />

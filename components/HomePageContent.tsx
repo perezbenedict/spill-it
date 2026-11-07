@@ -135,7 +135,7 @@ export default function HomePageContent({ session, provided }: HomePageContentPr
         >
           <span
             className="mb-2 inline-flex h-20 w-20 drop-shadow-[0_6px_18px_rgba(167,139,250,0.18)] sm:h-24 sm:w-24"
-            aria-label="Spill It"
+            role="img" aria-label="Spill It"
           >
             <Emblem className="h-full w-full" />
           </span>
