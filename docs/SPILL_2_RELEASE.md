@@ -3,10 +3,9 @@
 This record supplements the original audit in `SPILL_2_UPGRADE.md`. Production
 release status is recorded below only after verification.
 
-**Release status: validated, awaiting deployment.** Final browser, visual, load,
-migration-rehearsal and Cloudflare artifact checks passed in the run recorded
-below. Remote migration, commit/push, deployment IDs and production smoke results
-remain release gates.
+**Release status: deployed and production smoke-checked, 2026-11-07.** Final
+browser, visual, load, migration-rehearsal and Cloudflare artifact checks passed.
+The additive migration, Worker and Pages release are live; event data was retained.
 
 ## Integrated upgrade
 
@@ -122,7 +121,7 @@ A fresh private predeployment backup is at
 the same SHA-256 recorded above. Its restoration plus the final migration,
 including the `spill_schema_migrations` ledger, preserved three sessions and 16
 contributions and passed integrity/foreign-key checks. Remote preflight found no
-live session. Production migration/deployment results are recorded after release.
+live session. Production migration/deployment results are recorded below.
 
 Final fixes include reduced-motion hydration visibility on home/join, a dialog
 autofocus race during confirmation entry, form-baseline revisions surviving
@@ -147,8 +146,7 @@ queue conflicts, vote isolation, reactions, browser voting, cookie spoofing,
 moderation revisions, authorization, password rotation and safe shortcuts.
 
 Early runs found and corrected a proxy origin mismatch. A development hot-reload
-manifest failure required a clean rerun; it is not counted as a pass. Final gate,
-commit and deployment results are appended after verification.
+manifest failure required a clean rerun; it is not counted as a pass.
 
 The isolated runner now builds and serves production mode by default. To reuse a
 release build after `cf-build`, run
@@ -214,7 +212,10 @@ or alter the API secret to rotate a password.
 ## Changed-file inventory
 
 The foundation commit `274736c` remains the starting point. The continuing upgrade
-is grouped below; its eventual Git commit is the authoritative full diff.
+is grouped below; commit `a0d775961a5c45511f07f6d0edfabba367c8d546` is the
+authoritative full implementation diff (101 files, including 43 PNG baselines and
+five sanitized measurement files). The following documentation-only release
+record also retains production verification evidence.
 
 | Area | Files |
 | --- | --- |
@@ -225,3 +226,41 @@ is grouped below; its eventual Git commit is the authoritative full diff.
 | Design, motion and reusable configuration | `app/globals.css`, `components/HomePageContent.tsx`, `components/background/AnimatedBackground.tsx`, `components/motion/AnimatedSection.tsx`, `components/participant/TopicCard.js`, `components/ui/Dialog.js`, `lib/discussion-templates.js` |
 | Test and release tooling | `scripts/{test-isolated,test-migrations,patch-assets}.mjs`, `playwright.config.js`, `tests/helpers/e2e-env.js`, `tests/e2e/{platform,zz-auth-throttle}.spec.js`, `tests/e2e/platform.spec.js-snapshots/`, `tests/unit/{dialog.test.jsx,discussion-templates.test.js,request-origin.test.js,worker-auth.test.js}` |
 | Dependencies and documentation | `package.json`, `package-lock.json`, `.gitignore`, `eslint.config.mjs`, `api/DEPLOY.md`, `docs/{database,SPILL_2_UPGRADE,SPILL_2_RELEASE,RELEASE_RECOVERY}.md` |
+
+## Production release verification
+
+- Implementation commit: `a0d775961a5c45511f07f6d0edfabba367c8d546`, pushed to
+  `main`; author `perezbenedict`. Reachable Git author/message checks found no
+  Claude or Anthropic attribution.
+- Additive migration `004_platform` applied remotely: 28 queries executed.
+  Ledger confirmed; three sessions and 16 contributions retained, no live event,
+  and remote `foreign_key_check` returned no violations. SQLite integrity checks
+  passed on the backup rehearsal; remote D1 rejects `integrity_check`, so no
+  remote integrity-check pass is claimed.
+- Worker version: `3d5863f1-0e26-4431-a581-c59a99524736`; deployment:
+  `ae9313fb-4b08-462f-9755-b6d2da55774c`.
+- Pages production deployment: `799dd2ea-05e6-4dcb-8689-46aa84fe3429`, source
+  `a0d7759`, URL `https://799dd2ea.spill-it-4rw.pages.dev`.
+- Actual production domain `https://spill-it-4rw.pages.dev` checked in Chromium
+  at 390×844: home, login, existing participant entry, QR and room returned 200,
+  with no horizontal overflow or browser runtime errors. Six referenced JS/CSS
+  assets returned 200. API health and public engagement returned 200.
+- Paused-session vote validation returned 409 without creating a vote; a
+  cross-origin request returned 403; unauthenticated platform access returned
+  401 and protected navigation redirected to login. No production contribution,
+  poll, destructive operation, password rotation or load test was performed.
+- Authenticated production write journeys were not exercised because the live
+  admin password was not available to this execution. Their equivalent isolated
+  tests passed. No production secrets were replaced. Moderators must sign in
+  again after this first credential-version deployment.
+
+Evidence: `artifacts/production-2026-11-07/verification.json` and
+`artifacts/production-2026-11-07/home-mobile.png`. Existing private event content
+is excluded. Postdeployment row counts and foreign-key checks were repeated.
+
+No known implementation blocker remains. Limits: anonymous browser voting cannot
+guarantee one physical person per vote; local burst measurements do not certify
+distributed capacity; projection synchronization uses the existing 3.5-second
+poll interval; retention cleanup is operator-driven; visual baselines cover
+Chromium on macOS, not every browser/device. Projection analytics begin with
+upgrade activity and cannot reconstruct historical events.

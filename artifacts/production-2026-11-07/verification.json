@@ -1,0 +1,41 @@
+{
+  "origin": "https://spill-it-4rw.pages.dev",
+  "results": [
+    {
+      "page": "home",
+      "status": 200,
+      "horizontalOverflow": false
+    },
+    {
+      "staticAssets": 6,
+      "status": 200
+    },
+    {
+      "page": "login",
+      "status": 200,
+      "horizontalOverflow": false
+    },
+    {
+      "page": "join",
+      "status": 200,
+      "horizontalOverflow": false
+    },
+    {
+      "page": "qr",
+      "status": 200,
+      "horizontalOverflow": false
+    },
+    {
+      "page": "room",
+      "status": 200,
+      "horizontalOverflow": false
+    }
+  ],
+  "engagement": 200,
+  "pausedVoteRejected": 409,
+  "crossOriginRejected": 403,
+  "unauthorizedAdmin": 401,
+  "adminRedirect": true,
+  "browserRuntimeErrors": 0,
+  "authenticatedWrites": "Not attempted on production; isolated browser suite passed."
+}

@@ -5,8 +5,9 @@ reset a production database to install an upgrade. Backups contain private event
 content: keep them outside the repository with owner-only permissions and do not
 upload them as public build artifacts.
 
-The integrated upgrade is still awaiting final release gates. A private backup
-already exists at
+The integrated upgrade passed its isolated release gates and was deployed on
+2026-11-07. Deployment IDs and production smoke results are in
+`SPILL_2_RELEASE.md`. A private backup exists at
 `~/Library/Application Support/SPILL/backups/2026-11-07/spill-final-predeploy.sql`, SHA-256
 `e9babbc651e4296bb32b913fcf2fed99112359b4adb381bb4415cf369c05005f`.
 Its restoration and additive-migration rehearsal preserved three sessions and
@@ -67,6 +68,12 @@ repeatedly clicking the same operation. See `SPILL_2_RELEASE.md` for the complet
 operator controls.
 
 ## Recovery
+
+Pre-upgrade rollback references: Worker version
+`5ad6e53c-939e-4387-833e-8627a5934b18`, Worker deployment
+`8a9c784e-983d-4e5f-b1ef-99cfbb3b8876`, and Pages deployment
+`a15b8897-c765-4705-aeb6-0ae4d36eeab6`. The pre-release D1 time-travel bookmark is
+`00000195-00000000-0000511c-81a5938477929a906e2fb62f74856aa0`.
 
 Keep the previous Worker/Pages deployment IDs before release. For application
 regressions, roll back those deployments and leave additive tables/columns intact.
