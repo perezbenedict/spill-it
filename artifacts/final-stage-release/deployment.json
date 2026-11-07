@@ -1,0 +1,40 @@
+{
+  "pages": {
+    "Id": "a85f121e-468b-44c5-ab24-5cfed04da10f",
+    "Environment": "Production",
+    "Branch": "main",
+    "Source": "ffd43ba",
+    "Deployment": "https://a85f121e.spill-it-4rw.pages.dev",
+    "Status": "48 seconds ago",
+    "Build": "https://dash.cloudflare.com/3c0bdf6a1e868d79ba2a1caac4d4377a/pages/view/spill-it/a85f121e-468b-44c5-ab24-5cfed04da10f"
+  },
+  "worker": {
+    "id": "4414838f-d9a1-4555-8a55-b86dad613615",
+    "source": "wrangler",
+    "strategy": "percentage",
+    "author_email": "perezbenedict007@gmail.com",
+    "annotations": {
+      "workers/triggered_by": "deployment"
+    },
+    "versions": [
+      {
+        "version_id": "6d62287a-5a31-4093-807e-772c48ae1cac",
+        "percentage": 100
+      }
+    ],
+    "created_on": "2026-11-07T22:36:02.162314Z"
+  },
+  "sessions": 3,
+  "live": 1,
+  "contributions": 18,
+  "presentationReferencesAndRevisionsPreserved": true,
+  "foreignKeyViolations": 0,
+  "migrations": [
+    {
+      "version": "004_platform"
+    },
+    {
+      "version": "005_stage"
+    }
+  ]
+}

@@ -1,5 +1,9 @@
 # Premium stage evolution
 
+Released on 2026-11-07 after verification and a quiet-window assessment. The
+historical deferral below is superseded by `FINAL_STAGE_RELEASE.md`, which records
+the completed migration, deployments, test measurements and production checks.
+
 Implementation preserves the existing purple identity, navigation and contribution, moderation, queue, poll and deletion flows.
 
 ## Changes

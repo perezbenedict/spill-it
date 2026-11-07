@@ -1,0 +1,53 @@
+{
+  "origin": "https://spill-it-4rw.pages.dev",
+  "pages": [
+    {
+      "name": "home",
+      "status": 200,
+      "horizontalOverflow": false
+    },
+    {
+      "name": "login",
+      "status": 200,
+      "horizontalOverflow": false
+    },
+    {
+      "name": "join",
+      "status": 200,
+      "horizontalOverflow": false
+    },
+    {
+      "name": "qr",
+      "status": 200,
+      "horizontalOverflow": false
+    },
+    {
+      "name": "room",
+      "status": 200,
+      "horizontalOverflow": false
+    }
+  ],
+  "assets": 7,
+  "existingSessions": 3,
+  "authenticatedAdmin": true,
+  "participantEntryToNickname": true,
+  "publicStage": {
+    "status": 200,
+    "atmosphere": "midnight",
+    "activeChapterCount": 0,
+    "privatePromptsOmitted": true,
+    "overlay": null
+  },
+  "unauthorizedAdmin": 401,
+  "persistedStageRead": {
+    "status": 200,
+    "atmosphere": "midnight",
+    "chapters": 0,
+    "prompts": 0,
+    "overlay": null
+  },
+  "stageControlsVisible": true,
+  "allExistingSessionsAvailable": true,
+  "runtimeErrors": 0,
+  "productionWritesPerformed": false
+}
