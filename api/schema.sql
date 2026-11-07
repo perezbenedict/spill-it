@@ -127,7 +127,8 @@ CREATE TABLE IF NOT EXISTS platform_state (
  session_id TEXT PRIMARY KEY REFERENCES discussion_sessions(id) ON DELETE CASCADE,
  revision INTEGER NOT NULL DEFAULT 0, mutation_id TEXT,
  reactions_enabled INTEGER NOT NULL DEFAULT 0 CHECK(reactions_enabled IN (0,1)),
- projected_poll_id TEXT
+ projected_poll_id TEXT,
+ stage_config TEXT NOT NULL DEFAULT '{}' CHECK(json_valid(stage_config))
 );
 CREATE TABLE IF NOT EXISTS projection_queue (
  session_id TEXT NOT NULL REFERENCES discussion_sessions(id) ON DELETE CASCADE,
@@ -220,3 +221,4 @@ CREATE TABLE IF NOT EXISTS spill_schema_migrations (
  applied_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
 );
 INSERT OR IGNORE INTO spill_schema_migrations(version) VALUES('004_platform');
+INSERT OR IGNORE INTO spill_schema_migrations(version) VALUES('005_stage');

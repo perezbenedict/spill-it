@@ -127,7 +127,7 @@ function AnimatedCheckmark({ reducedMotion }) {
   );
 }
 
-export default function SubmissionForm({ session, nickname, category, onBack, onSuccess }) {
+export default function SubmissionForm({ session, nickname, category, onBack, onSuccess, initialContent = "", onDraftChange }) {
   const reducedMotion = useReducedMotion();
   const configuration = session.configuration || {};
   const minLength = clampLength(
@@ -139,7 +139,7 @@ export default function SubmissionForm({ session, nickname, category, onBack, on
     DEFAULT_MAX_CONTENT_LENGTH
   );
 
-  const [content, setContent] = useState("");
+  const [content, setContent] = useState(initialContent);
   const [error, setError] = useState(null);
   const [contentError, setContentError] = useState(null);
   const [status, setStatus] = useState("idle"); // idle | submitting | success | error
@@ -154,6 +154,7 @@ export default function SubmissionForm({ session, nickname, category, onBack, on
 
   function handleContentChange(event) {
     setContent(event.target.value);
+    onDraftChange?.(event.target.value);
     requestIdRef.current = null;
     if (contentError) setContentError(null);
   }
@@ -216,6 +217,7 @@ export default function SubmissionForm({ session, nickname, category, onBack, on
 
   function handleSubmitAnother() {
     setContent("");
+    onDraftChange?.("");
     requestIdRef.current = null;
     setError(null);
     setContentError(null);
@@ -240,7 +242,7 @@ export default function SubmissionForm({ session, nickname, category, onBack, on
             initial={{ scale: reducedMotion ? 1 : 0.72, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={reducedMotion ? { duration: 0 } : { type: "spring", stiffness: 260, damping: 22 }}
-            className="flex h-20 w-20 items-center justify-center rounded-pill bg-gold/15 text-gold"
+            className="submission-seal relative flex h-20 w-20 items-center justify-center rounded-pill border border-gold/25 bg-gold/10 text-gold"
           >
             <AnimatedCheckmark reducedMotion={reducedMotion} />
           </motion.div>

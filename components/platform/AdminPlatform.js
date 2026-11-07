@@ -7,6 +7,7 @@ import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import Input from '@/components/ui/Input';
 import Dialog from '@/components/ui/Dialog';
+import StageControls from './StageControls';
 
 export default function AdminPlatform({ sessionId, approved = [], insightsOnly = false }) {
   const { data, error, busy, updatedAt, refresh, mutate } = usePlatform(`/api/platform/admin/${sessionId}`);
@@ -28,6 +29,7 @@ export default function AdminPlatform({ sessionId, approved = [], insightsOnly =
     {!insightsOnly && <div role="group" aria-label="Event control sections" className="flex flex-wrap gap-2">{[['queue', 'Projection queue'], ['engagement', 'Polls & reactions'], ['insights', 'Insights'], ['activity', 'Activity']].map(([key, label]) => <Button key={key} size="sm" variant={panel === key ? 'primary' : 'secondary'} aria-pressed={panel === key} onClick={() => setPanel(key)}>{label}</Button>)}</div>}
     {error && <p role="alert" className="rounded-control border border-crimson/50 bg-crimson/10 p-3 text-sm">{error}</p>}
     {notice && <p role="status" className="text-sm text-gold-light">{notice}</p>}
+    {!insightsOnly && data && <details className="rounded-card border border-white/10 p-4"><summary className="cursor-pointer text-gold-light">Stage direction · atmosphere, chapters, prompts & reflection</summary><div className="mt-5"><StageControls stage={data.stage} busy={busy} run={run} /></div></details>}
     {!data && !error && <p className="text-sm text-muted">Loading event state…</p>}
     {data && !insightsOnly && <>
       <Card hidden={panel !== 'queue'} className="space-y-4"><div className="flex flex-wrap items-center justify-between gap-3"><h3 className="font-display text-xl">Projection queue <span className="font-body text-sm text-muted">({queue.length})</span></h3><div className="flex flex-wrap gap-2"><Button onClick={() => run({ action: 'advance' })} disabled={busy || !queue.length}>Project next</Button><Button variant="secondary" onClick={() => setConfirmation({ action: 'clearQueue' })} disabled={busy || !queue.length}>Clear queue</Button></div></div><p className="text-sm text-muted">Only an explicit projection action changes the screen. Approval and queue changes never project automatically.</p>

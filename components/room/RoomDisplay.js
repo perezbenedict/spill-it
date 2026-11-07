@@ -7,6 +7,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import RoomControls from "@/components/room/RoomControls";
 import RoomEngagement from "@/components/platform/RoomEngagement";
+import StagePresentation from "@/components/platform/StagePresentation";
+import "@/app/stage.css";
 import Badge from "@/components/ui/Badge";
 import { CATEGORIES } from "@/lib/constants";
 
@@ -21,15 +23,15 @@ function categoryLabel(key) {
   return CATEGORIES.find((category) => category.key === key)?.label ?? key;
 }
 
-// Long contributions shrink and widen so a full quote still fits a 1080p
-// projector without scrolling (submissions can run to 1000 characters).
+// Keep a readable minimum on small screens; the reserved main region scrolls
+// rather than shrinking maximum-length contributions below reading size.
 function quoteStyle(content) {
   const length = content?.length ?? 0;
-  if (length > 800) return { fontSize: "clamp(1.25rem, 2.2vw, 1.875rem)", lineHeight: 1.35, maxWidth: "48ch" };
+  if (length > 800) return { fontSize: "clamp(1.25rem, min(2.2vw, 3.1vh), 3rem)", lineHeight: 1.35, maxWidth: "52ch" };
   if (length > 550) return { fontSize: "clamp(1.5rem, 2.6vw, 2.25rem)", lineHeight: 1.35, maxWidth: "42ch" };
   if (length > 300) return { fontSize: "clamp(1.75rem, 3.2vw, 2.75rem)", lineHeight: 1.3, maxWidth: "36ch" };
   if (length > 160) return { fontSize: "clamp(2rem, 4vw, 3.5rem)", lineHeight: 1.25, maxWidth: "28ch" };
-  return { fontSize: "clamp(2rem, 5vw, 4.5rem)", lineHeight: 1.2, maxWidth: "24ch" };
+  return { fontSize: "clamp(2rem, min(5vw, 8vh), 8rem)", lineHeight: 1.2, maxWidth: "24ch" };
 }
 
 export default function RoomDisplay({
@@ -50,6 +52,19 @@ export default function RoomDisplay({
   }
   const sessionCode = session.public_code;
   const pollUrl = `/api/room/${sessionCode}`;
+  const [stage, setStage] = useState(null);
+  const [clock, setClock] = useState(() => Date.now());
+  const stageOverlay = stage?.overlay;
+  const overlayExpiry = stageOverlay?.endsAt ? Date.parse(stageOverlay.endsAt) : null;
+  const overlay = stageOverlay && (!overlayExpiry || overlayExpiry > clock) ? stageOverlay : null;
+  const seconds = overlay && overlayExpiry ? Math.max(0, Math.ceil((overlayExpiry - clock) / 1000)) : null;
+  const chapter = stage?.chapters?.find(item => item.id === stage.activeChapterId);
+  useEffect(() => {
+    setClock(Date.now());
+    if (!stageOverlay?.endsAt) return undefined;
+    const timer = setInterval(() => setClock(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [stageOverlay?.endsAt]);
 
   const [currentId, setCurrentId] = useState(initialCurrentId);
   const [currentRow, setCurrentRow] = useState(() =>
@@ -172,13 +187,13 @@ export default function RoomDisplay({
     if (!nextId) {
       const settleTimer = setTimeout(() => {
         if (transitionRef.current.version === version) setPresentationPhase("settled");
-      }, hadPrevious ? 320 : 0);
+      }, hadPrevious ? 200 : 0);
       transitionRef.current.timers = [settleTimer];
       return undefined;
     }
 
-    const anticipationAt = hadPrevious ? 300 : 0;
-    const revealAt = anticipationAt + 220;
+    const anticipationAt = hadPrevious ? 200 : 0;
+    const revealAt = anticipationAt + 250;
     const anticipationTimer = setTimeout(() => {
       if (transitionRef.current.version === version) setPresentationPhase("anticipating");
     }, anticipationAt);
@@ -189,7 +204,7 @@ export default function RoomDisplay({
     }, revealAt);
     const settleTimer = setTimeout(() => {
       if (transitionRef.current.version === version) setPresentationPhase("settled");
-    }, revealAt + 620);
+    }, revealAt + 700);
     transitionRef.current.timers = [anticipationTimer, revealTimer, settleTimer];
 
     return () => {
@@ -287,12 +302,18 @@ export default function RoomDisplay({
   return (
     <div
       ref={screenRef}
-      className="relative flex h-dvh w-full flex-col overflow-hidden bg-midnight text-ink"
+      className="spill-stage relative flex h-dvh w-full flex-col overflow-hidden text-ink"
+      data-atmosphere={stage?.atmosphere || 'midnight'}
+      data-overlay={overlay?.kind || ''}
+      data-session-status={sessionStatus}
       data-presentation-phase={presentationPhase}
       data-presentation-transition-version={transitionVersion}
       data-current-contribution-id={displayedRow?.id ?? ""}
       data-server-contribution-id={currentId ?? ""}
     >
+      <div className="stage-lightfield" aria-hidden="true" />
+      <div className="stage-contour" aria-hidden="true" />
+      <div className="stage-horizon" aria-hidden="true" />
       {/* Layered ambient light moves on transforms only and becomes static
           when the viewer prefers reduced motion. */}
       <motion.div
@@ -325,13 +346,13 @@ export default function RoomDisplay({
       />
       <motion.div
         aria-hidden="true"
-        className="pointer-events-none absolute left-[8%] top-[18%] h-48 w-48 rounded-full border border-gold/10 opacity-50 sm:h-72 sm:w-72"
+        className="hidden"
         animate={reduceMotion ? undefined : { rotate: [0, 360], opacity: [0.28, 0.5, 0.28] }}
         transition={{ rotate: { duration: 72, ease: "linear", repeat: Infinity }, opacity: { duration: 14, ease: "easeInOut", repeat: Infinity } }}
       />
       <motion.div
         aria-hidden="true"
-        className="pointer-events-none absolute bottom-[12%] right-[7%] h-32 w-32 rounded-full border border-dashed border-gold/10 opacity-40 sm:h-52 sm:w-52"
+        className="hidden"
         animate={reduceMotion ? undefined : { rotate: [360, 0], y: [0, -10, 0] }}
         transition={{ rotate: { duration: 88, ease: "linear", repeat: Infinity }, y: { duration: 12, ease: "easeInOut", repeat: Infinity } }}
       />
@@ -340,6 +361,7 @@ export default function RoomDisplay({
         <div className="flex min-w-0 items-center justify-between gap-4">
           <div className="flex min-w-0 items-center gap-3">
           <span className="text-xl font-bold tracking-tight">Spill It</span>
+          <span className="stage-eyebrow hidden sm:inline">{sessionStatus === 'live' ? 'Live' : sessionStatus}</span>
           <span className="inline-flex h-7 w-7" aria-label="Spill It">
             <svg
               viewBox="0 0 120 120"
@@ -390,6 +412,7 @@ export default function RoomDisplay({
         </div>
 
         <div className="flex min-h-12 flex-col items-center justify-center gap-1.5 text-center sm:min-h-16">
+          {chapter && <motion.p key={chapter.id} initial={reduceMotion ? false : { opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} className="stage-eyebrow max-w-full [overflow-wrap:anywhere]" data-active-chapter={chapter.id}>{chapter.title}</motion.p>}
           <AnimatePresence mode="wait" initial={false}>
             {displayedRow ? (
               <motion.div
@@ -436,8 +459,9 @@ export default function RoomDisplay({
       </header>
 
       <main ref={contentRef} tabIndex={0} aria-label="Presentation content. Scroll to read long contributions." style={{ marginBottom: isAdmin ? 'var(--room-controls-height, 5rem)' : 0 }} className="relative z-10 flex min-h-0 flex-1 flex-col items-center overflow-y-auto px-5 pb-6 sm:px-8 lg:px-10 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        <RoomEngagement sessionCode={sessionCode} onPollChange={setPollPresented} />
-        <div className={pollPresented ? 'hidden' : 'contents'}>
+        {overlay && <StagePresentation overlay={overlay} seconds={seconds} />}
+        <div className={overlay ? 'hidden' : 'contents'}><RoomEngagement sessionCode={sessionCode} onPollChange={setPollPresented} onStageChange={setStage} /></div>
+        <div className={pollPresented || overlay ? 'hidden' : 'contents'}>
         <AnimatePresence initial={false}>
           {(presentationPhase === "anticipating" || presentationPhase === "revealing") && !reduceMotion ? (
             <motion.div
@@ -457,10 +481,10 @@ export default function RoomDisplay({
           {displayedRow ? (
             <motion.div
               key={displayedRow.id}
-              initial={reduceMotion ? false : { opacity: 0, y: 28, scale: 0.965 }}
+              initial={reduceMotion ? false : { opacity: 0, y: 18, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -22, scale: 0.985 }}
-              transition={{ duration: reduceMotion ? 0 : 0.58, ease: REVEAL_EASE }}
+              exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -12, scale: 0.99, transition: { duration: 0.2, ease: REVEAL_EASE } }}
+              transition={{ duration: reduceMotion ? 0 : 0.5, ease: REVEAL_EASE }}
               className="relative z-10 my-auto flex w-full shrink-0 flex-col items-center text-center"
               data-presented-contribution={displayedRow.id}
             >
@@ -475,7 +499,7 @@ export default function RoomDisplay({
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: reduceMotion ? 0 : 0.72, ease: REVEAL_EASE }}
               />
-              <div className="flex flex-wrap items-center justify-center gap-3">
+              <motion.div initial={reduceMotion ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: reduceMotion ? 0 : 0.3, delay: reduceMotion ? 0 : 0.15 }} className="flex flex-wrap items-center justify-center gap-3">
                 <Badge variant="info" className="px-3 py-1 text-sm uppercase tracking-[0.2em]">
                   {categoryLabel(displayedRow.category)}
                 </Badge>
@@ -485,10 +509,10 @@ export default function RoomDisplay({
                     Pinned for discussion
                   </span>
                 ) : null}
-              </div>
-              <p className="mt-6 max-w-full text-[clamp(0.9375rem,1.4vw,1.25rem)] font-semibold uppercase tracking-[0.24em] text-gold [overflow-wrap:anywhere]">
+              </motion.div>
+              <motion.p initial={reduceMotion ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: reduceMotion ? 0 : 0.3, delay: reduceMotion ? 0 : 0.2 }} className="mt-6 max-w-full text-[clamp(0.9375rem,1.4vw,1.25rem)] font-semibold uppercase tracking-[0.24em] text-gold [overflow-wrap:anywhere]">
                 {displayedRow.nickname}
-              </p>
+              </motion.p>
               <blockquote
                 className="mt-8 w-full text-balance font-display text-ink [overflow-wrap:anywhere]"
                 style={quoteStyle(displayedRow.content)}

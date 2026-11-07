@@ -49,7 +49,7 @@ export default function HomePageContent({ session, provided }: HomePageContentPr
     initial: reducedMotion ? false : { opacity: 0, y: 18 },
     animate: { opacity: 1, y: 0 },
     transition: {
-      duration: reducedMotion ? 0 : 0.85,
+      duration: reducedMotion ? 0 : 0.65,
       delay: reducedMotion ? 0 : delay,
       ease: EASE,
     },
@@ -134,7 +134,7 @@ export default function HomePageContent({ session, provided }: HomePageContentPr
           transition={{ duration: reducedMotion ? 0 : 0.8, ease: EASE }}
         >
           <span
-            className="mb-2 inline-flex h-20 w-20 drop-shadow-[0_0_18px_rgba(167,139,250,0.25)] sm:h-24 sm:w-24 animate-emblem-drift"
+            className="mb-2 inline-flex h-20 w-20 drop-shadow-[0_6px_18px_rgba(167,139,250,0.18)] sm:h-24 sm:w-24"
             aria-label="Spill It"
           >
             <Emblem className="h-full w-full" />
@@ -216,7 +216,7 @@ export default function HomePageContent({ session, provided }: HomePageContentPr
         <AnimatedSection className="relative z-10 mt-8 flex justify-center" delay={0.92}>
           <MagneticButton
             href={joinHref}
-            className="group inline-flex w-full items-center justify-center gap-2 rounded-control bg-gold px-6 py-3 text-base font-medium text-midnight shadow-[0_0_18px_rgba(167,139,250,0.3)] transition-[background-color,box-shadow] duration-300 ease-out hover:bg-gold-light hover:shadow-[0_10px_30px_rgba(167,139,250,0.32)] active:shadow-[0_4px_18px_rgba(167,139,250,0.24)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold sm:w-auto"
+            className="hero-cta group inline-flex w-full items-center justify-center gap-2 rounded-control bg-gold px-6 py-3 text-base font-medium text-midnight transition-[background-color,box-shadow] duration-200 ease-out hover:bg-gold-light focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold sm:w-auto"
           >
             Join the Conversation
             <motion.span

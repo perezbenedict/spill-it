@@ -1,0 +1,18 @@
+.spill-stage {
+  --stage-light: 167, 139, 250;
+  --stage-secondary: 109, 74, 184;
+  background: linear-gradient(155deg, #150b27, #1e1035 48%, #10091d);
+}
+.spill-stage[data-atmosphere="electric"] { --stage-light: 175, 119, 255; --stage-secondary: 129, 68, 215; }
+.spill-stage[data-atmosphere="reflection"], .spill-stage[data-overlay="reflection"] { --stage-light: 192, 178, 226; --stage-secondary: 112, 94, 151; }
+.stage-lightfield { position: absolute; inset: -12%; pointer-events: none; opacity: .65; background: radial-gradient(ellipse at 9% 24%, rgba(var(--stage-light), .23), transparent 43%), radial-gradient(ellipse at 91% 77%, rgba(var(--stage-secondary), .25), transparent 44%); animation: stage-lightfield 32s ease-in-out infinite; }
+.stage-contour { position: absolute; pointer-events: none; inset: 11% -20%; border: 1px solid rgba(var(--stage-light), .065); border-radius: 50%; transform: rotate(-19deg); }
+.stage-contour::after { content: ''; position: absolute; inset: 12%; border: 1px solid rgba(var(--stage-light), .035); border-radius: inherit; }
+.stage-horizon { position: absolute; bottom: 0; left: 12%; right: 12%; height: 1px; background: linear-gradient(90deg, transparent, rgba(var(--stage-light), .24), transparent); }
+.stage-eyebrow { font-family: var(--font-sans), sans-serif; font-size: clamp(.65rem, 1vw, .9rem); letter-spacing: .24em; text-transform: uppercase; color: #c4b5fd; }
+.stage-prompt { max-width: 29ch; font-size: clamp(1.75rem, 4.2vw, 5.5rem); line-height: 1.22; text-wrap: balance; }
+.spill-stage[data-session-status="paused"] .stage-lightfield, .spill-stage[data-session-status="closed"] .stage-lightfield { opacity: .35; animation-duration: 40s; }
+.spill-stage[data-atmosphere="electric"] .stage-lightfield { animation-duration: 24s; opacity: .85; }
+.spill-stage[data-atmosphere="reflection"] .stage-lightfield, .spill-stage[data-overlay="reflection"] .stage-lightfield { animation-duration: 40s; opacity: .45; }
+@keyframes stage-lightfield { 0%,100% { transform: translate(-1%, -1%) scale(1); } 50% { transform: translate(2%, 1%) scale(1.035); } }
+@media (prefers-reduced-motion: reduce) { .stage-lightfield { animation: none !important; } }

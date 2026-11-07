@@ -6,7 +6,7 @@ import { isValidPublicCode } from '@/lib/session-code';
 import { isSameOriginRequest } from '@/lib/request-origin';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const ADMIN_ACTIONS = new Set(['enqueue', 'remove', 'reorder', 'clearQueue', 'advance', 'createPoll', 'openPoll', 'closePoll', 'projectPoll', 'deletePoll', 'setReactions', 'clearPoll']);
+const ADMIN_ACTIONS = new Set(['enqueue', 'remove', 'reorder', 'clearQueue', 'advance', 'createPoll', 'openPoll', 'closePoll', 'projectPoll', 'deletePoll', 'setReactions', 'clearPoll', 'configureStage']);
 
 async function proxy(request, context) {
   const { path } = await context.params;

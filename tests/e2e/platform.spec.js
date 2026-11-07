@@ -228,6 +228,7 @@ test('participant poll and reaction controls work without interrupting contribut
 });
 
 test('maximum-length unbroken projection remains readable at mobile and projector ratios', async ({ page }) => {
+  test.setTimeout(120000);
   const content = 'A'.repeat(1000);
   expect((await api('/submissions', { sessionCode: E2E.liveCode, participant_id: crypto.randomUUID(), request_id: crypto.randomUUID(), nickname: 'LongProjectionFixture', category: 'question', content }, false)).status).toBe(200);
   const listed = await api(`/admin/submissions?session_id=${E2E.adminSessionId}&status=pending`);
@@ -246,7 +247,7 @@ test('maximum-length unbroken projection remains readable at mobile and projecto
   await page.locator('main').focus();
   await page.keyboard.press('PageDown');
   await expect.poll(() => page.locator('main').evaluate(element => element.scrollTop)).toBeGreaterThan(0);
-  for (const viewport of [{ width: 320, height: 740 }, { width: 1024, height: 768 }, { width: 1920, height: 1080 }]) {
+  for (const viewport of [{ width: 320, height: 740 }, { width: 1024, height: 768 }, { width: 1280, height: 720 }, { width: 1366, height: 768 }, { width: 1920, height: 1080 }, { width: 2560, height: 1440 }, { width: 3840, height: 2160 }]) {
     await page.setViewportSize(viewport);
     await page.goto(`/room/${E2E.liveCode}`);
     const quote = page.locator('[data-presented-contribution]');
@@ -299,6 +300,23 @@ for (const reducedMotion of ['reduce', 'no-preference']) {
     });
   }
 }
+
+test('stage direction persists, isolates drafts and preserves the contribution pointer', async ({ page }) => {
+  const original = (await state()).stage;
+  const stage = { atmosphere: 'electric', chapters: [{ id: 'opening', title: 'The influence' }, { id: 'private', title: 'Unannounced chapter' }], activeChapterId: 'opening', prompts: [{ id: 'saved', text: 'Unsent private prompt' }], overlay: { kind: 'reflection', text: 'A moment to reflect', endsAt: null } };
+  try {
+    expect((await mutate('configureStage', { stage })).status).toBe(200);
+    expect((await state()).stage).toEqual(stage);
+    const publicState = await api(`/sessions/${E2E.liveCode}/engagement`, undefined, false);
+    expect(publicState.body.stage.prompts).toEqual([]);
+    expect(publicState.body.stage.chapters).toHaveLength(1);
+    await page.goto(`/room/${E2E.liveCode}`);
+    await expect(page.locator('[data-stage-overlay] h1')).toHaveText('A moment to reflect');
+    expect((await mutate('configureStage', { stage: { ...stage, overlay: null } })).status).toBe(200);
+    await expect(page.locator('[data-stage-overlay]')).not.toBeVisible();
+    expect((await mutate('configureStage', { stage: { ...stage, atmosphere: 'invalid' } })).status).toBe(400);
+  } finally { await mutate('configureStage', { stage: original }); }
+});
 
 test('a 100-item curated queue reorders atomically', async () => {
   test.setTimeout(120000);

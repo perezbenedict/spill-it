@@ -1,5 +1,55 @@
 @import "tailwindcss";
 
+.premium-surface {
+  background-image: linear-gradient(145deg, rgba(196,181,253,.045), transparent 52%);
+  box-shadow: inset 0 1px 0 rgba(245,243,255,.045), 0 18px 48px -30px rgba(5,2,16,.75);
+}
+
+.category-choice::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(120deg, rgba(196,181,253,.07), transparent 55%);
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+.category-choice[aria-pressed="true"]::before,
+.category-choice:hover::before { opacity: 1; }
+
+.submission-seal::after {
+  content: "";
+  position: absolute;
+  inset: -8px;
+  border: 1px solid rgba(196,181,253,.3);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: submission-ring 750ms cubic-bezier(.22,1,.36,1) both;
+}
+@keyframes submission-ring {
+  from { opacity: 0; transform: scale(.82); }
+  45% { opacity: .75; }
+  to { opacity: .2; transform: scale(1.12); }
+}
+
+.hero-cta {
+  background-image: linear-gradient(120deg, rgba(245,243,255,.2), transparent 65%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.25), 0 10px 28px -14px rgba(167,139,250,.45);
+}
+.hero-cta:hover { box-shadow: inset 0 1px 0 rgba(255,255,255,.35), 0 14px 32px -14px rgba(167,139,250,.55); }
+.hero-cta:active { box-shadow: inset 0 2px 4px rgba(22,13,43,.18); }
+
+[data-qr-atmosphere="electric"] .qr-ambient-light {
+  background-image: radial-gradient(48% 42% at 24% 20%,rgba(167,139,250,.38),transparent 68%),radial-gradient(46% 42% at 82% 78%,rgba(109,74,184,.4),transparent 70%);
+}
+[data-qr-atmosphere="reflection"] .qr-ambient-light {
+  background-image: radial-gradient(55% 48% at 15% 25%,rgba(196,181,253,.19),transparent 72%),radial-gradient(50% 45% at 85% 75%,rgba(167,139,250,.14),transparent 72%);
+  animation-duration: 38s;
+}
+.qr-premium-frame {
+  box-shadow: inset 0 1px 0 rgba(245,243,255,.16),0 30px 80px -45px rgba(167,139,250,.65);
+}
+
 @theme {
   /* Brand colors */
   --color-midnight: #160D2B;

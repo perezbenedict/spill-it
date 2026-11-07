@@ -15,6 +15,8 @@ INSERT INTO submissions(id,session_id,participant_id,nickname,category,content,m
 INSERT INTO presentation_state(session_id,current_submission_id) VALUES('session-a','contribution-a');`);
 execute(readFileSync('api/migrations/004_platform.sql', 'utf8'));
 assert.equal(execute('SELECT version FROM spill_schema_migrations;'), '004_platform');
+execute(readFileSync('api/migrations/005_stage.sql', 'utf8'));
+assert.equal(execute("SELECT version FROM spill_schema_migrations WHERE version='005_stage';"), '005_stage');
 assert.equal(execute('SELECT COUNT(*) FROM discussion_sessions;'), '2');
 assert.equal(execute('SELECT content FROM submissions;'), 'Preserve this contribution');
 assert.equal(execute('SELECT current_submission_id FROM presentation_state WHERE session_id=\'session-a\';'), 'contribution-a');

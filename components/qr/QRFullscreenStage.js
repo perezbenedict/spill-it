@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Maximize2, Minimize2 } from "lucide-react";
 import Button from "@/components/ui/Button";
 import PrintButton from "@/components/qr/PrintButton";
+import usePlatform from "@/components/platform/usePlatform";
 
 export default function QRFullscreenStage({
   topic,
@@ -15,6 +16,8 @@ export default function QRFullscreenStage({
   const stageRef = useRef(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [fullscreenError, setFullscreenError] = useState("");
+  const { data: engagement } = usePlatform(`/api/platform/public/${publicCode}`);
+  const atmosphere = engagement?.stage?.atmosphere || "midnight";
 
   useEffect(() => {
     const syncFullscreen = () => {
@@ -68,6 +71,7 @@ export default function QRFullscreenStage({
     <main
       ref={stageRef}
       data-qr-stage
+      data-qr-atmosphere={atmosphere}
       data-fullscreen-active={isFullscreen ? "true" : "false"}
       className={`qr-event-stage relative isolate flex min-w-0 items-center bg-midnight text-center transition-[padding] duration-500 ${
         isFullscreen

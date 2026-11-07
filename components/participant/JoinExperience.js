@@ -60,6 +60,7 @@ export default function JoinExperience({ session, usedNicknames = [] }) {
   const [chosenCategory, setChosenCategory] = useState(null);
   const [nicknameError, setNicknameError] = useState(null);
   const [nicknamePending, setNicknamePending] = useState(false);
+  const [draft, setDraft] = useState("");
 
   useEffect(() => {
     const saved = readNicknameCookie(session.code);
@@ -341,6 +342,8 @@ export default function JoinExperience({ session, usedNicknames = [] }) {
               transition={{ duration: reducedMotion ? 0 : 0.34, ease: REVEAL_EASE }}
             >
               <SubmissionForm
+                initialContent={draft}
+                onDraftChange={setDraft}
                 session={session}
                 nickname={nickname}
                 category={category}

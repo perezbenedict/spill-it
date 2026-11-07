@@ -3,11 +3,12 @@ import usePlatform from './usePlatform';
 import PollResults from './PollResults';
 import { useEffect } from 'react';
 
-export default function RoomEngagement({ sessionCode, onPollChange }) {
+export default function RoomEngagement({ sessionCode, onPollChange, onStageChange }) {
   const { data } = usePlatform(`/api/platform/public/${sessionCode}`);
   const poll = data?.presentationPoll || data?.projectedPoll;
   const hasPoll = Boolean(poll);
   useEffect(() => { onPollChange?.(hasPoll); }, [hasPoll, onPollChange]);
+  useEffect(() => { onStageChange?.(data?.stage || null); }, [data?.stage, onStageChange]);
   // Keep the contribution region reserved; result projection uses its own
   // readable panel rather than floating graphics over a contribution.
   return <>
