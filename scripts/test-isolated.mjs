@@ -169,9 +169,7 @@ try {
     summary.privateArtifacts = [];
     for (const route of ['/cloudflare/next-env.mjs', '/server-functions/default/index.mjs', '/worker.js', '/_worker.js']) {
       const response = await fetch(`${previewURL}${route}`);
-      // Pages reserves _worker.js in production. Wrangler's local asset shim
-      // returns ENOTDIR/502 for that reserved filename instead of its 404.
-      if (response.status !== 404 && !(route === '/_worker.js' && response.status === 502)) throw new Error(`Private build artifact was not denied: ${route} (${response.status})`);
+      if (response.status !== 404) throw new Error(`Private build artifact was not denied: ${route} (${response.status})`);
       summary.privateArtifacts.push({ route, status: response.status });
     }
     const login = await fetch(`${api}/admin/auth/login`, { method: 'POST', headers: { Authorization: `Bearer ${secret}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ password }) });

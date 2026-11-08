@@ -1,4 +1,4 @@
-import { cpSync, existsSync, readdirSync, rmSync, statSync } from 'node:fs';
+import { cpSync, existsSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 // The bundled Worker is self-contained. OpenNext's intermediate server modules
@@ -11,4 +11,5 @@ if (publicEntries.some(name => name === '_worker.js' || name === 'assets')) thro
 for (const name of publicEntries) cpSync(join(assets, name), join(root, name), { recursive: true });
 const keep = new Set(['_worker.js', ...publicEntries]);
 for (const name of readdirSync(root)) if (!keep.has(name)) rmSync(join(root, name), { recursive: true, force: true });
+writeFileSync(join(root, '_routes.json'), JSON.stringify({ version: 1, include: ['/*'], exclude: [] }));
 console.log(`Prepared Pages: bundled Worker and ${publicEntries.length} public asset entries; private build intermediates excluded.`);

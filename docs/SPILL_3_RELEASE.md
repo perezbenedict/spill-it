@@ -17,7 +17,7 @@
 - Configuration mutations use server-side compare-and-swap revisions. Vote aggregation and version reads share a D1 batch snapshot. Closed events cannot reopen or accept new votes.
 - Public voting uses event-scoped, HttpOnly browser identities supplied by the server proxy; client-supplied identity is discarded. Shared D1 admission caps new voting attempts at 10 per identity/event/minute and 2,400 per event/minute. No fingerprinting or personal details are collected. A browser identity cannot enforce one physical person across browsers/devices.
 - Admin endpoints require the existing authenticated role; mutations check origin, bounds, enum values and scope. Queries bind values. Passwords and tokens are absent from activity entries.
-- Pages packaging now removes OpenNext intermediate server/environment modules and duplicate build output. Only the self-contained reserved `_worker.js` and public assets remain. A public-asset value scan found zero secret leaks. Local preview denies intermediate paths with 404; Wrangler returns an ENOTDIR 502 for reserved `_worker.js`, while production must return 404.
+- Pages packaging now removes OpenNext intermediate server/environment modules and duplicate build output. Only the self-contained reserved `_worker.js` and public assets remain. A public-asset value scan found zero secret leaks. An explicit Worker guard denies intermediate and reserved Worker paths before asset lookup, with all routes assigned to the Worker. Both local preview and production must return 404. A production check exposed older support assets still reachable after directory cleanup; the guard was added before final release verification. No credential values were present in those responses.
 
 ## Verification
 
