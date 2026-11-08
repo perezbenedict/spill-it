@@ -69,6 +69,9 @@ test('shared stage controls persist, preserve local drafts, restore previous scr
   await projector.goto(`/stage/${item.code}`);
   await expect(projector.getByRole('link', { name: 'Stage controls', exact: true })).toHaveAttribute('href', '/admin/stage?mode=standalone');
   await expect(projector.locator('[data-stage-overlay="prompt"]')).toContainText('A standalone perspective.');
+  await page.getByLabel('Preview atmosphere').selectOption('aurora');
+  await page.getByRole('button', { name: 'Apply atmosphere', exact: true }).click();
+  await expect(projector.locator('.standalone-projector')).toHaveAttribute('data-atmosphere', 'aurora');
   await page.getByLabel('Edit saved prompt').fill('A revised standalone perspective.');
   await page.getByLabel('Edit saved prompt').blur();
   await expect.poll(async () => (await state(item.id)).stage.prompts[0].text).toBe('A revised standalone perspective.');
@@ -87,6 +90,7 @@ test('shared stage controls persist, preserve local drafts, restore previous scr
   await page.getByLabel('Duration in seconds (optional)', { exact: true }).fill('8');
   await page.getByRole('button', { name: 'Begin reflection', exact: true }).click();
   await expect(projector.locator('[data-stage-overlay="reflection"]')).toContainText('Pause here.');
+  await expect(projector.getByRole('timer', { name: 'Reflection time remaining' })).toHaveText(/0:0[0-8]/);
   await expect(projector.locator('[data-stage-overlay="prompt"]')).toBeVisible({ timeout: 15000 });
   await page.getByRole('textbox', { name: 'Announcement text', exact: true }).fill('Keep my unsaved draft.');
   await page.getByRole('button', { name: 'Refresh stage preview', exact: true }).click();
@@ -98,6 +102,7 @@ test('shared stage controls persist, preserve local drafts, restore previous scr
   await page.getByRole('button', { name: 'Clear stage', exact: true }).click();
   await expect.poll(async () => (await state(item.id)).stage.overlay).toBeNull();
   const cleared = (await state(item.id)).stage;
+  expect(cleared.atmosphere).toBe('aurora');
   expect(cleared.prompts[0].text).toBe('A revised standalone perspective.');
   expect(cleared.announcements[0].text).toBe('Private saved announcement.');
   expect(cleared.returnOverlay || null).toBeNull();
@@ -126,6 +131,16 @@ test('stale stage writes conflict, refresh latest state and retain unsaved contr
   expect((await state(item.id)).stage.overlay.text).toBe('Another operator owns the screen.');
   await api(`/admin/stages/${item.id}`, { action: 'clearStage', expectedRevision: baseline.revision }, 409);
   expect((await state(item.id)).stage.overlay.text).toBe('Another operator owns the screen.');
+  const current = await state(item.id);
+  const auditBefore = (await api(`/admin/activity?category=stage&q=${item.id}`)).items.length;
+  const simultaneous = await Promise.all(['First operator', 'Second operator'].map(text => fetch(`${worker}/admin/stages/${item.id}`, {
+    method: 'POST', headers: { Authorization: `Bearer ${process.env.SPILL_E2E_API_SECRET}`, 'X-Admin-Token': token, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'configureStage', expectedRevision: current.revision, stage: { ...current.stage, overlay: { kind: 'prompt', text, endsAt: null } } }),
+  })));
+  expect(simultaneous.map(response => response.status).sort()).toEqual([200, 409]);
+  const winner = await simultaneous.find(response => response.status === 200).json();
+  expect((await state(item.id)).stage.overlay.text).toBe(winner.item.stage.overlay.text);
+  expect((await api(`/admin/activity?category=stage&q=${item.id}`)).items.length).toBe(auditBefore + 1);
 });
 
 test('public stage excludes saved drafts, private metadata and unrelated discussion content', async () => {

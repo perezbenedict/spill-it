@@ -37,4 +37,23 @@ Lint, all 47 unit tests and migration tests 004–009 passed. The selected regre
 
 The fresh production export restored with SQLite integrity `ok` and zero foreign-key violations. Rehearsing migration 009 preserved every existing column value across 23 existing data tables. It found five closed discussions, 24 contributions, no voting events/votes and 101 activity records. Raw evidence remains owner-only outside the repository; sanitized results are in `artifacts/standalone-stage/`.
 
-Production commit and deployment verification are recorded after release below.
+## Production release — 2026-11-08
+
+Deployed runtime commit: `9412f111ab7d8deb6e5a24f99f5865c0bdf2206b`.
+
+- Production: https://spill-it-4rw.pages.dev
+- Pages deployment: `7f7577db-37e6-408d-901e-73979abbfbfe`.
+- API deployment: `42007957-1b2b-43a8-be17-98a0e5511983`, version `c9de97ba-b77d-449c-98a1-237827c64e29`.
+- Ready blank projector: https://spill-it-4rw.pages.dev/stage/FATNP2XC
+
+An immediate predeployment backup completed at 18:39 UTC and matched the restored rehearsal byte-for-byte: SHA-256 `8fa9746ca4e3453e38c55d1eacd8f4e61a01f193b89c4b4fbdbccb125e04cf30`, 81,720 bytes. Private file: `~/Library/Application Support/SPILL/backups/standalone-stage-20261108T181941Z/immediate-predeploy.sql`. Initial export attempts returned HTTP 429; a later retry after backoff succeeded. No safeguard was skipped.
+
+Migration 009 applied successfully and appears in the remote ledger. The post-migration export matched every existing column value across all 23 pre-existing data tables. Restored integrity was `ok`, with zero foreign-key violations.
+
+Production verification created one blank, reusable standalone stage with no title. It confirmed saved-state refresh, public response privacy, the dedicated branded projector, fullscreen, reduced motion, projector refresh and standalone activity identification. Discussion Stage and original session-based announcement/prompt/reflection/atmosphere controls remained available, and their presentation snapshot was identical before and after verification. Six deployed static assets returned 200, private build paths returned 404, and the browser recorded zero page errors or unexpected write attempts.
+
+The final data comparison preserved all pre-existing values, including the original 101 activity entries. Final counts: **five closed discussions, 24 contributions, zero voting events/votes, one standalone stage and 102 activity entries**. The single additional activity entry records creation of the blank stage; no existing event, vote or contribution was modified or deleted.
+
+Additional disposable checks after release verified an actual two-request moderator race: one change succeeded, one conflicted, the winning content persisted and exactly one audit entry was appended. The final five-case lifecycle rerun also passed atmosphere switching, countdown display, saved-prompt editing and restoration. Production verification used only blank-stage creation; projection writes and voting lifecycle checks used isolated data.
+
+Machine-readable release evidence: [production-release.json](../artifacts/standalone-stage/production-release.json). Eight preserved source fingerprints establish that existing shared controls, the original session route, Discussion Stage component, Room View and voting modules remain byte-identical. The existing Stage page gains only mode selection and its independent standalone branch.

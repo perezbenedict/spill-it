@@ -10,6 +10,7 @@ artifacts/standalone-stage/backup-rehearsal.json
 artifacts/standalone-stage/files-changed.txt
 artifacts/standalone-stage/final-focused-summary.json
 artifacts/standalone-stage/preserved-components.json
+artifacts/standalone-stage/production-release.json
 artifacts/standalone-stage/regression-summary.json
 artifacts/standalone-stage/screens/standalone-admin-mobile.png
 artifacts/standalone-stage/screens/standalone-projector-1920.png
