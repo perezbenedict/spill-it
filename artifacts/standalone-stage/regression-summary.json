@@ -1,0 +1,226 @@
+{
+  "isolation": "loopback Worker, disposable D1, generated local credentials",
+  "output": "/Users/perezbenedict/Documents/SPILL/artifacts/isolated-2026-11-08T18-29-54-649Z-b084ac93",
+  "tests": [
+    {
+      "spec": "activity.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-08T18:30:05.485Z",
+        "duration": 3064.553,
+        "expected": 5,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      }
+    },
+    {
+      "spec": "admin-room-recovery.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-08T18:30:11.182Z",
+        "duration": 18100.697999999997,
+        "expected": 6,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      }
+    },
+    {
+      "spec": "fullscreen-projection.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-08T18:30:31.514Z",
+        "duration": 14996.918,
+        "expected": 3,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      }
+    },
+    {
+      "spec": "nickname-reservation.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-08T18:30:48.751Z",
+        "duration": 616.932,
+        "expected": 1,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      }
+    },
+    {
+      "spec": "platform.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-08T18:30:51.632Z",
+        "duration": 82323.247,
+        "expected": 20,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      }
+    },
+    {
+      "spec": "public-journey.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-08T18:32:16.495Z",
+        "duration": 7482.816,
+        "expected": 5,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      }
+    },
+    {
+      "spec": "qr-responsive.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-08T18:32:26.448Z",
+        "duration": 8960.667,
+        "expected": 7,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      }
+    },
+    {
+      "spec": "stage-centre.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-08T18:32:37.725Z",
+        "duration": 37070.178,
+        "expected": 6,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      }
+    },
+    {
+      "spec": "stage-controls.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-08T18:33:17.606Z",
+        "duration": 16850.432,
+        "expected": 1,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      }
+    },
+    {
+      "spec": "standalone-layout.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-08T18:33:37.426Z",
+        "duration": 20313.903,
+        "expected": 3,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      }
+    },
+    {
+      "spec": "standalone-stage.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-08T18:34:00.977Z",
+        "duration": 38992.155,
+        "expected": 5,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      }
+    },
+    {
+      "spec": "voting-rounds.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-08T18:34:42.681Z",
+        "duration": 9989.149,
+        "expected": 6,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      }
+    },
+    {
+      "spec": "voting3.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-08T18:34:55.828Z",
+        "duration": 13402.718,
+        "expected": 6,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      }
+    }
+  ],
+  "loads": [],
+  "previewAssets": 8,
+  "preview": [
+    {
+      "route": "/",
+      "status": 200
+    },
+    {
+      "route": "/admin/login",
+      "status": 200
+    },
+    {
+      "route": "/join/ABCDEFGH",
+      "status": 200
+    },
+    {
+      "route": "/qr/ABCDEFGH",
+      "status": 200
+    },
+    {
+      "route": "/room/ABCDEFGH",
+      "status": 200
+    }
+  ],
+  "privateArtifacts": [
+    {
+      "route": "/cloudflare/next-env.mjs",
+      "status": 404
+    },
+    {
+      "route": "/server-functions/default/index.mjs",
+      "status": 404
+    },
+    {
+      "route": "/worker.js",
+      "status": 404
+    },
+    {
+      "route": "/_worker.js",
+      "status": 404
+    }
+  ],
+  "previewStandalone": {
+    "created": 201,
+    "publicRead": 200,
+    "projector": 200,
+    "admin": 200,
+    "savedContentPrivate": true
+  },
+  "previewVoting": {
+    "publicRead": 200,
+    "adminRead": 200,
+    "vote": 200,
+    "protectedCookie": true,
+    "duplicateRetry": true,
+    "voterPage": 200,
+    "projectorPage": 200,
+    "reopenPreservedVotes": true,
+    "roundTwoAccepted": 200,
+    "staleRound": 409,
+    "historyPreserved": true,
+    "activity": 200,
+    "stageCentre": 200
+  }
+}

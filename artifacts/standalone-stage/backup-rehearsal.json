@@ -1,0 +1,38 @@
+{
+  "backupSha256": "8fa9746ca4e3453e38c55d1eacd8f4e61a01f193b89c4b4fbdbccb125e04cf30",
+  "bytes": 81720,
+  "preservedTables": 23,
+  "allExistingValuesPreserved": true,
+  "integrity": "ok",
+  "foreignKeyViolations": 0,
+  "counts": {
+    "discussion_sessions": 5,
+    "submissions": 24,
+    "voting_events": 0,
+    "voting_votes": 0,
+    "admin_activity": 101,
+    "standalone_stages": 0
+  },
+  "sessionStates": [
+    [
+      "closed",
+      5
+    ]
+  ],
+  "openVotingEvents": 0,
+  "latestContribution": "2026-11-08T16:08:52.910Z",
+  "recentActivity": [
+    [
+      "status_closed",
+      "2026-11-08T17:44:15.989Z"
+    ],
+    [
+      "voting_delete",
+      "2026-11-08T17:44:01.536Z"
+    ],
+    [
+      "voting_archive",
+      "2026-11-08T15:55:32.718Z"
+    ]
+  ]
+}

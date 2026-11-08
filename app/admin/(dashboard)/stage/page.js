@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import StageControlCentre from '@/components/admin/StageControlCentre';
+import StandaloneStageCentre from '@/components/admin/StandaloneStageCentre';
+import StageModeChoice from '@/components/admin/StageModeChoice';
 import ErrorState from '@/components/ui/ErrorState';
 import { getAdminToken, requireAdmin } from '@/lib/auth';
 import { getAdminSession, listAdminSessions, listAdminSubmissions } from '@/lib/spill-api';
@@ -10,8 +12,14 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export default async function StagePage({ searchParams }) {
   await requireAdmin();
-  const token = await getAdminToken();
   const query = await searchParams;
+  const mode = Array.isArray(query?.mode) ? query.mode[0] : query?.mode;
+  if (mode === 'standalone') {
+    const stageId = Array.isArray(query?.stage) ? query.stage[0] : query?.stage;
+    if (query?.stage !== undefined && (!stageId || !UUID.test(stageId))) notFound();
+    return <><StageModeChoice mode="standalone"/><StandaloneStageCentre key={stageId || 'new-stage'} stageId={stageId || null}/></>;
+  }
+  const token = await getAdminToken();
   const explicitSelection = query?.session !== undefined;
   const requested = Array.isArray(query?.session) ? query.session[0] : query?.session;
   if (explicitSelection && (!requested || !UUID.test(requested))) notFound();
@@ -32,5 +40,5 @@ export default async function StagePage({ searchParams }) {
     if (selected) sessions.unshift(selected);
   }
   const approved = selected ? await listAdminSubmissions(token, { session_id: selected.id, status: 'approved', limit: 100, sort: 'newest' }) : null;
-  return <StageControlCentre key={selected?.id || 'no-session'} sessions={sessions} session={selected} approved={approved?.ok ? (approved.body?.items || []).filter(row => !row.hidden_from_presentation) : []} contributionError={Boolean(approved && !approved.ok)} hasMoreSessions={(recent.body?.total || 0) > 100} ambiguousLive={(live.body?.total || 0) > 1}/>;
+  return <><StageModeChoice/><StageControlCentre key={selected?.id || 'no-session'} sessions={sessions} session={selected} approved={approved?.ok ? (approved.body?.items || []).filter(row => !row.hidden_from_presentation) : []} contributionError={Boolean(approved && !approved.ok)} hasMoreSessions={(recent.body?.total || 0) > 100} ambiguousLive={(live.body?.total || 0) > 1}/></>;
 }

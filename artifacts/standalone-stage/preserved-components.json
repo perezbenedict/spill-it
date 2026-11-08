@@ -1,0 +1,10 @@
+{
+  "components/platform/StageControls.js": "a49d9082c6771e57097f87c529116e57de6d1ec2e252cf3f62d0c612d173f82b",
+  "components/platform/AdminPlatform.js": "aa467e11534ea6abf4520cf401d54f19fae0a20d19b4d38a6105ebed5f533640",
+  "components/admin/StageControlCentre.js": "c38a9faa1f9759172e1785935fe595f7495af2acf4d4ff9cc3794abe43131266",
+  "app/admin/(dashboard)/sessions/[id]/live/page.js": "c3c24522e7b911d1fd5cfa39501685e75d8a9eaf5792dbba15bfe0db66c224f6",
+  "components/room/RoomDisplay.js": "85ac6439cf482fab2e241c5dbe3668125c8a648e45f7303588b8be63798fed0e",
+  "components/voting/VotingStage.js": "adde3ab7d83b4041156fb84d4bca192ea1574a711bf425c832e13b58e75419df",
+  "components/voting/AdminVoting.js": "5df8d81e8351276a116abc55f696781b12c6178aa5d314de81dd1c7527c39f58",
+  "api/voting.js": "5a34fe755b4efad8a0b3f35090a0558d4bf75cd6cc575bae07dce316b868dae4"
+}

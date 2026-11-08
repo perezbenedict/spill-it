@@ -8,6 +8,7 @@
 import { handlePlatform, handleEngagement, exportSession, credentialVersion, authAdmission, clearAuthAdmission } from './platform.js';
 import { handleVotingCollection, handleVotingAdmin, handleVotingPublic } from './voting.js';
 import { handleActivity } from './activity.js';
+import { handleStandaloneStages } from './stages.js';
 
 const KNOWN_CATEGORIES = ['question', 'opinion', 'challenge', 'twocents'];
 const SESSION_STATUSES = ['draft', 'live', 'paused', 'closed'];
@@ -1644,6 +1645,8 @@ const worker = {
 
       const votingPublicMatch = path.match(/^\/voting\/([^/]+)(?:\/(vote))?$/);
       if (votingPublicMatch) return await handleVotingPublic(request, env, votingPublicMatch[1].toUpperCase(), votingPublicMatch[2]);
+      const standalonePublicMatch = path.match(/^\/stages\/([^/]+)$/);
+      if (standalonePublicMatch) return await handleStandaloneStages(request, env, null, standalonePublicMatch[1], true);
 
       // ----- admin -----
 
@@ -1665,6 +1668,9 @@ const worker = {
         return json({ user: admin.user });
       }
       if (path === '/admin/activity') return await handleActivity(request, env, admin);
+      if (path === '/admin/stages') return await handleStandaloneStages(request, env, admin);
+      const standaloneAdminMatch = path.match(/^\/admin\/stages\/([^/]+)$/);
+      if (standaloneAdminMatch) return await handleStandaloneStages(request, env, admin, standaloneAdminMatch[1]);
 
       const platformMatch = path.match(/^\/admin\/sessions\/([^/]+)\/(platform|export)$/);
       if (platformMatch && isUuid(platformMatch[1])) {

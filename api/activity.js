@@ -1,9 +1,9 @@
 const reply = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
 const ELIGIBLE = ['moderation', 'status_draft', 'status_live', 'status_paused', 'status_closed', 'enqueue', 'remove', 'reorder', 'clearQueue', 'advance', 'project', 'createPoll', 'openPoll', 'closePoll', 'projectPoll', 'clearProjection', 'clearPoll', 'setReactions', 'configureStage', 'voting_create', 'voting_edit', 'voting_open', 'voting_close', 'voting_settings', 'voting_present', 'voting_reopen', 'voting_newRound', 'voting_new_round', 'voting_startRound', 'voting_start_round'];
 const ELIGIBLE_SQL = `a.action IN (${ELIGIBLE.map(action => `'${action}'`).join(',')})`;
-const CATEGORY_SQL = `CASE WHEN a.action NOT IN (${ELIGIBLE.map(action => `'${action}'`).join(',')}) THEN 'administrative' WHEN a.action='moderation' THEN 'moderation' WHEN a.action LIKE 'voting_%' THEN 'voting' WHEN a.action IN ('enqueue','remove','reorder','clearQueue','advance','project','projectPoll','clearProjection','clearPoll','configureStage') THEN 'stage' ELSE 'discussion' END`;
+const CATEGORY_SQL = `CASE WHEN a.action LIKE 'standalone_%' THEN 'stage' WHEN a.action NOT IN (${ELIGIBLE.map(action => `'${action}'`).join(',')}) THEN 'administrative' WHEN a.action='moderation' THEN 'moderation' WHEN a.action LIKE 'voting_%' THEN 'voting' WHEN a.action IN ('enqueue','remove','reorder','clearQueue','advance','project','projectPoll','clearProjection','clearPoll','configureStage') THEN 'stage' ELSE 'discussion' END`;
 const categories = ['all', 'discussion', 'voting', 'moderation', 'stage', 'administrative'];
-const joins = `LEFT JOIN discussion_sessions d ON d.id=a.session_id LEFT JOIN voting_events v ON v.id=a.session_id OR (a.action LIKE 'voting_%' AND v.id=a.target_id) LEFT JOIN activity_archives ar ON ar.activity_id=a.id LEFT JOIN activity_history_batches b ON b.id=a.target_id AND a.action='clear_activity_history'`;
+const joins = `LEFT JOIN discussion_sessions d ON d.id=a.session_id LEFT JOIN voting_events v ON v.id=a.session_id OR (a.action LIKE 'voting_%' AND v.id=a.target_id) LEFT JOIN standalone_stages s ON s.id=a.session_id AND a.action LIKE 'standalone_%' LEFT JOIN activity_archives ar ON ar.activity_id=a.id LEFT JOIN activity_history_batches b ON b.id=a.target_id AND a.action='clear_activity_history'`;
 const encode = value => btoa(String.fromCharCode(...new TextEncoder().encode(JSON.stringify(value)))).replaceAll('+', '-').replaceAll('/', '_').replace(/=+$/, '');
 function decode(value) {
   if (typeof value !== 'string' || value.length > 4000 || !/^[A-Za-z0-9_-]+$/.test(value)) throw Error('Invalid activity cursor.');
@@ -62,14 +62,15 @@ function condition(scope, cutoff) {
   const clauses = ['a.rowid<=?', scope.view === 'archived' ? 'ar.activity_id IS NOT NULL' : 'ar.activity_id IS NULL'];
   const args = [cutoff];
   if (scope.category === 'voting') clauses.push("a.action LIKE 'voting_%'");
-  else if (scope.category === 'discussion') clauses.push("a.action NOT LIKE 'voting_%' AND a.session_id<>'activity-history'");
+  else if (scope.category === 'discussion') clauses.push("a.action NOT LIKE 'voting_%' AND a.action NOT LIKE 'standalone_%' AND a.session_id<>'activity-history'");
   else if (scope.category !== 'all') { clauses.push(`(${CATEGORY_SQL})=?`); args.push(scope.category); }
-  if (scope.q) { clauses.push("(instr(lower(COALESCE(d.title,v.title,'')),lower(?))>0 OR instr(lower(a.action),lower(?))>0 OR instr(lower(a.session_id),lower(?))>0 OR instr(lower(COALESCE(a.target_id,'')),lower(?))>0)"); args.push(scope.q, scope.q, scope.q, scope.q); }
+  if (scope.q) { clauses.push("(instr(lower(COALESCE(d.title,v.title,s.title,'')),lower(?))>0 OR instr(lower(a.action),lower(?))>0 OR instr(lower(a.session_id),lower(?))>0 OR instr(lower(COALESCE(a.target_id,'')),lower(?))>0)"); args.push(scope.q, scope.q, scope.q, scope.q); }
   if (scope.from) { clauses.push('a.created_at>=?'); args.push(`${scope.from}T00:00:00.000Z`); }
   if (scope.to) { const next = new Date(`${scope.to}T00:00:00Z`); next.setUTCDate(next.getUTCDate() + 1); clauses.push('a.created_at<?'); args.push(next.toISOString()); }
   return { sql: clauses.join(' AND '), args };
 }
 const labels = {
+  standalone_create: 'Standalone stage created', standalone_configure: 'Standalone presentation updated', standalone_clear: 'Standalone presentation cleared',
   moderation: 'Contribution moderation updated', status_draft: 'Discussion returned to draft', status_live: 'Discussion opened', status_paused: 'Discussion paused', status_closed: 'Discussion closed',
   enqueue: 'Contribution added to projection queue', remove: 'Contribution removed from projection queue', reorder: 'Projection queue reordered', clearQueue: 'Projection queue cleared', advance: 'Next contribution projected', project: 'Contribution projection changed', clearProjection: 'Discussion stage cleared',
   createPoll: 'Discussion poll created', openPoll: 'Discussion poll opened', closePoll: 'Discussion poll closed', projectPoll: 'Discussion poll results projected', clearPoll: 'Discussion poll results hidden', deletePoll: 'Discussion poll permanently deleted', setReactions: 'Audience reaction setting changed', configureStage: 'Stage presentation settings updated',
@@ -77,10 +78,10 @@ const labels = {
 };
 function serialize(item) {
   return { id: item.id, action: item.action, description: labels[item.action] || item.action.replaceAll('_', ' '), category: item.category,
-    eventId: item.action.startsWith('voting_') ? item.voting_id : item.discussion_id,
+    eventId: item.action.startsWith('standalone_') ? item.stage_id : item.action.startsWith('voting_') ? item.voting_id : item.discussion_id,
     eventReference: item.session_id === 'activity-history' ? null : item.action.startsWith('voting_') ? item.target_id || item.session_id : item.session_id,
-    eventType: item.action.startsWith('voting_') ? 'voting' : item.session_id === 'activity-history' ? 'administrative' : 'discussion',
-    eventTitle: item.event_title || (item.session_id === 'activity-history' ? 'Activity administration' : item.action.startsWith('voting_') ? 'Deleted voting event' : 'Deleted discussion'),
+    eventType: item.action.startsWith('standalone_') ? 'stage' : item.action.startsWith('voting_') ? 'voting' : item.session_id === 'activity-history' ? 'administrative' : 'discussion',
+    eventTitle: item.event_title || (item.action.startsWith('standalone_') ? 'Standalone stage' : item.session_id === 'activity-history' ? 'Activity administration' : item.action.startsWith('voting_') ? 'Deleted voting event' : 'Deleted discussion'),
     createdAt: item.created_at, created_at: item.created_at, session_id: item.session_id,
     archivedAt: item.archived_at, protected: !item.eligible, archivedCount: item.archived_count ?? null };
 }
@@ -112,7 +113,7 @@ export async function handleActivity(request, env, admin) {
         cursorSql = ' AND (a.created_at<? OR (a.created_at=? AND a.id<?))'; cursorArgs.push(cursor.createdAt, cursor.createdAt, cursor.id);
       }
       const result = await env.DB.batch([
-        env.DB.prepare(`SELECT a.id,a.action,a.session_id,a.target_id,a.created_at,d.id AS discussion_id,v.id AS voting_id,CASE WHEN a.action LIKE 'voting_%' THEN v.title ELSE d.title END AS event_title,ar.archived_at,b.archived_count,${CATEGORY_SQL} AS category,${ELIGIBLE_SQL} AS eligible FROM admin_activity a ${joins} WHERE ${query.sql}${cursorSql} ORDER BY a.created_at DESC,a.id DESC LIMIT ?`).bind(...query.args, ...cursorArgs, limit + 1),
+        env.DB.prepare(`SELECT a.id,a.action,a.session_id,a.target_id,a.created_at,d.id AS discussion_id,v.id AS voting_id,s.id AS stage_id,CASE WHEN a.action LIKE 'standalone_%' THEN s.title WHEN a.action LIKE 'voting_%' THEN v.title ELSE d.title END AS event_title,ar.archived_at,b.archived_count,${CATEGORY_SQL} AS category,${ELIGIBLE_SQL} AS eligible FROM admin_activity a ${joins} WHERE ${query.sql}${cursorSql} ORDER BY a.created_at DESC,a.id DESC LIMIT ?`).bind(...query.args, ...cursorArgs, limit + 1),
         env.DB.prepare(`SELECT COALESCE(SUM(${ELIGIBLE_SQL}),0) AS eligible,COALESCE(SUM(NOT (${ELIGIBLE_SQL})),0) AS protected FROM admin_activity a ${joins} WHERE ${query.sql}`).bind(...query.args),
       ]);
       const found = result[0].results;
