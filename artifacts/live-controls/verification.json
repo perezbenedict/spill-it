@@ -789,27 +789,21 @@
     "restriction": "Old API unsafe after round 2; retain round-aware API thereafter"
   },
   "production": {
-    "status": "awaiting safe-window confirmation",
-    "migrationApplied": false,
-    "deployed": false,
-    "reason": "Active Room View and admin polling observed. No production writes performed.",
-    "sourceCommit": "27c0c1a0edb89d618152d80909a64ff8cdc1e21d",
-    "pushedToMain": true,
-    "verifiedUnchangedDeployment": "c932f6f3-0c4b-4a0b-96dd-d11c9759022a",
-    "verifiedUnchangedCommit": "09785a0d56d9c1b0e1cc1da981287631702abc7b",
-    "postCheckCounts": {
-      "sessions": 5,
-      "contributions": 24,
-      "votingEvents": 1,
-      "votes": 5,
-      "activity": 99
-    },
-    "pendingMigrations": [
+    "status": "deployed and verified",
+    "sourceCommit": "baa29c02fcbbbdfbb1c2a2f52d1e86503b18a076",
+    "deploymentId": "8397d612-2177-4507-997d-3f322578cf58",
+    "migrationsApplied": [
       "007_voting_rounds",
       "008_activity"
     ],
-    "publicHomepage": 200,
-    "privateArtifactPaths": 404
+    "evidence": "artifacts/live-controls/production-release.json",
+    "postCheckCounts": {
+      "discussion_sessions": 5,
+      "submissions": 24,
+      "voting_events": 0,
+      "voting_votes": 0,
+      "admin_activity": 101
+    }
   },
   "originalSessionControls": "byte-identical source fingerprints retained"
 }

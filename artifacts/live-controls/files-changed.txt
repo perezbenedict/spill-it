@@ -11,6 +11,7 @@ app/api/voting/[...path]/route.js
 app/stage.css
 artifacts/live-controls/files-changed.txt
 artifacts/live-controls/preflight.json
+artifacts/live-controls/production-release.json
 artifacts/live-controls/screens/activity-mobile.png
 artifacts/live-controls/screens/branded-participant-mobile.png
 artifacts/live-controls/screens/branded-projector-1280.png
@@ -34,6 +35,7 @@ components/voting/VotingParticipant.js
 components/voting/VotingStage.js
 components/voting/voting.css
 docs/ACTIVITY_RETENTION.md
+docs/LIVE_CONTROLS_PRODUCTION_RELEASE.md
 docs/LIVE_EVENT_CONTROLS_UPGRADE.md
 scripts/test-isolated.mjs
 scripts/test-migrations.mjs

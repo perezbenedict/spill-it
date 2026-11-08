@@ -1,0 +1,248 @@
+{
+  "verifiedAt": "2026-11-08T18:00:14.243147+00:00",
+  "releaseCommit": "baa29c02fcbbbdfbb1c2a2f52d1e86503b18a076",
+  "productionUrl": "https://spill-it-4rw.pages.dev",
+  "pages": {
+    "project": "spill-it",
+    "deploymentId": "8397d612-2177-4507-997d-3f322578cf58",
+    "url": "https://8397d612.spill-it-4rw.pages.dev",
+    "canonicalCommit": "baa29c02fcbbbdfbb1c2a2f52d1e86503b18a076"
+  },
+  "api": {
+    "deploymentId": "7659056a-3709-459a-b332-7d03747c3742",
+    "versionId": "2b081e05-70cb-421b-b71e-ec9b089cbf9a"
+  },
+  "backup": {
+    "backupSha256": "9defb0c3d91465119af0a3b3a27489217289c8d9c293138bf9eacc6d986c2dff",
+    "backupBytes": 78144,
+    "integrity": "ok",
+    "foreignKeyViolations": 0,
+    "allExistingColumnValuesPreserved": true,
+    "counts": {
+      "discussion_sessions": 5,
+      "submissions": 24,
+      "voting_events": 0,
+      "voting_votes": 0,
+      "admin_activity": 101
+    },
+    "latestContribution": "2026-11-08T16:08:52.910Z",
+    "openVotes": 0
+  },
+  "migration": {
+    "allExistingValuesPreserved": true,
+    "tablesCompared": 20,
+    "integrity": "ok",
+    "foreignKeyViolations": 0,
+    "migrations": [
+      "004_platform",
+      "005_stage",
+      "006_voting",
+      "007_voting_rounds",
+      "008_activity"
+    ],
+    "counts": {
+      "discussion_sessions": 5,
+      "submissions": 24,
+      "voting_events": 0,
+      "voting_votes": 0,
+      "admin_activity": 101
+    },
+    "postMigrationSha256": "8fa9746ca4e3453e38c55d1eacd8f4e61a01f193b89c4b4fbdbccb125e04cf30"
+  },
+  "postReleaseData": {
+    "allExistingColumnValuesPreserved": true,
+    "tablesCompared": 20,
+    "integrity": "ok",
+    "foreignKeyViolations": 0,
+    "counts": {
+      "discussion_sessions": 5,
+      "submissions": 24,
+      "voting_events": 0,
+      "voting_votes": 0,
+      "admin_activity": 101
+    },
+    "closedDiscussions": 5
+  },
+  "productionVerification": {
+    "success": true,
+    "production": "https://spill-it-4rw.pages.dev",
+    "readOnly": true,
+    "checks": [
+      {
+        "path": "/",
+        "status": 200
+      },
+      {
+        "unauthenticatedStage": "redirected to login"
+      },
+      {
+        "path": "/admin/stage",
+        "status": 200
+      },
+      {
+        "path": "/admin/stage?session=[session]",
+        "status": 200
+      },
+      {
+        "centralStageShortcuts": 5,
+        "controlsReady": true
+      },
+      {
+        "path": "/admin/sessions/[session]/live",
+        "status": 200
+      },
+      {
+        "originalSessionStageControls": "present in unchanged workflow"
+      },
+      {
+        "presentationStateUnchanged": true
+      },
+      {
+        "path": "/admin/activity",
+        "status": 200
+      },
+      {
+        "activityPagination": "200, bounded to 2"
+      },
+      {
+        "path": "/admin/voting",
+        "status": 200
+      },
+      {
+        "path": "/qr/[code]",
+        "status": 200
+      },
+      {
+        "path": "/join/[code]",
+        "status": 200
+      },
+      {
+        "path": "/room/[code]",
+        "status": 200
+      },
+      {
+        "reducedMotionWatermark": "none"
+      },
+      {
+        "staticAssetsVerified": 6,
+        "privateArtifacts": 404
+      }
+    ],
+    "blockedWrites": 0,
+    "pageErrors": 0,
+    "votingLifecycle": "Verified against isolated disposable data and packaged Cloudflare build; no existing production ballot was available and no production test ballot was created."
+  },
+  "finalFocusedTests": {
+    "passed": 20,
+    "specs": [
+      {
+        "spec": "activity.spec.js",
+        "passed": true,
+        "stats": {
+          "startTime": "2026-11-08T17:53:48.098Z",
+          "duration": 2764.3970000000004,
+          "expected": 5,
+          "skipped": 0,
+          "unexpected": 0,
+          "flaky": 0
+        }
+      },
+      {
+        "spec": "live-controls-accessibility.spec.js",
+        "passed": true,
+        "stats": {
+          "startTime": "2026-11-08T17:53:52.821Z",
+          "duration": 9240.066,
+          "expected": 2,
+          "skipped": 0,
+          "unexpected": 0,
+          "flaky": 0
+        }
+      },
+      {
+        "spec": "stage-centre.spec.js",
+        "passed": true,
+        "stats": {
+          "startTime": "2026-11-08T17:54:04.104Z",
+          "duration": 39460.716,
+          "expected": 6,
+          "skipped": 0,
+          "unexpected": 0,
+          "flaky": 0
+        }
+      },
+      {
+        "spec": "stage-controls.spec.js",
+        "passed": true,
+        "stats": {
+          "startTime": "2026-11-08T17:54:45.643Z",
+          "duration": 15863.093,
+          "expected": 1,
+          "skipped": 0,
+          "unexpected": 0,
+          "flaky": 0
+        }
+      },
+      {
+        "spec": "voting-rounds.spec.js",
+        "passed": true,
+        "stats": {
+          "startTime": "2026-11-08T17:55:03.537Z",
+          "duration": 8484.311,
+          "expected": 6,
+          "skipped": 0,
+          "unexpected": 0,
+          "flaky": 0
+        }
+      }
+    ],
+    "packagedWorker": {
+      "publicRead": 200,
+      "adminRead": 200,
+      "vote": 200,
+      "protectedCookie": true,
+      "duplicateRetry": true,
+      "voterPage": 200,
+      "projectorPage": 200,
+      "reopenPreservedVotes": true,
+      "roundTwoAccepted": 200,
+      "staleRound": 409,
+      "historyPreserved": true,
+      "activity": 200,
+      "stageCentre": 200
+    },
+    "privateArtifacts": [
+      {
+        "route": "/cloudflare/next-env.mjs",
+        "status": 404
+      },
+      {
+        "route": "/server-functions/default/index.mjs",
+        "status": 404
+      },
+      {
+        "route": "/worker.js",
+        "status": 404
+      },
+      {
+        "route": "/_worker.js",
+        "status": 404
+      }
+    ]
+  },
+  "priorFullRegression": {
+    "e2e": 144,
+    "unit": 47,
+    "crossBrowserCursor": 6,
+    "visualAndActivityComparison": 29
+  },
+  "build": [
+    "cf-build passed",
+    "cf-bundle passed"
+  ],
+  "resolvedPreReleaseDefect": "Stage shortcuts focus synchronously and wait for shared controls before enabling. Regression checks passed after fix.",
+  "dataBaselineExplanation": "Before this authorized release, production history recorded voting_delete at 2026-11-08T17:44:01.536Z and status_closed at 17:44:15.989Z. Fresh backup already held zero voting events/votes. Release did not delete them.",
+  "backupDirectory": "/Users/perezbenedict/Library/Application Support/SPILL/backups/live-controls-authorized-20261108T174527Z",
+  "rollback": "Keep round-aware API for voting operations. Pre-upgrade API is not safe for round-two aggregates or round metadata writes.",
+  "originalSessionControlsSource": "byte-identical"
+}
