@@ -54,4 +54,6 @@ Historical application modules were executed against the migrated restored datab
 
 Release checks are complete, but no production migration or deployment has been performed yet. Monitoring detected active Room View and admin polling, despite stable counts and no contribution after 16:08 UTC. The live flag alone was not treated as an event; active presentation clients require confirmation of an idle maintenance window. Production remains on Pages `c932f6f3-0c4b-4a0b-96dd-d11c9759022a` and API version `07f507db-f0c4-49cb-b933-227325511482` until that window is confirmed.
 
+Source commit `27c0c1a0edb89d618152d80909a64ff8cdc1e21d` is pushed to `main` with automatic deployment skipped. A subsequent Cloudflare API read confirmed that the canonical production deployment remains unchanged. Nondestructive homepage/login reads returned 200 and private artifact paths returned 404; the new Stage route is not yet deployed. A final remote read confirmed the same five discussions, 24 contributions, one voting event, five votes and 99 activity records, with migrations 007/008 still pending.
+
 Machine-readable sanitized evidence: `artifacts/live-controls/verification.json`. Raw backups, tokens, operational traces and restored private data remain outside the repository. No credentials were rotated and no production event rows were changed.

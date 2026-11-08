@@ -792,7 +792,24 @@
     "status": "awaiting safe-window confirmation",
     "migrationApplied": false,
     "deployed": false,
-    "reason": "Active Room View and admin polling observed. No production writes performed."
+    "reason": "Active Room View and admin polling observed. No production writes performed.",
+    "sourceCommit": "27c0c1a0edb89d618152d80909a64ff8cdc1e21d",
+    "pushedToMain": true,
+    "verifiedUnchangedDeployment": "c932f6f3-0c4b-4a0b-96dd-d11c9759022a",
+    "verifiedUnchangedCommit": "09785a0d56d9c1b0e1cc1da981287631702abc7b",
+    "postCheckCounts": {
+      "sessions": 5,
+      "contributions": 24,
+      "votingEvents": 1,
+      "votes": 5,
+      "activity": 99
+    },
+    "pendingMigrations": [
+      "007_voting_rounds",
+      "008_activity"
+    ],
+    "publicHomepage": 200,
+    "privateArtifactPaths": 404
   },
   "originalSessionControls": "byte-identical source fingerprints retained"
 }
