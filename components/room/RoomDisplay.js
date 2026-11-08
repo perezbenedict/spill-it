@@ -1,12 +1,14 @@
 "use client";
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { ArrowLeft, Pin } from "lucide-react";
+import { ArrowLeft, Pin, MousePointer2 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import RoomControls from "@/components/room/RoomControls";
 import StageAtmosphere from "@/components/room/StageAtmosphere";
+import StageCursor from "@/components/room/StageCursor";
+import VotingStage from "@/components/voting/VotingStage";
 import RoomEngagement from "@/components/platform/RoomEngagement";
 import StagePresentation from "@/components/platform/StagePresentation";
 import "@/app/stage.css";
@@ -56,8 +58,9 @@ export default function RoomDisplay({
   const [stage, setStage] = useState(null);
   const [clock, setClock] = useState(() => Date.now());
   const stageOverlay = stage?.overlay;
-  const overlayExpiry = stageOverlay?.endsAt ? Date.parse(stageOverlay.endsAt) : null;
-  const overlay = stageOverlay && (!overlayExpiry || overlayExpiry > clock) ? stageOverlay : null;
+  const active = candidate => candidate && (!candidate.endsAt || Date.parse(candidate.endsAt) > clock) ? candidate : null;
+  const overlay = active(stageOverlay) || active(stage?.resumeOverlay);
+  const overlayExpiry = overlay?.endsAt ? Date.parse(overlay.endsAt) : null;
   const seconds = overlay && overlayExpiry ? Math.max(0, Math.ceil((overlayExpiry - clock) / 1000)) : null;
   const chapter = stage?.chapters?.find(item => item.id === stage.activeChapterId);
   useEffect(() => {
@@ -83,10 +86,15 @@ export default function RoomDisplay({
   const [sessionStatus, setSessionStatus] = useState(session.status);
   const [sessionTopic, setSessionTopic] = useState(session.topic?.trim() || session.title);
   const [ambientQuality, setAmbientQuality] = useState('assessing');
+  const [nativeCursorOnly, setNativeCursorOnly] = useState(false);
   const [pollPresented, setPollPresented] = useState(false);
   const currentIdRef = useRef(currentId);
   const displayedIdRef = useRef(displayedRow?.id ?? null);
   const transitionRef = useRef({ version: 0, timers: [] });
+
+  useEffect(() => {
+    try { setNativeCursorOnly(localStorage.getItem('spill-room-native-cursor') === 'true'); } catch { /* Browser storage may be unavailable. */ }
+  }, []);
 
   useEffect(() => {
     currentIdRef.current = currentId;
@@ -298,6 +306,8 @@ export default function RoomDisplay({
 
   const isClosed = sessionStatus === "closed";
   const topic = sessionTopic;
+  const standalone = ['announcement', 'voting'].includes(overlay?.kind);
+  const showHeader = !standalone || isAdmin || (overlay?.kind === 'announcement' && overlay.showBrand);
   const statusLine =
     sessionStatus === "paused"
       ? "Submissions paused"
@@ -311,6 +321,7 @@ export default function RoomDisplay({
       className="spill-stage relative flex h-dvh w-full flex-col overflow-hidden text-ink"
       data-atmosphere={stage?.atmosphere || 'midnight'}
       data-overlay={overlay?.kind || ''}
+      data-stage-mode={overlay?.kind || (pollPresented ? 'voting' : displayedRow ? 'contribution' : 'waiting')}
       data-session-status={sessionStatus}
       data-ambient-quality={ambientQuality}
       data-presentation-phase={presentationPhase}
@@ -322,10 +333,11 @@ export default function RoomDisplay({
       <div className="stage-contour" aria-hidden="true" />
       <div className="stage-horizon" aria-hidden="true" />
       <StageAtmosphere onQualityChange={setAmbientQuality} />
+      <StageCursor stageRef={screenRef} enabled={!nativeCursorOnly} />
 
-      <header className="stage-header relative z-10 flex shrink-0 flex-col gap-4 px-5 pt-5 sm:px-8 sm:pt-7 lg:px-10 lg:pt-8">
+      <header style={{ display: showHeader ? undefined : 'none', paddingTop: standalone ? '1rem' : undefined, paddingBottom: standalone ? '.75rem' : undefined, gap: standalone ? 0 : undefined }} className="stage-header relative z-10 flex shrink-0 flex-col gap-4 px-5 pt-5 sm:px-8 sm:pt-7 lg:px-10 lg:pt-8">
         <div className="flex min-w-0 items-center justify-between gap-4">
-          <div className="stage-brand-lockup flex min-w-0 flex-wrap items-center gap-3">
+          <div style={{ display: standalone && !overlay?.showBrand ? 'none' : undefined }} className="stage-brand-lockup flex min-w-0 flex-wrap items-center gap-3">
           <span className="text-lg font-semibold tracking-tight sm:text-xl">Spill It</span>
           <AnimatePresence mode="wait" initial={false}>
             <motion.span key={sessionStatus} initial={reduceMotion ? false : { opacity: 0, y: 3 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: reduceMotion ? 0 : 0.2 }} className="stage-status-mark stage-eyebrow inline-flex items-center gap-2" role="status">
@@ -363,9 +375,13 @@ export default function RoomDisplay({
               />
             </svg>
           </span>
+          {standalone && <span className="stage-eyebrow">Session {sessionCode}</span>}
           </div>
           {isAdmin ? (
-            <nav className="shrink-0" aria-label="Admin navigation">
+            <nav className="ml-auto flex shrink-0 items-center gap-2" aria-label="Admin navigation">
+              <button type="button" aria-label="Use native cursor only" aria-pressed={nativeCursorOnly} title={nativeCursorOnly ? 'Enable violet cursor accent' : 'Use native cursor only'} className="stage-cursor-setting" onClick={() => {
+                setNativeCursorOnly(value => { const next = !value; try { localStorage.setItem('spill-room-native-cursor', String(next)); } catch { /* Keep the preference for this view. */ } return next; });
+              }}><MousePointer2 className="h-4 w-4" aria-hidden="true" /></button>
               <Link
                 href="/admin"
                 className="group inline-flex min-h-9 items-center rounded-pill border border-gold/15 bg-surface/60 px-2.5 py-1.5 text-muted shadow-sm backdrop-blur-md transition-[border-color,color,background-color,transform] duration-200 hover:border-gold/35 hover:bg-gold/10 hover:text-gold motion-safe:hover:-translate-y-0.5 motion-safe:active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
@@ -381,7 +397,7 @@ export default function RoomDisplay({
           ) : null}
         </div>
 
-        <div className="stage-topic-band flex min-h-12 flex-col items-center justify-center gap-2 text-center sm:min-h-16">
+        <div style={{ display: standalone ? 'none' : undefined }} className="stage-topic-band flex min-h-12 flex-col items-center justify-center gap-2 text-center sm:min-h-16">
           <AnimatePresence mode="wait" initial={false}>
             {chapter && <motion.p key={chapter.id} initial={reduceMotion ? false : { opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: reduceMotion ? 0 : 0.25 }} className="stage-chapter stage-eyebrow max-w-full [overflow-wrap:anywhere]" data-active-chapter={chapter.id}>{chapter.title}</motion.p>}
           </AnimatePresence>
@@ -426,7 +442,7 @@ export default function RoomDisplay({
       </header>
 
       <main ref={contentRef} tabIndex={0} aria-label="Presentation content. Scroll to read long contributions." style={{ marginBottom: isAdmin ? 'var(--room-controls-height, 5rem)' : 0 }} className="relative z-10 flex min-h-0 flex-1 flex-col items-center overflow-y-auto px-5 pb-6 sm:px-8 lg:px-10 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {overlay && <StagePresentation overlay={overlay} seconds={seconds} />}
+        {overlay?.kind === 'voting' ? <div className="relative z-20 my-auto w-full py-6"><VotingStage code={overlay.eventCode} embedded /></div> : overlay && <StagePresentation overlay={overlay} seconds={seconds} />}
         <div className={overlay ? 'hidden' : 'contents'}><RoomEngagement sessionCode={sessionCode} onPollChange={setPollPresented} onStageChange={setStage} /></div>
         <div className={pollPresented || overlay ? 'hidden' : 'contents'}>
         <AnimatePresence initial={false}>

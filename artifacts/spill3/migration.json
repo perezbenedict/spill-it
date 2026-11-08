@@ -1,0 +1,9 @@
+{
+  "allExistingRowsByteEquivalent": true,
+  "foreignKeyCheck": "ok",
+  "integrityCheck": "ok",
+  "sessions": 5,
+  "contributions": 23,
+  "live": 1,
+  "migrationApplied": true
+}

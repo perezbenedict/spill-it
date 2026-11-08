@@ -4,42 +4,77 @@ const uuid = () => crypto.randomUUID();
 const iso = () => new Date().toISOString();
 const rows = async (db, sql, ...args) => (await db.prepare(sql).bind(...args).all()).results;
 
-const defaultStage = () => ({ atmosphere: 'midnight', chapters: [], activeChapterId: null, prompts: [], overlay: null });
+const ATMOSPHERES = ['midnight', 'electric', 'reflection', 'royal', 'celestial', 'velvet', 'aurora'];
+const defaultStage = () => ({ atmosphere: 'midnight', chapters: [], activeChapterId: null, prompts: [], announcements: [], overlay: null });
 const record = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const stageId = value => typeof value === 'string' && /^[A-Za-z0-9_-]{1,80}$/.test(value);
 const stageText = (value, maximum) => typeof value === 'string' && value.trim().length > 0 && value.trim().length <= maximum;
+const optionalStageText = (value, maximum) => value === undefined || (typeof value === 'string' && value.trim().length <= maximum);
+
+function announcement(value) {
+  if (!record(value) || !stageText(value.text, 1500) || !optionalStageText(value.heading, 120) || !optionalStageText(value.subtitle, 240)) return null;
+  if ((value.style !== undefined && !['statement', 'notice', 'quote'].includes(value.style)) || (value.showBrand !== undefined && typeof value.showBrand !== 'boolean')) return null;
+  return { heading: (value.heading || '').trim(), text: value.text.trim(), subtitle: (value.subtitle || '').trim(), style: value.style === undefined ? 'statement' : value.style, showBrand: value.showBrand === true };
+}
 
 export function validateStage(value, now = Date.now()) {
-  if (!record(value) || !['midnight', 'electric', 'reflection'].includes(value.atmosphere)) return null;
+  if (!record(value) || !ATMOSPHERES.includes(value.atmosphere)) return null;
   if (!Array.isArray(value.chapters) || value.chapters.length > 20 || !Array.isArray(value.prompts) || value.prompts.length > 20) return null;
   if (value.chapters.some(item => !record(item) || !stageId(item.id) || !stageText(item.title, 120)) || value.prompts.some(item => !record(item) || !stageId(item.id) || !stageText(item.text, 500))) return null;
   if (new Set(value.chapters.map(item => item.id)).size !== value.chapters.length || new Set(value.prompts.map(item => item.id)).size !== value.prompts.length) return null;
   if (value.activeChapterId !== null && !value.chapters.some(item => item.id === value.activeChapterId)) return null;
+  const announcements = value.announcements === undefined ? [] : value.announcements;
+  if (!Array.isArray(announcements) || announcements.length > 20 || announcements.some(item => !stageId(item?.id) || !announcement(item)) || new Set(announcements.map(item => item.id)).size !== announcements.length) return null;
   let overlay = null;
   if (value.overlay !== null) {
     const candidate = value.overlay;
-    if (!record(candidate) || !['prompt', 'reflection'].includes(candidate.kind) || !stageText(candidate.text, 500)) return null;
+    if (!record(candidate) || !['prompt', 'reflection', 'announcement', 'voting'].includes(candidate.kind)) return null;
+    if (['prompt', 'reflection'].includes(candidate.kind) && !stageText(candidate.text, 500)) return null;
+    if (candidate.kind === 'announcement' && !announcement(candidate)) return null;
+    if (candidate.kind === 'voting' && (typeof candidate.eventCode !== 'string' || !/^[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{8}$/.test(candidate.eventCode))) return null;
     if (candidate.endsAt !== null) {
-      if (candidate.kind !== 'reflection' || typeof candidate.endsAt !== 'string') return null;
+      if (!['reflection', 'announcement'].includes(candidate.kind) || typeof candidate.endsAt !== 'string') return null;
       const end = Date.parse(candidate.endsAt);
       if (!Number.isFinite(end) || end <= now || end > now + 86400000) return null;
     }
-    overlay = { kind: candidate.kind, text: candidate.text.trim(), endsAt: candidate.endsAt === null ? null : new Date(candidate.endsAt).toISOString() };
+    overlay = candidate.kind === 'announcement'
+      ? { kind: 'announcement', ...announcement(candidate), endsAt: candidate.endsAt === null ? null : new Date(candidate.endsAt).toISOString() }
+      : candidate.kind === 'voting'
+        ? { kind: 'voting', eventCode: candidate.eventCode, text: 'Voting', endsAt: null }
+        : { kind: candidate.kind, text: candidate.text.trim(), endsAt: candidate.endsAt === null ? null : new Date(candidate.endsAt).toISOString() };
   }
-  return { atmosphere: value.atmosphere, chapters: value.chapters.map(({ id, title }) => ({ id, title: title.trim() })), activeChapterId: value.activeChapterId, prompts: value.prompts.map(({ id, text }) => ({ id, text: text.trim() })), overlay };
+  return { atmosphere: value.atmosphere, chapters: value.chapters.map(({ id, title }) => ({ id, title: title.trim() })), activeChapterId: value.activeChapterId, prompts: value.prompts.map(({ id, text }) => ({ id, text: text.trim() })), announcements: announcements.map(item => ({ id: item.id, ...announcement(item) })), overlay };
 }
 
-function readStage(state) {
+function storedStage(state) {
   let stage;
   try { stage = JSON.parse(state.stage_config || '{}'); } catch { return defaultStage(); }
-  // A persisted countdown may expire between reads. Keep the saved configuration
-  // intact while clients derive the return to the underlying presentation.
-  return record(stage) && ['midnight', 'electric', 'reflection'].includes(stage.atmosphere) ? stage : defaultStage();
+  return record(stage) && ATMOSPHERES.includes(stage.atmosphere) ? { ...defaultStage(), ...stage } : defaultStage();
+}
+
+const activeOverlay = overlay => overlay && (!overlay.endsAt || Date.parse(overlay.endsAt) > Date.now()) ? overlay : null;
+const resumableOverlay = overlay => ['prompt', 'reflection', 'announcement', 'voting'].includes(overlay?.kind) ? activeOverlay(overlay) : null;
+const overrideOverlay = overlay => ['announcement', 'voting'].includes(overlay?.kind);
+
+function readStage(state) {
+  const { returnOverlay, ...stage } = storedStage(state);
+  const resumeOverlay = resumableOverlay(returnOverlay);
+  return { ...stage, overlay: activeOverlay(stage.overlay) || (overrideOverlay(stage.overlay) ? resumeOverlay : null), resumeOverlay: activeOverlay(stage.overlay) && overrideOverlay(stage.overlay) ? resumeOverlay : null };
 }
 
 function publicStage(state) {
   const stage = readStage(state);
-  return { ...stage, chapters: stage.chapters.filter(item => item.id === stage.activeChapterId), prompts: [] };
+  return { ...stage, chapters: stage.chapters.filter(item => item.id === stage.activeChapterId), prompts: [], announcements: [] };
+}
+
+async function eligibleStage(env, stage) {
+  for (const key of ['overlay', 'resumeOverlay']) {
+    if (stage[key]?.kind !== 'voting') continue;
+    const event = await env.DB.prepare("SELECT id FROM voting_events WHERE public_code=? AND status IN ('open','closed')").bind(stage[key].eventCode).first();
+    if (!event) stage[key] = null;
+  }
+  if (!stage.overlay && stage.resumeOverlay) { stage.overlay = stage.resumeOverlay; stage.resumeOverlay = null; }
+  return stage;
 }
 
 export async function credentialVersion(env) {
@@ -96,7 +131,8 @@ export async function platformState(env, sessionId) {
   const categories = await rows(env.DB, 'SELECT category,COUNT(*) AS count FROM submissions WHERE session_id=? GROUP BY category', sessionId);
   const timeline = await rows(env.DB, "SELECT substr(created_at,1,13) AS hour,COUNT(*) AS count FROM submissions WHERE session_id=? GROUP BY hour ORDER BY hour", sessionId);
   const projected = await env.DB.prepare("SELECT COUNT(DISTINCT target_id) AS count FROM admin_activity WHERE session_id=? AND action IN ('advance','project')").bind(sessionId).first();
-  return { revision: state.revision, stage: readStage(state), queue, polls, reactionsEnabled: !!state.reactions_enabled, projectedPollId: state.projected_poll_id, activity, insights: { ...totals, projected: projected.count, categories, timeline, polls } };
+  const presentation = await env.DB.prepare('SELECT p.current_submission_id,s.status FROM discussion_sessions s LEFT JOIN presentation_state p ON p.session_id=s.id WHERE s.id=?').bind(sessionId).first();
+  return { revision: state.revision, stage: await eligibleStage(env, readStage(state)), currentSubmissionId: presentation?.current_submission_id ?? null, sessionStatus: presentation?.status ?? null, queue, polls, reactionsEnabled: !!state.reactions_enabled, projectedPollId: state.projected_poll_id, activity, insights: { ...totals, projected: projected.count, categories, timeline, polls } };
 }
 
 export async function handlePlatform(request, env, admin, sessionId, verifyPassword) {
@@ -118,9 +154,20 @@ export async function handlePlatform(request, env, admin, sessionId, verifyPassw
   const statements = [env.DB.prepare('UPDATE platform_state SET revision=revision+1,mutation_id=? WHERE session_id=? AND revision=? RETURNING revision').bind(mutationId, sessionId, body.expectedRevision)];
   let target = body.submissionId || body.pollId || null;
   if (body.action === 'configureStage') {
-    const stage = validateStage(body.stage);
-    if (!stage) return reply({ error: 'Use a valid atmosphere, up to 20 chapters and prompts, and an optional reflection ending within 24 hours.' }, 400);
-    statements.push(guarded(`UPDATE platform_state SET stage_config=? WHERE session_id=? AND ${guard}`, JSON.stringify(stage), sessionId));
+    const candidate = record(body.stage) && body.stage.announcements === undefined ? { ...body.stage, announcements: readStage(state).announcements } : body.stage;
+    const stage = validateStage(candidate);
+    if (!stage) return reply({ error: 'Use a valid atmosphere, up to 20 chapters, prompts and announcements, and a supported stage message. Timed messages must end within 24 hours.' }, 400);
+    if (stage.overlay?.kind === 'voting') {
+      const event = await env.DB.prepare("SELECT id FROM voting_events WHERE public_code=? AND status IN ('open','closed')").bind(stage.overlay.eventCode).first();
+      if (!event) return reply({ error: 'Open a valid voting event before projecting it.' }, 400);
+    }
+    const previous = readStage(state);
+    const stored = storedStage(state);
+    const returnOverlay = overrideOverlay(stage.overlay)
+      ? previous.overlay?.kind === stage.overlay.kind ? resumableOverlay(stored.returnOverlay) : resumableOverlay(previous.overlay)
+      : null;
+    if (!stage.overlay && overrideOverlay(previous.overlay)) stage.overlay = resumableOverlay(stored.returnOverlay);
+    statements.push(guarded(`UPDATE platform_state SET stage_config=? WHERE session_id=? AND ${guard}`, JSON.stringify({ ...stage, returnOverlay }), sessionId));
   } else if (body.action === 'enqueue') {
     const eligible = await env.DB.prepare("SELECT id FROM submissions WHERE id=? AND session_id=? AND moderation_status='approved' AND hidden_from_presentation=0").bind(body.submissionId || '', sessionId).first();
     if (!eligible) return reply({ error: 'Only approved, visible contributions can be queued.' }, 400);
@@ -172,6 +219,9 @@ export async function handlePlatform(request, env, admin, sessionId, verifyPassw
     if (typeof body.enabled !== 'boolean') return reply({ error: 'Choose whether reactions are enabled.' }, 400);
     statements.push(guarded(`UPDATE platform_state SET reactions_enabled=? WHERE session_id=? AND ${guard}`, body.enabled ? 1 : 0, sessionId));
   }
+  if (['advance', 'projectPoll', 'clearProjection'].includes(body.action)) {
+    statements.push(guarded(`UPDATE platform_state SET stage_config=json_set(stage_config,'$.overlay',NULL,'$.returnOverlay',NULL) WHERE session_id=? AND ${guard}`, sessionId));
+  }
   statements.push(guarded(`INSERT INTO admin_activity(id,session_id,actor_id,action,target_id,created_at) SELECT ?,?,?,?,?,? WHERE ${guard}`, uuid(), sessionId, admin.user.id, body.action, target, iso()));
   try {
     const results = await env.DB.batch(statements);
@@ -191,7 +241,8 @@ export async function handleEngagement(request, env, code, action) {
     const poll = polls.find(item => item.status === 'open') || null;
     const projectedPoll = polls.find(item => item.id === state.projected_poll_id) || null;
     const reactions = state.reactions_enabled ? await rows(env.DB, 'SELECT reaction,COUNT(*) AS count FROM reaction_events WHERE session_id=? AND created_at>? GROUP BY reaction', session.id, Date.now() - 15000) : [];
-    return reply({ stage: publicStage(state), poll, projectedPoll, presentationPoll: projectedPoll, reactionsEnabled: !!state.reactions_enabled, reactions });
+    const stage = await eligibleStage(env, publicStage(state));
+    return reply({ stage, poll, projectedPoll, presentationPoll: projectedPoll, reactionsEnabled: !!state.reactions_enabled, reactions });
   }
   const body = await request.json().catch(() => null);
   if (!body || typeof body.participant_id !== 'string' || !/^[A-Za-z0-9_-]{16,100}$/.test(body.participant_id)) return reply({ error: 'Rejoin this discussion before participating.' }, 400);

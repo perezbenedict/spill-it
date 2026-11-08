@@ -68,3 +68,83 @@
   .stage-lightfield, .stage-emblem-watermark, .stage-orbit, .stage-wing { animation: none !important; }
   .stage-atmosphere { transition: none; }
 }
+
+.spill-stage[data-atmosphere="royal"] {
+  --stage-light: 201, 180, 233; --stage-secondary: 123, 75, 162;
+  background: radial-gradient(ellipse at 78% 12%, #382044 0%, transparent 56%), linear-gradient(165deg, #130b20, #281438 52%, #10091c);
+}
+.spill-stage[data-atmosphere="royal"] .stage-lightfield { background: radial-gradient(ellipse at 8% 48%, rgba(201,180,233,.17), transparent 35%), radial-gradient(ellipse at 94% 44%, rgba(123,75,162,.25), transparent 37%); animation-duration: 38s; }
+.spill-stage[data-atmosphere="royal"] .stage-orbit-outer { width: 94%; height: 76%; border-color: rgba(201,180,233,.085); }
+.spill-stage[data-atmosphere="royal"] .stage-floor-light { height: 16%; opacity: .8; }
+.spill-stage[data-atmosphere="royal"] .stage-horizon { left: 5%; right: 5%; background: linear-gradient(90deg, transparent, rgba(213,192,238,.38), transparent); }
+
+.spill-stage[data-atmosphere="celestial"] {
+  --stage-light: 154, 165, 221; --stage-secondary: 102, 86, 166;
+  background: radial-gradient(ellipse at 20% 0%, #1d1937, transparent 53%), linear-gradient(180deg, #0b0819, #17102c 70%, #0a0814);
+}
+.spill-stage[data-atmosphere="celestial"] .stage-lightfield { background: radial-gradient(ellipse at 3% 18%, rgba(154,165,221,.16), transparent 31%), radial-gradient(ellipse at 93% 88%, rgba(102,86,166,.2), transparent 39%); animation-duration: 40s; }
+.spill-stage[data-atmosphere="celestial"] .stage-orbit-outer { left: 58%; top: 62%; width: 104%; height: 82%; }
+.spill-stage[data-atmosphere="celestial"] .stage-orbit-inner { width: 88%; height: 72%; opacity: .6; }
+.spill-stage[data-atmosphere="celestial"] .stage-wing { width: 12%; bottom: 30%; opacity: .25; }
+.spill-stage[data-atmosphere="celestial"] .stage-floor-light { opacity: .35; }
+
+.spill-stage[data-atmosphere="velvet"] {
+  --stage-light: 205, 155, 210; --stage-secondary: 142, 84, 151;
+  background: radial-gradient(ellipse at 28% 62%, #3b1c3b, transparent 64%), linear-gradient(145deg, #201024, #29132f 48%, #140c22);
+}
+.spill-stage[data-atmosphere="velvet"] .stage-lightfield { background: radial-gradient(ellipse at 16% 65%, rgba(205,155,210,.18), transparent 48%), radial-gradient(ellipse at 90% 30%, rgba(142,84,151,.22), transparent 43%); animation-name: stage-velvet-flow; animation-duration: 36s; }
+.spill-stage[data-atmosphere="velvet"] .stage-wing { top: 30%; width: 28%; }
+.spill-stage[data-atmosphere="velvet"] .stage-floor-light { height: 28%; opacity: .85; }
+.spill-stage[data-atmosphere="velvet"] .stage-orbit-outer { height: 48%; top: 64%; }
+
+.spill-stage[data-atmosphere="aurora"] {
+  --stage-light: 177, 169, 242; --stage-secondary: 116, 99, 194;
+  background: radial-gradient(ellipse at 90% 22%, #2d2051, transparent 56%), linear-gradient(175deg, #0d0c24, #22133f 58%, #100c24);
+}
+.spill-stage[data-atmosphere="aurora"] .stage-lightfield { background: radial-gradient(ellipse at 16% 22%, rgba(177,169,242,.19), transparent 42%), linear-gradient(135deg, transparent 27%, rgba(116,99,194,.13) 48%, transparent 69%); animation-name: stage-aurora-flow; animation-duration: 34s; }
+.spill-stage[data-atmosphere="aurora"] .stage-wing { width: 35%; top: 12%; bottom: 5%; background: linear-gradient(155deg, transparent 20%, rgba(177,169,242,.12), transparent 72%); }
+.spill-stage[data-atmosphere="aurora"] .stage-orbit { opacity: .5; }
+.spill-stage[data-atmosphere="aurora"] .stage-floor-light { inset-inline: 3%; height: 16%; }
+@keyframes stage-velvet-flow { 0%,100% { transform: translateX(-2%) scale(1); } 50% { transform: translateX(2%) scale(1.02); } }
+@keyframes stage-aurora-flow { 0%,100% { transform: translate(-1%, 2%) rotate(-1deg); } 50% { transform: translate(2%, -2%) rotate(1deg); } }
+
+[data-qr-atmosphere="royal"] { background: radial-gradient(ellipse at 78% 12%, #382044, transparent 56%), linear-gradient(165deg, #130b20, #281438 52%, #10091c); }
+[data-qr-atmosphere="royal"] .qr-ambient-light { background: radial-gradient(ellipse at 8% 48%, rgba(201,180,233,.2), transparent 35%), radial-gradient(ellipse at 94% 44%, rgba(123,75,162,.28), transparent 37%); }
+[data-qr-atmosphere="celestial"] { background: radial-gradient(ellipse at 20% 0%, #1d1937, transparent 53%), linear-gradient(180deg, #0b0819, #17102c 70%, #0a0814); }
+[data-qr-atmosphere="celestial"] .qr-ambient-light { background: radial-gradient(ellipse at 3% 18%, rgba(154,165,221,.19), transparent 31%), radial-gradient(ellipse at 93% 88%, rgba(102,86,166,.23), transparent 39%); }
+[data-qr-atmosphere="velvet"] { background: radial-gradient(ellipse at 28% 62%, #3b1c3b, transparent 64%), linear-gradient(145deg, #201024, #29132f 48%, #140c22); }
+[data-qr-atmosphere="velvet"] .qr-ambient-light { background: radial-gradient(ellipse at 16% 65%, rgba(205,155,210,.21), transparent 48%), radial-gradient(ellipse at 90% 30%, rgba(142,84,151,.25), transparent 43%); }
+[data-qr-atmosphere="aurora"] { background: radial-gradient(ellipse at 90% 22%, #2d2051, transparent 56%), linear-gradient(175deg, #0d0c24, #22133f 58%, #100c24); }
+[data-qr-atmosphere="aurora"] .qr-ambient-light { background: radial-gradient(ellipse at 16% 22%, rgba(177,169,242,.22), transparent 42%), linear-gradient(135deg, transparent 27%, rgba(116,99,194,.16) 48%, transparent 69%); }
+
+.stage-preset-preview { min-height: 12rem; }
+.stage-announcement { padding: clamp(1rem, 3vh, 3rem) 0; }
+.stage-announcement-message { min-width: 0; padding-inline: .1em; line-height: 1.23; color: #f6f0e7; text-wrap: pretty; }
+.stage-announcement-heading { max-width: 42ch; font-size: clamp(1.5rem, 3.2vw, 4rem); line-height: 1.15; color: #d7c7ee; }
+.stage-announcement-subtitle { font-size: clamp(.95rem, 1.6vw, 1.75rem); line-height: 1.5; }
+.stage-announcement[data-announcement-style="notice"] { max-width: 110rem; margin-inline: auto; border-block: 1px solid rgba(var(--stage-light), .15); padding-block: clamp(1.5rem, 4vh, 4rem); }
+.stage-announcement[data-announcement-style="quote"] .stage-announcement-message { font-style: italic; }
+.stage-quotation-mark { margin-bottom: .3rem; color: rgba(var(--stage-light), .55); font-family: var(--font-instrument-serif), serif; font-size: clamp(3rem, 7vw, 8rem); line-height: .6; }
+.stage-announcement-preview { max-height: 28rem; overflow-y: auto; }
+.stage-announcement-preview .stage-announcement-heading { font-size: 1.5rem; }
+.stage-announcement-preview .stage-announcement-subtitle { font-size: .95rem; }
+.stage-announcement-preview .stage-quotation-mark { font-size: 3rem; }
+.stage-cursor { position: absolute; left: 0; top: 0; z-index: 80; width: 1px; height: 1px; pointer-events: none; }
+.stage-cursor-ring, .stage-cursor-dot { position: absolute; left: 0; top: 0; border-radius: 50%; pointer-events: none; transform: translate(-50%, -50%); }
+.stage-cursor-ring { width: 22px; height: 22px; border: 1px solid rgba(196,181,253,.5); transition: width .16s ease, height .16s ease, border-color .16s ease; }
+.stage-cursor-dot { width: 3px; height: 3px; background: #c4b5fd; }
+.stage-cursor[data-interactive="true"] .stage-cursor-ring { width: 30px; height: 30px; border-color: rgba(196,181,253,.8); }
+.stage-cursor[data-pressed="true"] .stage-cursor-ring { width: 16px; height: 16px; }
+.stage-cursor-setting { display: inline-flex; align-items: center; justify-content: center; width: 2.75rem; height: 2.75rem; flex-shrink: 0; border: 1px solid rgba(var(--stage-light), .18); border-radius: 50%; color: #c4b5fd; background: rgba(20,11,37,.75); opacity: .6; transition: opacity .2s ease, border-color .2s ease; }
+.stage-cursor-setting:hover, .stage-cursor-setting:focus-visible { opacity: 1; border-color: rgba(var(--stage-light), .55); }
+.stage-cursor-setting:focus-visible { outline: 2px solid #c4b5fd; outline-offset: 3px; }
+
+/* Keep theme-specific animation names inside the existing quiet-mode contract. */
+.spill-stage[data-ambient-quality="quiet"] .stage-lightfield,
+.spill-stage[data-ambient-quality="quiet"] .stage-orbit,
+.spill-stage[data-ambient-quality="quiet"] .stage-wing { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  .stage-lightfield, .stage-wing, .stage-orbit, .stage-emblem-watermark { animation: none !important; }
+  .stage-cursor { display: none; }
+  .stage-cursor-setting, .stage-cursor-ring { transition: none; }
+}

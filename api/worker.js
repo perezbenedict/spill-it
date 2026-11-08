@@ -6,6 +6,7 @@
    this process. */
 
 import { handlePlatform, handleEngagement, exportSession, credentialVersion, authAdmission, clearAuthAdmission } from './platform.js';
+import { handleVotingCollection, handleVotingAdmin, handleVotingPublic } from './voting.js';
 
 const KNOWN_CATEGORIES = ['question', 'opinion', 'challenge', 'twocents'];
 const SESSION_STATUSES = ['draft', 'live', 'paused', 'closed'];
@@ -1583,7 +1584,7 @@ async function handlePutPresentation(request, env, admin, sessionId) {
   let results;
   try {
     results = await env.DB.batch([
-    env.DB.prepare('UPDATE platform_state SET revision=revision+1,mutation_id=?,projected_poll_id=NULL WHERE session_id=? AND revision=? AND EXISTS(SELECT 1 FROM presentation_state WHERE session_id=? AND revision=?) RETURNING revision').bind(mutationId, sessionId, platform.revision, sessionId, body.expectedRevision),
+    env.DB.prepare("UPDATE platform_state SET revision=revision+1,mutation_id=?,projected_poll_id=NULL,stage_config=json_set(stage_config,'$.overlay',NULL,'$.returnOverlay',NULL) WHERE session_id=? AND revision=? AND EXISTS(SELECT 1 FROM presentation_state WHERE session_id=? AND revision=?) RETURNING revision").bind(mutationId, sessionId, platform.revision, sessionId, body.expectedRevision),
     env.DB.prepare('UPDATE presentation_state SET current_submission_id=?,updated_at=?,updated_by=?,revision=revision+1 WHERE session_id=? AND revision=? AND EXISTS(SELECT 1 FROM platform_state WHERE session_id=? AND mutation_id=?) RETURNING revision').bind(currentId, now, admin.user.id, sessionId, body.expectedRevision, sessionId, mutationId),
     env.DB.prepare("INSERT INTO admin_activity(id,session_id,actor_id,action,target_id,created_at) SELECT ?,?,?,'project',?,? WHERE EXISTS(SELECT 1 FROM platform_state WHERE session_id=? AND mutation_id=?)").bind(crypto.randomUUID(), sessionId, admin.user.id, currentId, now, sessionId, mutationId),
     ]);
@@ -1640,6 +1641,9 @@ const worker = {
         return await handleEngagement(request, env, engagementMatch[1].toUpperCase(), engagementMatch[2]);
       }
 
+      const votingPublicMatch = path.match(/^\/voting\/([^/]+)(?:\/(vote))?$/);
+      if (votingPublicMatch) return await handleVotingPublic(request, env, votingPublicMatch[1].toUpperCase(), votingPublicMatch[2]);
+
       // ----- admin -----
 
       if (path === '/admin/auth/login' && method === 'POST') {
@@ -1648,6 +1652,10 @@ const worker = {
 
       const admin = await requireAdminUser(request, env);
       if (!admin) return json({ error: 'unauthorized' }, 401);
+
+      if (path === '/admin/voting') return await handleVotingCollection(request, env, admin);
+      const votingAdminMatch = path.match(/^\/admin\/voting\/([^/]+)$/);
+      if (votingAdminMatch) return await handleVotingAdmin(request, env, admin, votingAdminMatch[1], verifyDestructiveAdminPassword);
 
       if (path === '/admin/auth/logout' && method === 'POST') {
         return await handleLogout(request, env, admin);

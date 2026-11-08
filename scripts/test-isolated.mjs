@@ -166,6 +166,39 @@ try {
       }
     }
     summary.preview = routes;
+    summary.privateArtifacts = [];
+    for (const route of ['/cloudflare/next-env.mjs', '/server-functions/default/index.mjs', '/worker.js', '/_worker.js']) {
+      const response = await fetch(`${previewURL}${route}`);
+      // Pages reserves _worker.js in production. Wrangler's local asset shim
+      // returns ENOTDIR/502 for that reserved filename instead of its 404.
+      if (response.status !== 404 && !(route === '/_worker.js' && response.status === 502)) throw new Error(`Private build artifact was not denied: ${route} (${response.status})`);
+      summary.privateArtifacts.push({ route, status: response.status });
+    }
+    const login = await fetch(`${api}/admin/auth/login`, { method: 'POST', headers: { Authorization: `Bearer ${secret}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ password }) });
+    const adminToken = (await login.json()).token;
+    const adminHeaders = { Authorization: `Bearer ${secret}`, 'X-Admin-Token': adminToken, 'Content-Type': 'application/json' };
+    async function votingCall(route, body) {
+      const response = await fetch(`${api}${route}`, { method: 'POST', headers: adminHeaders, body: JSON.stringify(body) });
+      if (!response.ok) throw new Error('Cloudflare voting artifact fixture failed.');
+      return response.json();
+    }
+    let event = (await votingCall('/admin/voting', { title: 'Disposable artifact vote', questions: [{ text: 'Is the compiled voting route ready?', options: ['Yes', 'No'] }] })).event;
+    event = (await votingCall(`/admin/voting/${event.id}`, { action: 'open', expectedRevision: event.revision })).event;
+    const publicVoteURL = `${previewURL}/api/voting/public/${event.code}`;
+    const publicRead = await fetch(publicVoteURL);
+    const privateRead = await fetch(`${previewURL}/api/voting/admin/${event.id}`, { headers: { Cookie: `spill_admin_session=${adminToken}` } });
+    if (!publicRead.ok || !privateRead.ok) throw new Error('Compiled voting read proxy failed.');
+    const ballot = { questionId: event.questions[0].id, optionId: event.questions[0].options[0].id };
+    const voteResponse = await fetch(`${publicVoteURL}/vote`, { method: 'POST', headers: { Origin: previewURL, 'Content-Type': 'application/json' }, body: JSON.stringify(ballot) });
+    const cookies = voteResponse.headers.getSetCookie();
+    if (!voteResponse.ok || !cookies.some(cookie => /HttpOnly/i.test(cookie))) throw new Error('Compiled anonymous vote or protected identity cookie failed.');
+    const retry = await fetch(`${publicVoteURL}/vote`, { method: 'POST', headers: { Origin: previewURL, 'Content-Type': 'application/json', Cookie: cookies.map(cookie => cookie.split(';')[0]).join('; ') }, body: JSON.stringify(ballot) });
+    if (!retry.ok || !(await retry.json()).duplicate) throw new Error('Compiled anonymous vote retry was not idempotent.');
+    const pages = await Promise.all([`/vote/${event.code}`, `/vote/${event.code}/stage`].map(route => fetch(previewURL + route)));
+    if (pages.some(response => !response.ok)) throw new Error('Compiled voting pages failed.');
+    event = (await votingCall(`/admin/voting/${event.id}`, { action: 'close', expectedRevision: event.revision })).event;
+    await votingCall(`/admin/voting/${event.id}`, { action: 'delete', expectedRevision: event.revision, password });
+    summary.previewVoting = { publicRead: publicRead.status, adminRead: privateRead.status, vote: voteResponse.status, protectedCookie: true, duplicateRetry: true, voterPage: pages[0].status, projectorPage: pages[1].status };
     console.log(JSON.stringify({ cloudflarePreview: routes, assets: summary.previewAssets }));
   }
   if (runE2E) {
@@ -179,8 +212,8 @@ try {
   }
   if (runE2E) {
     const { readdir } = await import('node:fs/promises');
-    const requestedSpec = process.argv.includes('--spec') ? process.argv[process.argv.indexOf('--spec') + 1] : null;
-    const specs = (await readdir(path.join(root, 'tests/e2e'))).filter(f => f.endsWith('.spec.js') && (!requestedSpec || f === requestedSpec)).sort();
+    const requestedSpecs = new Set((process.argv.includes('--spec') ? process.argv[process.argv.indexOf('--spec') + 1] : '').split(',').filter(Boolean));
+    const specs = (await readdir(path.join(root, 'tests/e2e'))).filter(f => f.endsWith('.spec.js') && (!requestedSpecs.size || requestedSpecs.has(f))).sort();
     if (!specs.length) throw new Error('No matching E2E spec.');
     for (const spec of specs) {
       await seed();

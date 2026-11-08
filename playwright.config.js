@@ -23,6 +23,10 @@ export default defineConfig({
   },
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    ...(process.env.SPILL_CROSS_BROWSER === '1' ? [
+      { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
+      { name: 'webkit', use: { ...devices['Desktop Safari'] } },
+    ] : []),
   ],
   // A supplied URL is always treated as an already-running target. With no
   // URL, retain the repository's convenient local production-build startup.

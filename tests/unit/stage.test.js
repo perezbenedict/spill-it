@@ -15,4 +15,17 @@ describe('stage configuration admission', () => {
     expect(validateStage(reflection(-1), now)).toBeNull();
     expect(validateStage(reflection(86400001), now)).toBeNull();
   });
+  it('validates announcement limits, styles and optional branding without trusting restoration input', () => {
+    const announcement = { kind: 'announcement', text: 'Welcome', heading: 'Tonight', subtitle: 'Together', style: 'quote', showBrand: true, endsAt: null };
+    expect(validateStage({ ...stage, overlay: announcement, returnOverlay: { kind: 'prompt', text: 'Forged' } })).not.toHaveProperty('returnOverlay');
+    for (const change of [{text:'x'.repeat(1501)},{heading:'x'.repeat(121)},{subtitle:'x'.repeat(241)},{style:'unknown'},{showBrand:'true'}]) {
+      expect(validateStage({...stage,overlay:{...announcement,...change}})).toBeNull();
+    }
+    expect(validateStage({...stage,announcements:[{id:'a',...announcement},{id:'a',...announcement}]})).toBeNull();
+  });
+  it('keeps old sessions compatible while admitting all seven atmospheres and scoped voting codes', () => {
+    for (const atmosphere of ['midnight','electric','reflection','royal','celestial','velvet','aurora']) expect(validateStage({...stage,atmosphere})).toBeTruthy();
+    expect(validateStage({...stage,overlay:{kind:'voting',eventCode:'ABCDEFGH',endsAt:null}})?.overlay.kind).toBe('voting');
+    expect(validateStage({...stage,overlay:{kind:'voting',eventCode:'../admin',endsAt:null}})).toBeNull();
+  });
 });

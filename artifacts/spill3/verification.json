@@ -1,0 +1,621 @@
+{
+  "unitTests": {
+    "passed": 47,
+    "files": 9
+  },
+  "browserTests": [
+    {
+      "spec": "accessibility.spec.js",
+      "passed": 12,
+      "failed": 0,
+      "skipped": 0,
+      "durationMs": 32127.995
+    },
+    {
+      "spec": "admin-bulk-delete.spec.js",
+      "passed": 3,
+      "failed": 0,
+      "skipped": 0,
+      "durationMs": 6570.196
+    },
+    {
+      "spec": "admin-room-recovery.spec.js",
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0,
+      "durationMs": 18480.912
+    },
+    {
+      "spec": "fullscreen-projection.spec.js",
+      "passed": 3,
+      "failed": 0,
+      "skipped": 0,
+      "durationMs": 15236.394
+    },
+    {
+      "spec": "nickname-reservation.spec.js",
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0,
+      "durationMs": 724.344
+    },
+    {
+      "spec": "platform.spec.js",
+      "passed": 20,
+      "failed": 0,
+      "skipped": 0,
+      "durationMs": 79388.545
+    },
+    {
+      "spec": "public-journey.spec.js",
+      "passed": 5,
+      "failed": 0,
+      "skipped": 0,
+      "durationMs": 6130.982999999999
+    },
+    {
+      "spec": "qr-responsive.spec.js",
+      "passed": 7,
+      "failed": 0,
+      "skipped": 0,
+      "durationMs": 7948.918000000001
+    },
+    {
+      "spec": "room-performance.spec.js",
+      "passed": 2,
+      "failed": 0,
+      "skipped": 0,
+      "durationMs": 9214.393
+    },
+    {
+      "spec": "room-premium.spec.js",
+      "passed": 9,
+      "failed": 0,
+      "skipped": 0,
+      "durationMs": 98771.523
+    },
+    {
+      "spec": "stage-controls.spec.js",
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0,
+      "durationMs": 15846.462
+    },
+    {
+      "spec": "stage-verification.spec.js",
+      "passed": 32,
+      "failed": 0,
+      "skipped": 0,
+      "durationMs": 266523.887
+    },
+    {
+      "spec": "stage3.spec.js",
+      "passed": 24,
+      "failed": 0,
+      "skipped": 0,
+      "durationMs": 213000.979
+    },
+    {
+      "spec": "voting-performance.spec.js",
+      "passed": 2,
+      "failed": 0,
+      "skipped": 0,
+      "durationMs": 41087.119
+    },
+    {
+      "spec": "voting-visual.spec.js",
+      "passed": 4,
+      "failed": 0,
+      "skipped": 0,
+      "durationMs": 47372.703
+    },
+    {
+      "spec": "voting3.spec.js",
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0,
+      "durationMs": 11666.329
+    },
+    {
+      "spec": "zz-auth-throttle.spec.js",
+      "passed": 2,
+      "failed": 0,
+      "skipped": 0,
+      "durationMs": 572.316
+    }
+  ],
+  "browserChecksPassed": 139,
+  "snapshotFiles": 52,
+  "votingLoad": [
+    {
+      "concurrency": 10,
+      "successes": 10,
+      "errors": 0,
+      "p50Ms": 44.38158299999998,
+      "p95Ms": 56.812791999999945,
+      "acknowledgedMs": 57.762666999999965,
+      "browserObservedFromStartMs": 2378.632208,
+      "browserObservedAfterLastAckMs": 2320.869541,
+      "totalVotes": 10,
+      "duplicateRetryInflation": 0,
+      "target": "loopback Next voting proxy, disposable Worker and local D1"
+    },
+    {
+      "concurrency": 25,
+      "successes": 25,
+      "errors": 0,
+      "p50Ms": 74.04775000000018,
+      "p95Ms": 108.84870799999999,
+      "acknowledgedMs": 110.26691600000004,
+      "browserObservedFromStartMs": 2436.4907909999997,
+      "browserObservedAfterLastAckMs": 2326.2238749999997,
+      "totalVotes": 25,
+      "duplicateRetryInflation": 0,
+      "target": "loopback Next voting proxy, disposable Worker and local D1"
+    },
+    {
+      "concurrency": 50,
+      "successes": 50,
+      "errors": 0,
+      "p50Ms": 215.43554099999983,
+      "p95Ms": 217.96320800000012,
+      "acknowledgedMs": 221.69012500000008,
+      "browserObservedFromStartMs": 2030.5076250000002,
+      "browserObservedAfterLastAckMs": 1808.8175,
+      "totalVotes": 50,
+      "duplicateRetryInflation": 0,
+      "target": "loopback Next voting proxy, disposable Worker and local D1"
+    },
+    {
+      "concurrency": 100,
+      "successes": 100,
+      "errors": 0,
+      "p50Ms": 395.3774170000015,
+      "p95Ms": 403.72891700000037,
+      "acknowledgedMs": 406.9332919999997,
+      "browserObservedFromStartMs": 2212.3835839999992,
+      "browserObservedAfterLastAckMs": 1805.4502919999995,
+      "totalVotes": 100,
+      "duplicateRetryInflation": 0,
+      "target": "loopback Next voting proxy, disposable Worker and local D1"
+    }
+  ],
+  "voting4KProfiles": [
+    {
+      "style": "bars",
+      "motion": "no-preference",
+      "frames": 56,
+      "durationMs": 2016.6999999999998,
+      "p50Ms": 33.399999999999636,
+      "p95Ms": 50,
+      "over50Ms": 0,
+      "longTasks": [],
+      "labelsStationary": true,
+      "quality": "quiet",
+      "measurement": "Headless Chromium RAF scheduling, not a physical projector or GPU benchmark"
+    },
+    {
+      "style": "rows",
+      "motion": "no-preference",
+      "frames": 68,
+      "durationMs": 2016.7000000000007,
+      "p50Ms": 33.30000000000109,
+      "p95Ms": 33.399999999999636,
+      "over50Ms": 0,
+      "longTasks": [],
+      "labelsStationary": true,
+      "quality": "quiet",
+      "measurement": "Headless Chromium RAF scheduling, not a physical projector or GPU benchmark"
+    },
+    {
+      "style": "donut",
+      "motion": "no-preference",
+      "frames": 63,
+      "durationMs": 2016.6000000000004,
+      "p50Ms": 33.29999999999927,
+      "p95Ms": 33.400000000001455,
+      "over50Ms": 0,
+      "longTasks": [],
+      "labelsStationary": true,
+      "quality": "quiet",
+      "measurement": "Headless Chromium RAF scheduling, not a physical projector or GPU benchmark"
+    },
+    {
+      "style": "comparison",
+      "motion": "no-preference",
+      "frames": 63,
+      "durationMs": 2000,
+      "p50Ms": 33.29999999999927,
+      "p95Ms": 33.400000000001455,
+      "over50Ms": 0,
+      "longTasks": [],
+      "labelsStationary": true,
+      "quality": "quiet",
+      "measurement": "Headless Chromium RAF scheduling, not a physical projector or GPU benchmark"
+    },
+    {
+      "style": "bars",
+      "motion": "reduce",
+      "frames": 121,
+      "durationMs": 2016.5,
+      "p50Ms": 16.699999999999818,
+      "p95Ms": 16.799999999999955,
+      "over50Ms": 0,
+      "longTasks": [],
+      "labelsStationary": true,
+      "quality": "quiet",
+      "measurement": "Headless Chromium RAF scheduling, not a physical projector or GPU benchmark"
+    },
+    {
+      "style": "rows",
+      "motion": "reduce",
+      "frames": 121,
+      "durationMs": 2016.5999999999995,
+      "p50Ms": 16.699999999999818,
+      "p95Ms": 16.800000000000182,
+      "over50Ms": 0,
+      "longTasks": [],
+      "labelsStationary": true,
+      "quality": "quiet",
+      "measurement": "Headless Chromium RAF scheduling, not a physical projector or GPU benchmark"
+    },
+    {
+      "style": "donut",
+      "motion": "reduce",
+      "frames": 120,
+      "durationMs": 2000,
+      "p50Ms": 16.69999999999891,
+      "p95Ms": 16.799999999999272,
+      "over50Ms": 0,
+      "longTasks": [],
+      "labelsStationary": true,
+      "quality": "quiet",
+      "measurement": "Headless Chromium RAF scheduling, not a physical projector or GPU benchmark"
+    },
+    {
+      "style": "comparison",
+      "motion": "reduce",
+      "frames": 121,
+      "durationMs": 2016.6000000000004,
+      "p50Ms": 16.69999999999891,
+      "p95Ms": 16.799999999999272,
+      "over50Ms": 0,
+      "longTasks": [],
+      "labelsStationary": true,
+      "quality": "quiet",
+      "measurement": "Headless Chromium RAF scheduling, not a physical projector or GPU benchmark"
+    }
+  ],
+  "room4KProfiles": [
+    "no-preference",
+    "reduce"
+  ],
+  "contributionLoad": [
+    {
+      "concurrency": 10,
+      "passed": true,
+      "report": {
+        "concurrency": 10,
+        "requests": 10,
+        "successes": 10,
+        "errors": 0,
+        "successRate": 100,
+        "wallTimeMs": 62.1,
+        "throughputPerSecond": 160.92,
+        "latency": {
+          "minMs": 16,
+          "p50Ms": 59.8,
+          "p95Ms": 60.2,
+          "p99Ms": 60.2,
+          "maxMs": 60.2
+        },
+        "statusCounts": {
+          "200": 10
+        },
+        "errorSamples": [],
+        "database": {
+          "before": 3,
+          "after": 14,
+          "expectedDelta": 11,
+          "actualDelta": 11,
+          "countMatches": true
+        },
+        "duplicateProbe": {
+          "statuses": [
+            200,
+            200
+          ],
+          "allSuccessful": true,
+          "replayRecognized": true,
+          "exactlyOneRow": true
+        },
+        "concurrentRoomPolling": {
+          "requests": 30,
+          "errors": 0,
+          "p50Ms": 28.6,
+          "p95Ms": 32.9
+        },
+        "moderationAndProjection": {
+          "status": 200,
+          "moderationStatus": 200,
+          "moderationLatencyMs": 66.8,
+          "moderationResponseMs": 114.9,
+          "projectionObservedMs": 168.5,
+          "correctPointer": true
+        },
+        "browserProjection": {
+          "observedMs": 3540.6,
+          "correctPointer": true,
+          "reducedMotion": true
+        }
+      }
+    },
+    {
+      "concurrency": 25,
+      "passed": true,
+      "report": {
+        "concurrency": 25,
+        "requests": 25,
+        "successes": 25,
+        "errors": 0,
+        "successRate": 100,
+        "wallTimeMs": 238.5,
+        "throughputPerSecond": 104.81,
+        "latency": {
+          "minMs": 232.3,
+          "p50Ms": 234.7,
+          "p95Ms": 237.5,
+          "p99Ms": 238.4,
+          "maxMs": 238.4
+        },
+        "statusCounts": {
+          "200": 25
+        },
+        "errorSamples": [],
+        "database": {
+          "before": 3,
+          "after": 29,
+          "expectedDelta": 26,
+          "actualDelta": 26,
+          "countMatches": true
+        },
+        "duplicateProbe": {
+          "statuses": [
+            200,
+            200
+          ],
+          "allSuccessful": true,
+          "replayRecognized": true,
+          "exactlyOneRow": true
+        },
+        "concurrentRoomPolling": {
+          "requests": 75,
+          "errors": 0,
+          "p50Ms": 66.1,
+          "p95Ms": 210.8
+        },
+        "moderationAndProjection": {
+          "status": 200,
+          "moderationStatus": 200,
+          "moderationLatencyMs": 94.4,
+          "moderationResponseMs": 371.5,
+          "projectionObservedMs": 378.1,
+          "correctPointer": true
+        },
+        "browserProjection": {
+          "observedMs": 3538.6,
+          "correctPointer": true,
+          "reducedMotion": true
+        }
+      }
+    },
+    {
+      "concurrency": 50,
+      "passed": true,
+      "report": {
+        "concurrency": 50,
+        "requests": 50,
+        "successes": 50,
+        "errors": 0,
+        "successRate": 100,
+        "wallTimeMs": 386.3,
+        "throughputPerSecond": 129.44,
+        "latency": {
+          "minMs": 187.4,
+          "p50Ms": 376.5,
+          "p95Ms": 379.5,
+          "p99Ms": 379.7,
+          "maxMs": 379.7
+        },
+        "statusCounts": {
+          "200": 50
+        },
+        "errorSamples": [],
+        "database": {
+          "before": 3,
+          "after": 54,
+          "expectedDelta": 51,
+          "actualDelta": 51,
+          "countMatches": true
+        },
+        "duplicateProbe": {
+          "statuses": [
+            200,
+            200
+          ],
+          "allSuccessful": true,
+          "replayRecognized": true,
+          "exactlyOneRow": true
+        },
+        "concurrentRoomPolling": {
+          "requests": 150,
+          "errors": 0,
+          "p50Ms": 119.7,
+          "p95Ms": 326.7
+        },
+        "moderationAndProjection": {
+          "status": 200,
+          "moderationStatus": 200,
+          "moderationLatencyMs": 223.9,
+          "moderationResponseMs": 587.1,
+          "projectionObservedMs": 591.3,
+          "correctPointer": true
+        },
+        "browserProjection": {
+          "observedMs": 3549.7,
+          "correctPointer": true,
+          "reducedMotion": true
+        }
+      }
+    },
+    {
+      "concurrency": 100,
+      "passed": true,
+      "report": {
+        "concurrency": 100,
+        "requests": 100,
+        "successes": 100,
+        "errors": 0,
+        "successRate": 100,
+        "wallTimeMs": 980.9,
+        "throughputPerSecond": 101.94,
+        "latency": {
+          "minMs": 380.5,
+          "p50Ms": 942.5,
+          "p95Ms": 975.3,
+          "p99Ms": 975.6,
+          "maxMs": 975.7
+        },
+        "statusCounts": {
+          "200": 100
+        },
+        "errorSamples": [],
+        "database": {
+          "before": 3,
+          "after": 104,
+          "expectedDelta": 101,
+          "actualDelta": 101,
+          "countMatches": true
+        },
+        "duplicateProbe": {
+          "statuses": [
+            200,
+            200
+          ],
+          "allSuccessful": true,
+          "replayRecognized": true,
+          "exactlyOneRow": true
+        },
+        "concurrentRoomPolling": {
+          "requests": 300,
+          "errors": 0,
+          "p50Ms": 202.5,
+          "p95Ms": 640.1
+        },
+        "moderationAndProjection": {
+          "status": 200,
+          "moderationStatus": 200,
+          "moderationLatencyMs": 293.8,
+          "moderationResponseMs": 1227,
+          "projectionObservedMs": 1248.4,
+          "correctPointer": true
+        },
+        "browserProjection": {
+          "observedMs": 3517.7,
+          "correctPointer": true,
+          "reducedMotion": true
+        }
+      }
+    }
+  ],
+  "cloudflarePreview": {
+    "preview": [
+      {
+        "route": "/",
+        "status": 200
+      },
+      {
+        "route": "/admin/login",
+        "status": 200
+      },
+      {
+        "route": "/join/ABCDEFGH",
+        "status": 200
+      },
+      {
+        "route": "/qr/ABCDEFGH",
+        "status": 200
+      },
+      {
+        "route": "/room/ABCDEFGH",
+        "status": 200
+      }
+    ],
+    "previewAssets": 8,
+    "privateArtifacts": [
+      {
+        "route": "/cloudflare/next-env.mjs",
+        "status": 404
+      },
+      {
+        "route": "/server-functions/default/index.mjs",
+        "status": 404
+      },
+      {
+        "route": "/worker.js",
+        "status": 404
+      },
+      {
+        "route": "/_worker.js",
+        "status": 502
+      }
+    ],
+    "previewVoting": {
+      "publicRead": 200,
+      "adminRead": 200,
+      "vote": 200,
+      "protectedCookie": true,
+      "duplicateRetry": true,
+      "voterPage": 200,
+      "projectorPage": 200
+    }
+  },
+  "backup": {
+    "sha256": "6b9aa59bad52a563a10a321263b8ae72bc4488c285059f182536d087f15a4c25",
+    "bytes": 64224,
+    "counts": {
+      "discussion_sessions": 5,
+      "submissions": 23,
+      "presentation_state": 5,
+      "admin_users": 1,
+      "admin_sessions": 4,
+      "nickname_reservations": 30,
+      "platform_state": 5,
+      "projection_queue": 0,
+      "polls": 1,
+      "poll_options": 3,
+      "poll_votes": 7,
+      "reaction_events": 1,
+      "admin_activity": 67,
+      "auth_rate_limits": 0,
+      "nickname_backfills": 1,
+      "legacy_nickname_claims": 0,
+      "spill_schema_migrations": 2
+    },
+    "restoredIntegrity": "ok",
+    "migrationIdempotent": true,
+    "allExistingRowsAndReferencesPreserved": true
+  },
+  "limitations": [
+    "Load measurements use loopback Next proxy, isolated Worker and local D1, not production or a distributed internet audience.",
+    "4K profiles measure headless browser scheduling; no physical projector, graphics power or thermal benchmark was performed.",
+    "Earlier first-paint chart sampling included adaptive atmosphere assessment and a 116.7 ms p95 transient; settled profiles wait for assessment plus 30 warm-up frames.",
+    "Anonymous browser tokens cannot guarantee one vote per physical person."
+  ],
+  "targetedStageRestorationRerun": {
+    "passed": 8,
+    "skipped": 0,
+    "failed": 0,
+    "includesAnnouncementOverVotingReturn": true
+  }
+}

@@ -5,6 +5,7 @@ import { Maximize2, Minimize2 } from "lucide-react";
 import Button from "@/components/ui/Button";
 import PrintButton from "@/components/qr/PrintButton";
 import usePlatform from "@/components/platform/usePlatform";
+import "@/app/stage.css";
 
 export default function QRFullscreenStage({
   topic,

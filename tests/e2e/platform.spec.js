@@ -306,7 +306,7 @@ test('stage direction persists, isolates drafts and preserves the contribution p
   const stage = { atmosphere: 'electric', chapters: [{ id: 'opening', title: 'The influence' }, { id: 'private', title: 'Unannounced chapter' }], activeChapterId: 'opening', prompts: [{ id: 'saved', text: 'Unsent private prompt' }], overlay: { kind: 'reflection', text: 'A moment to reflect', endsAt: null } };
   try {
     expect((await mutate('configureStage', { stage })).status).toBe(200);
-    expect((await state()).stage).toEqual(stage);
+    expect((await state()).stage).toMatchObject(stage);
     const publicState = await api(`/sessions/${E2E.liveCode}/engagement`, undefined, false);
     expect(publicState.body.stage.prompts).toEqual([]);
     expect(publicState.body.stage.chapters).toHaveLength(1);

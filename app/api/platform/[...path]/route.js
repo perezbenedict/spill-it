@@ -21,10 +21,11 @@ async function proxy(request, context) {
   let body;
   if (request.method === 'POST') {
     if (operation === 'export') return NextResponse.json({ error: 'Method not allowed.' }, { status: 405 });
-    if (Number(request.headers.get('content-length')) > 20000) return NextResponse.json({ error: 'Request too large.' }, { status: 413 });
+    const maximumBody = admin ? 100000 : 20000;
+    if (Number(request.headers.get('content-length')) > maximumBody) return NextResponse.json({ error: 'Request too large.' }, { status: 413 });
     try {
       const text = await request.text();
-      if (text.length > 20000) return NextResponse.json({ error: 'Request too large.' }, { status: 413 });
+      if (text.length > maximumBody) return NextResponse.json({ error: 'Request too large.' }, { status: 413 });
       body = JSON.parse(text);
     } catch { return NextResponse.json({ error: 'Invalid request.' }, { status: 400 }); }
     if (!body || typeof body !== 'object' || Array.isArray(body)) return NextResponse.json({ error: 'Invalid request.' }, { status: 400 });
