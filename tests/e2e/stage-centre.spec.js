@@ -61,6 +61,9 @@ test('original session controls and the new centre share prompts, announcements,
   await expect(shared(page).getByLabel('Edit saved prompt')).toHaveValue('A perspective from the original workflow.');
   await page.getByRole('button', { name: 'Stage Announcement', exact: true }).click();
   await shared(page).getByRole('textbox', { name: 'Announcement text', exact: true }).fill('A notice from the centre.');
+  await page.evaluate(() => new Promise(requestAnimationFrame));
+  await expect(shared(page).getByRole('textbox', { name: 'Announcement text', exact: true })).toHaveValue('A notice from the centre.');
+  await expect(shared(page).getByRole('textbox', { name: 'Announcement heading (optional)', exact: true })).toHaveValue('');
   await shared(page).getByRole('button', { name: 'Save for later', exact: true }).click();
   await shared(page).getByRole('button', { name: 'Project Now', exact: true }).click();
   await expect(original.getByRole('button', { name: 'Edit announcement', exact: true })).toBeVisible();

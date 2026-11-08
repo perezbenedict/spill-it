@@ -50,6 +50,8 @@ Historical application modules were executed against the migrated restored datab
 
 **Rollback restriction:** Once round 2 exists, old API code would aggregate rounds incorrectly. Retain a known-good round-aware API thereafter; do not revert to the pre-upgrade API. Leave additive tables and preserved history in place. Before round 2, the old API can read the migrated round-one schema. Restore backups only into a separate recovery database for reviewed reconciliation; never reset production or discard later votes. Stage cursor and frontend visuals can be rolled back independently of round-aware backend support.
 
+Old-API read compatibility does not establish write compatibility: old voting lifecycle writes do not maintain the new round timestamps and exposure metadata. Keep round-aware API support when moderators continue operating voting, including round one.
+
 ## Production release status
 
 Release checks are complete, but no production migration or deployment has been performed yet. Monitoring detected active Room View and admin polling, despite stable counts and no contribution after 16:08 UTC. The live flag alone was not treated as an event; active presentation clients require confirmation of an idle maintenance window. Production remains on Pages `c932f6f3-0c4b-4a0b-96dd-d11c9759022a` and API version `07f507db-f0c4-49cb-b933-227325511482` until that window is confirmed.

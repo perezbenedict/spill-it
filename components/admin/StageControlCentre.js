@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Emblem from '@/components/Emblem';
 import AdminPlatform from '@/components/platform/AdminPlatform';
@@ -38,6 +38,18 @@ function SessionSelection({ sessions, session, hasMoreSessions, ambiguousLive })
 function SelectedStage({ session, approved, contributionError }) {
   const { data, error, updatedAt, refresh } = usePlatform(`/api/platform/admin/${session.id}`);
   const controls = useRef(null);
+  const [controlsReady, setControlsReady] = useState(false);
+  useEffect(() => {
+    const root = controls.current;
+    if (!root) return;
+    const ready = () => SHORTCUTS.every(([, , heading]) => [...root.querySelectorAll('h3')].some(element => element.textContent.startsWith(heading)));
+    if (ready()) { setControlsReady(true); return; }
+    const observer = new MutationObserver(() => {
+      if (ready()) { setControlsReady(true); observer.disconnect(); }
+    });
+    observer.observe(root, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, []);
   const stage = data?.stage;
   const mode = stage?.overlay?.kind || (data?.projectedPollId ? 'poll' : data?.currentSubmissionId ? 'contribution' : 'waiting');
   const projected = stage?.overlay?.heading || stage?.overlay?.text || data?.polls?.find(poll => poll.id === data.projectedPollId)?.question || approved.find(row => row.id === data?.currentSubmissionId)?.content;
@@ -55,10 +67,8 @@ function SelectedStage({ session, approved, contributionError }) {
     if (!target) return;
     const details = target.closest('details');
     if (details) details.open = true;
-    requestAnimationFrame(() => {
-      target.scrollIntoView({ block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
-      target.closest('.premium-surface')?.querySelector('input,textarea,select,button')?.focus({ preventScroll: true });
-    });
+    target.closest('.premium-surface')?.querySelector('input,textarea,select,button')?.focus({ preventScroll: true });
+    target.scrollIntoView({ block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
   }
   return <div className="space-y-6" data-stage-session={session.id}>
     <section aria-label="Selected stage preview" className="spill-stage relative isolate overflow-hidden rounded-card border border-white/15 p-5 sm:p-7" data-atmosphere={stage?.atmosphere || 'midnight'}>
@@ -74,7 +84,7 @@ function SelectedStage({ session, approved, contributionError }) {
       </div>
     </section>
     <section aria-label="Quick stage actions" className="grid min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-      {SHORTCUTS.map(([label, description, heading]) => <button key={label} type="button" aria-label={label} onClick={() => openControl(heading)} className="group min-w-0 rounded-card border border-white/10 bg-surface p-5 text-left transition-colors hover:border-gold/35 hover:bg-white/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"><span className="block font-display text-xl text-ink">{label}</span><span className="mt-2 block text-xs leading-relaxed text-muted">{description}</span><span aria-hidden="true" className="mt-4 block text-sm text-gold-light">Open controls →</span></button>)}
+      {SHORTCUTS.map(([label, description, heading]) => <button key={label} type="button" aria-label={label} disabled={!controlsReady} onClick={() => openControl(heading)} className="group min-w-0 rounded-card border border-white/10 bg-surface p-5 text-left transition-colors hover:border-gold/35 hover:bg-white/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold disabled:cursor-wait disabled:opacity-60"><span className="block font-display text-xl text-ink">{label}</span><span className="mt-2 block text-xs leading-relaxed text-muted">{description}</span><span aria-hidden="true" className="mt-4 block text-sm text-gold-light">{controlsReady ? 'Open controls →' : 'Connecting to controls…'}</span></button>)}
       <Link href="/admin/voting" className="min-w-0 rounded-card border border-gold/20 bg-surface p-5 text-left transition-colors hover:border-gold/40 hover:bg-white/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"><span className="block font-display text-xl text-ink">Voting Room</span><span className="mt-2 block text-xs leading-relaxed text-muted">Open voting events, presentation links, QR and results controls.</span><span aria-hidden="true" className="mt-4 block text-sm text-gold-light">Open voting →</span></Link>
     </section>
     {contributionError && <p role="status" className="rounded-control border border-gold/20 p-3 text-sm text-muted">Approved contribution choices could not be loaded. Existing queue controls still use current server state. Refresh this page to load contribution choices.</p>}
