@@ -41,12 +41,12 @@ All totals matched accepted votes; retry inflation was zero. These are loopback 
 
 ### Animation performance
 
-| 4K settled style | Normal RAF p95 | Reduced RAF p95 |
+| 4K settled style | Normal average FPS / RAF p95 | Reduced average FPS / RAF p95 |
 |---|---|---|
-| bars | 50.0 ms | 16.8 ms |
-| rows | 33.4 ms | 16.8 ms |
-| donut | 33.4 ms | 16.8 ms |
-| comparison | 33.4 ms | 16.8 ms |
+| bars | 27.8 / 50.0 ms | 60.0 / 16.8 ms |
+| rows | 33.7 / 33.4 ms | 60.0 / 16.8 ms |
+| donut | 31.2 / 33.4 ms | 60.0 / 16.8 ms |
+| comparison | 31.5 / 33.4 ms | 60.0 / 16.8 ms |
 
 All measured labels remained stationary and no long tasks were observed. Adaptive quiet mode was selected on the headless 4K renderer. An earlier initial sample included adaptive assessment/raster warm-up and reached 116.7ms p95; settled profiles explicitly wait for assessment plus 30 warm-up frames. This measures browser scheduling, not GPU power, thermal behavior, physical projector quality or a guaranteed 60fps experience. Physical event equipment should still be checked.
 
@@ -75,4 +75,4 @@ Emergency recovery: preserve a new export first; roll back Pages through its exi
 
 ## Release record
 
-Production deployment and final verification are recorded after release in the companion production evidence file. No real production ballots or contributions are created for testing. New write journeys are exercised only in disposable environments.
+Production deployment and final verification are recorded in [the production release record](SPILL_3_PRODUCTION.md). No real production ballots or contributions are created for testing. New write journeys are exercised only in disposable environments.

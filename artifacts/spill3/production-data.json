@@ -1,0 +1,15 @@
+{
+  "sessions": 5,
+  "liveSessions": 1,
+  "contributions": 23,
+  "nicknameReservations": 30,
+  "discussionPolls": 1,
+  "existingPollVotes": 7,
+  "votingEvents": 0,
+  "standaloneVotes": 0,
+  "allExistingRowsUnchanged": true,
+  "presentationReferencesUnchanged": true,
+  "foreignKeyCheck": "ok",
+  "integrityCheck": "ok",
+  "productionTestDataCreated": false
+}

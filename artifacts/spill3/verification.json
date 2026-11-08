@@ -567,7 +567,7 @@
       },
       {
         "route": "/_worker.js",
-        "status": 502
+        "status": 404
       }
     ],
     "previewVoting": {
@@ -617,5 +617,10 @@
     "skipped": 0,
     "failed": 0,
     "includesAnnouncementOverVotingReturn": true
+  },
+  "finalArtifactGate": {
+    "votingTestsPassed": 6,
+    "privatePathsDenied": 4,
+    "allRoutesAssignedToWorker": true
   }
 }

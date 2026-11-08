@@ -1,0 +1,37 @@
+{
+  "commit": "0d9872b79798e99ec337f04ab060372ccd343272",
+  "pages": {
+    "project": "spill-it",
+    "id": "47de6d3a-f954-40a1-be7b-2afadbca5888",
+    "url": "https://spill-it-4rw.pages.dev",
+    "immutableUrl": "https://47de6d3a.spill-it-4rw.pages.dev",
+    "status": "success"
+  },
+  "api": {
+    "version": "07f507db-f0c4-49cb-b933-227325511482",
+    "deployment": "8b245b40-ac51-4a0d-a776-5ec827922a8c",
+    "url": "https://spill-api.perezbenedict007.workers.dev"
+  },
+  "oldPagesCompatibility": {
+    "homepage": 200,
+    "roomAPI": 200,
+    "stageAPI": 200
+  },
+  "preflight": {
+    "confirmedTailSeconds": 44,
+    "ownHealthProbeObserved": true,
+    "otherRequests": 0,
+    "writesObserved": 0,
+    "noEventDataChangedDuringPreflight": true
+  },
+  "rollbackRehearsed": {
+    "oldApiAgainstMigratedBackup": true,
+    "adminLogin": true,
+    "roomAndEngagementReads": 10
+  },
+  "featureCommit": "336d5b84e3f4a5db63b7692dff9de9c117ea962d",
+  "supersededPagesAttempt": {
+    "id": "1b161d82-ccfa-4eec-9440-c6e6699c5070",
+    "reason": "Private support paths required an explicit Worker-first guard"
+  }
+}

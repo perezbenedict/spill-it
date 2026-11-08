@@ -10,7 +10,11 @@ app/api/voting/[...path]/route.js
 app/stage.css
 app/vote/[code]/page.js
 app/vote/[code]/stage/page.js
+artifacts/spill3/deployment.json
+artifacts/spill3/files-changed.txt
 artifacts/spill3/migration.json
+artifacts/spill3/production-browser.json
+artifacts/spill3/production-data.json
 artifacts/spill3/screens/announcement.png
 artifacts/spill3/verification.json
 components/admin/AdminNav.js
@@ -27,9 +31,11 @@ components/voting/VotingQR.js
 components/voting/VotingStage.js
 components/voting/useVoting.js
 components/voting/voting.css
+docs/SPILL_3_PRODUCTION.md
 docs/SPILL_3_RELEASE.md
 package.json
 playwright.config.js
+scripts/patch-assets.mjs
 scripts/prepare-pages.mjs
 scripts/test-isolated.mjs
 scripts/test-migrations.mjs
@@ -68,4 +74,3 @@ tests/e2e/voting-visual.spec.js-snapshots/voting-rows-chromium-darwin.png
 tests/e2e/voting3.spec.js
 tests/unit/stage.test.js
 tests/unit/voting.test.js
-artifacts/spill3/files-changed.txt

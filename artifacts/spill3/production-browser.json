@@ -1,0 +1,52 @@
+{
+  "url": "https://spill-it-4rw.pages.dev",
+  "checks": [
+    {
+      "name": "public build assets",
+      "passed": true,
+      "assets": 8
+    },
+    {
+      "name": "private intermediate and reserved Worker files denied",
+      "passed": true,
+      "paths": 6,
+      "status": 404
+    },
+    {
+      "name": "preserved live status, pointer and spotlight",
+      "passed": true,
+      "statusPreserved": true,
+      "pointerPreserved": true,
+      "stagePreserved": true
+    },
+    {
+      "name": "voting APIs enforce authorization and availability",
+      "passed": true,
+      "adminRead": 200,
+      "unauthorizedRead": 401,
+      "unavailableEvent": 404,
+      "events": 0
+    },
+    {
+      "name": "homepage three-line composition",
+      "passed": true
+    },
+    {
+      "name": "anonymous participant entry to nickname without submitting",
+      "passed": true
+    },
+    {
+      "name": "QR and fullscreen",
+      "passed": true
+    },
+    {
+      "name": "Room View preserves the current spotlight and anonymous controls",
+      "passed": true
+    },
+    {
+      "name": "authenticated admin and Voting navigation",
+      "passed": true
+    }
+  ],
+  "productionWrites": 0
+}
