@@ -7,6 +7,7 @@
 
 import { handlePlatform, handleEngagement, exportSession, credentialVersion, authAdmission, clearAuthAdmission } from './platform.js';
 import { handleVotingCollection, handleVotingAdmin, handleVotingPublic } from './voting.js';
+import { handleActivity } from './activity.js';
 
 const KNOWN_CATEGORIES = ['question', 'opinion', 'challenge', 'twocents'];
 const SESSION_STATUSES = ['draft', 'live', 'paused', 'closed'];
@@ -1663,10 +1664,7 @@ const worker = {
       if (path === '/admin/auth/me' && method === 'GET') {
         return json({ user: admin.user });
       }
-      if (path === '/admin/activity' && method === 'GET') {
-        const { results } = await env.DB.prepare('SELECT action,session_id,created_at FROM admin_activity ORDER BY created_at DESC LIMIT 200').all();
-        return json({ items: results });
-      }
+      if (path === '/admin/activity') return await handleActivity(request, env, admin);
 
       const platformMatch = path.match(/^\/admin\/sessions\/([^/]+)\/(platform|export)$/);
       if (platformMatch && isUuid(platformMatch[1])) {

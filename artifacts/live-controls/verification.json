@@ -1,0 +1,798 @@
+{
+  "verifiedAt": "2026-11-08T17:00:21.866063+00:00",
+  "fullE2E": {
+    "passed": 144,
+    "skipped": 0,
+    "flaky": 0,
+    "specs": [
+      {
+        "spec": "accessibility.spec.js",
+        "passed": true,
+        "stats": {
+          "startTime": "2026-11-08T16:39:11.509Z",
+          "duration": 24389.729000000003,
+          "expected": 14,
+          "skipped": 0,
+          "unexpected": 0,
+          "flaky": 0
+        }
+      },
+      {
+        "spec": "activity.spec.js",
+        "passed": true,
+        "stats": {
+          "startTime": "2026-11-08T16:39:37.915Z",
+          "duration": 2044.5769999999998,
+          "expected": 5,
+          "skipped": 0,
+          "unexpected": 0,
+          "flaky": 0
+        }
+      },
+      {
+        "spec": "admin-bulk-delete.spec.js",
+        "passed": true,
+        "stats": {
+          "startTime": "2026-11-08T16:39:41.962Z",
+          "duration": 4605.328,
+          "expected": 3,
+          "skipped": 0,
+          "unexpected": 0,
+          "flaky": 0
+        }
+      },
+      {
+        "spec": "admin-room-recovery.spec.js",
+        "passed": true,
+        "stats": {
+          "startTime": "2026-11-08T16:39:48.445Z",
+          "duration": 16599.955,
+          "expected": 6,
+          "skipped": 0,
+          "unexpected": 0,
+          "flaky": 0
+        }
+      },
+      {
+        "spec": "fullscreen-projection.spec.js",
+        "passed": true,
+        "stats": {
+          "startTime": "2026-11-08T16:40:06.913Z",
+          "duration": 14227.025,
+          "expected": 3,
+          "skipped": 0,
+          "unexpected": 0,
+          "flaky": 0
+        }
+      },
+      {
+        "spec": "live-controls-accessibility.spec.js",
+        "passed": true,
+        "stats": {
+          "startTime": "2026-11-08T16:40:23.054Z",
+          "duration": 8864.153,
+          "expected": 2,
+          "skipped": 0,
+          "unexpected": 0,
+          "flaky": 0
+        }
+      },
+      {
+        "spec": "nickname-reservation.spec.js",
+        "passed": true,
+        "stats": {
+          "startTime": "2026-11-08T16:40:33.965Z",
+          "duration": 460.89799999999997,
+          "expected": 1,
+          "skipped": 0,
+          "unexpected": 0,
+          "flaky": 0
+        }
+      },
+      {
+        "spec": "platform.spec.js",
+        "passed": true,
+        "stats": {
+          "startTime": "2026-11-08T16:40:36.336Z",
+          "duration": 97326.231,
+          "expected": 20,
+          "skipped": 0,
+          "unexpected": 0,
+          "flaky": 0
+        }
+      },
+      {
+        "spec": "public-journey.spec.js",
+        "passed": true,
+        "stats": {
+          "startTime": "2026-11-08T16:42:15.788Z",
+          "duration": 5658.519,
+          "expected": 5,
+          "skipped": 0,
+          "unexpected": 0,
+          "flaky": 0
+        }
+      },
+      {
+        "spec": "qr-responsive.spec.js",
+        "passed": true,
+        "stats": {
+          "startTime": "2026-11-08T16:42:23.296Z",
+          "duration": 7898.58,
+          "expected": 7,
+          "skipped": 0,
+          "unexpected": 0,
+          "flaky": 0
+        }
+      },
+      {
+        "spec": "room-performance.spec.js",
+        "passed": true,
+        "stats": {
+          "startTime": "2026-11-08T16:42:32.875Z",
+          "duration": 9191.28,
+          "expected": 2,
+          "skipped": 0,
+          "unexpected": 0,
+          "flaky": 0
+        }
+      },
+      {
+        "spec": "room-premium.spec.js",
+        "passed": true,
+        "stats": {
+          "startTime": "2026-11-08T16:42:43.998Z",
+          "duration": 97089.225,
+          "expected": 9,
+          "skipped": 0,
+          "unexpected": 0,
+          "flaky": 0
+        }
+      },
+      {
+        "spec": "stage-centre.spec.js",
+        "passed": true,
+        "stats": {
+          "startTime": "2026-11-08T16:44:23.308Z",
+          "duration": 39182.452,
+          "expected": 6,
+          "skipped": 0,
+          "unexpected": 0,
+          "flaky": 0
+        }
+      },
+      {
+        "spec": "stage-controls.spec.js",
+        "passed": true,
+        "stats": {
+          "startTime": "2026-11-08T16:45:04.539Z",
+          "duration": 15730.269,
+          "expected": 1,
+          "skipped": 0,
+          "unexpected": 0,
+          "flaky": 0
+        }
+      },
+      {
+        "spec": "stage-verification.spec.js",
+        "passed": true,
+        "stats": {
+          "startTime": "2026-11-08T16:45:22.639Z",
+          "duration": 262111.342,
+          "expected": 32,
+          "skipped": 0,
+          "unexpected": 0,
+          "flaky": 0
+        }
+      },
+      {
+        "spec": "stage3.spec.js",
+        "passed": true,
+        "stats": {
+          "startTime": "2026-11-08T16:49:47.711Z",
+          "duration": 67657.157,
+          "expected": 8,
+          "skipped": 0,
+          "unexpected": 0,
+          "flaky": 0
+        }
+      },
+      {
+        "spec": "voting-performance.spec.js",
+        "passed": true,
+        "stats": {
+          "startTime": "2026-11-08T16:50:58.372Z",
+          "duration": 41438.367,
+          "expected": 2,
+          "skipped": 0,
+          "unexpected": 0,
+          "flaky": 0
+        }
+      },
+      {
+        "spec": "voting-rounds.spec.js",
+        "passed": true,
+        "stats": {
+          "startTime": "2026-11-08T16:51:41.896Z",
+          "duration": 8851.635,
+          "expected": 6,
+          "skipped": 0,
+          "unexpected": 0,
+          "flaky": 0
+        }
+      },
+      {
+        "spec": "voting-visual.spec.js",
+        "passed": true,
+        "stats": {
+          "startTime": "2026-11-08T16:51:53.105Z",
+          "duration": 48529.664,
+          "expected": 4,
+          "skipped": 0,
+          "unexpected": 0,
+          "flaky": 0
+        }
+      },
+      {
+        "spec": "voting3.spec.js",
+        "passed": true,
+        "stats": {
+          "startTime": "2026-11-08T16:52:43.623Z",
+          "duration": 12483.312,
+          "expected": 6,
+          "skipped": 0,
+          "unexpected": 0,
+          "flaky": 0
+        }
+      },
+      {
+        "spec": "zz-auth-throttle.spec.js",
+        "passed": true,
+        "stats": {
+          "startTime": "2026-11-08T16:52:57.834Z",
+          "duration": 423.90199999999993,
+          "expected": 2,
+          "skipped": 0,
+          "unexpected": 0,
+          "flaky": 0
+        }
+      }
+    ]
+  },
+  "unit": {
+    "passed": 47,
+    "files": 9
+  },
+  "lint": "passed",
+  "migrations": "004 through 008 passed",
+  "cloudflareBuild": "cf-build and cf-bundle passed; private artifact paths 404",
+  "crossBrowserCursor": {
+    "passed": 6,
+    "engines": [
+      "Chromium",
+      "Firefox",
+      "WebKit"
+    ]
+  },
+  "visualComparisonAndActivityRerun": {
+    "passed": 29,
+    "baselineUpdate": false
+  },
+  "preview": {
+    "previewAssets": 8,
+    "preview": [
+      {
+        "route": "/",
+        "status": 200
+      },
+      {
+        "route": "/admin/login",
+        "status": 200
+      },
+      {
+        "route": "/join/ABCDEFGH",
+        "status": 200
+      },
+      {
+        "route": "/qr/ABCDEFGH",
+        "status": 200
+      },
+      {
+        "route": "/room/ABCDEFGH",
+        "status": 200
+      }
+    ],
+    "privateArtifacts": [
+      {
+        "route": "/cloudflare/next-env.mjs",
+        "status": 404
+      },
+      {
+        "route": "/server-functions/default/index.mjs",
+        "status": 404
+      },
+      {
+        "route": "/worker.js",
+        "status": 404
+      },
+      {
+        "route": "/_worker.js",
+        "status": 404
+      }
+    ],
+    "previewVoting": {
+      "publicRead": 200,
+      "adminRead": 200,
+      "vote": 200,
+      "protectedCookie": true,
+      "duplicateRetry": true,
+      "voterPage": 200,
+      "projectorPage": 200,
+      "reopenPreservedVotes": true,
+      "roundTwoAccepted": 200,
+      "staleRound": 409,
+      "historyPreserved": true,
+      "activity": 200,
+      "stageCentre": 200
+    }
+  },
+  "votingLoad": [
+    {
+      "concurrency": 10,
+      "successes": 10,
+      "errors": 0,
+      "p50Ms": 65.64941599999997,
+      "p95Ms": 66.35333300000002,
+      "acknowledgedMs": 67.03875000000005,
+      "browserObservedFromStartMs": 2364.115541,
+      "browserObservedAfterLastAckMs": 2297.076791,
+      "totalVotes": 10,
+      "duplicateRetryInflation": 0,
+      "target": "loopback Next voting proxy, disposable Worker and local D1"
+    },
+    {
+      "concurrency": 25,
+      "successes": 25,
+      "errors": 0,
+      "p50Ms": 132.98700000000008,
+      "p95Ms": 137.28170800000044,
+      "acknowledgedMs": 138.96558400000004,
+      "browserObservedFromStartMs": 2447.155334,
+      "browserObservedAfterLastAckMs": 2308.18975,
+      "totalVotes": 25,
+      "duplicateRetryInflation": 0,
+      "target": "loopback Next voting proxy, disposable Worker and local D1"
+    },
+    {
+      "concurrency": 50,
+      "successes": 50,
+      "errors": 0,
+      "p50Ms": 264.90087500000027,
+      "p95Ms": 268.6627090000002,
+      "acknowledgedMs": 273.76608399999986,
+      "browserObservedFromStartMs": 2071.5567919999994,
+      "browserObservedAfterLastAckMs": 1797.7907079999995,
+      "totalVotes": 50,
+      "duplicateRetryInflation": 0,
+      "target": "loopback Next voting proxy, disposable Worker and local D1"
+    },
+    {
+      "concurrency": 100,
+      "successes": 100,
+      "errors": 0,
+      "p50Ms": 660.7298749999991,
+      "p95Ms": 670.4871669999993,
+      "acknowledgedMs": 673.5851250000014,
+      "browserObservedFromStartMs": 2467.7110410000005,
+      "browserObservedAfterLastAckMs": 1794.125915999999,
+      "totalVotes": 100,
+      "duplicateRetryInflation": 0,
+      "target": "loopback Next voting proxy, disposable Worker and local D1"
+    }
+  ],
+  "contributionLoad": [
+    {
+      "concurrency": 10,
+      "passed": true,
+      "report": {
+        "concurrency": 10,
+        "requests": 10,
+        "successes": 10,
+        "errors": 0,
+        "successRate": 100,
+        "wallTimeMs": 77,
+        "throughputPerSecond": 129.91,
+        "latency": {
+          "minMs": 73.8,
+          "p50Ms": 74.3,
+          "p95Ms": 75.7,
+          "p99Ms": 75.7,
+          "maxMs": 75.7
+        },
+        "statusCounts": {
+          "200": 10
+        },
+        "errorSamples": [],
+        "database": {
+          "before": 3,
+          "after": 14,
+          "expectedDelta": 11,
+          "actualDelta": 11,
+          "countMatches": true
+        },
+        "duplicateProbe": {
+          "statuses": [
+            200,
+            200
+          ],
+          "allSuccessful": true,
+          "replayRecognized": true,
+          "exactlyOneRow": true
+        },
+        "concurrentRoomPolling": {
+          "requests": 30,
+          "errors": 0,
+          "p50Ms": 27.5,
+          "p95Ms": 37.6
+        },
+        "moderationAndProjection": {
+          "status": 200,
+          "moderationStatus": 200,
+          "moderationLatencyMs": 65.5,
+          "moderationResponseMs": 119.3,
+          "projectionObservedMs": 182.9,
+          "correctPointer": true
+        },
+        "browserProjection": {
+          "observedMs": 3522.9,
+          "correctPointer": true,
+          "reducedMotion": true
+        }
+      }
+    },
+    {
+      "concurrency": 25,
+      "passed": true,
+      "report": {
+        "concurrency": 25,
+        "requests": 25,
+        "successes": 25,
+        "errors": 0,
+        "successRate": 100,
+        "wallTimeMs": 273.4,
+        "throughputPerSecond": 91.45,
+        "latency": {
+          "minMs": 244.6,
+          "p50Ms": 247,
+          "p95Ms": 268.2,
+          "p99Ms": 269.1,
+          "maxMs": 269.1
+        },
+        "statusCounts": {
+          "200": 25
+        },
+        "errorSamples": [],
+        "database": {
+          "before": 3,
+          "after": 29,
+          "expectedDelta": 26,
+          "actualDelta": 26,
+          "countMatches": true
+        },
+        "duplicateProbe": {
+          "statuses": [
+            200,
+            200
+          ],
+          "allSuccessful": true,
+          "replayRecognized": true,
+          "exactlyOneRow": true
+        },
+        "concurrentRoomPolling": {
+          "requests": 75,
+          "errors": 0,
+          "p50Ms": 73.5,
+          "p95Ms": 223.1
+        },
+        "moderationAndProjection": {
+          "status": 200,
+          "moderationStatus": 200,
+          "moderationLatencyMs": 127.2,
+          "moderationResponseMs": 403.5,
+          "projectionObservedMs": 408,
+          "correctPointer": true
+        },
+        "browserProjection": {
+          "observedMs": 3536,
+          "correctPointer": true,
+          "reducedMotion": true
+        }
+      }
+    },
+    {
+      "concurrency": 50,
+      "passed": true,
+      "report": {
+        "concurrency": 50,
+        "requests": 50,
+        "successes": 50,
+        "errors": 0,
+        "successRate": 100,
+        "wallTimeMs": 459.2,
+        "throughputPerSecond": 108.88,
+        "latency": {
+          "minMs": 451.6,
+          "p50Ms": 453.1,
+          "p95Ms": 458,
+          "p99Ms": 458.9,
+          "maxMs": 458.9
+        },
+        "statusCounts": {
+          "200": 50
+        },
+        "errorSamples": [],
+        "database": {
+          "before": 3,
+          "after": 54,
+          "expectedDelta": 51,
+          "actualDelta": 51,
+          "countMatches": true
+        },
+        "duplicateProbe": {
+          "statuses": [
+            200,
+            200
+          ],
+          "allSuccessful": true,
+          "replayRecognized": true,
+          "exactlyOneRow": true
+        },
+        "concurrentRoomPolling": {
+          "requests": 150,
+          "errors": 0,
+          "p50Ms": 91.9,
+          "p95Ms": 428.1
+        },
+        "moderationAndProjection": {
+          "status": 200,
+          "moderationStatus": 200,
+          "moderationLatencyMs": 210.2,
+          "moderationResponseMs": 683.5,
+          "projectionObservedMs": 690.2,
+          "correctPointer": true
+        },
+        "browserProjection": {
+          "observedMs": 3530.1,
+          "correctPointer": true,
+          "reducedMotion": true
+        }
+      }
+    },
+    {
+      "concurrency": 100,
+      "passed": true,
+      "report": {
+        "concurrency": 100,
+        "requests": 100,
+        "successes": 100,
+        "errors": 0,
+        "successRate": 100,
+        "wallTimeMs": 914.5,
+        "throughputPerSecond": 109.35,
+        "latency": {
+          "minMs": 779.1,
+          "p50Ms": 864.4,
+          "p95Ms": 905.8,
+          "p99Ms": 909.3,
+          "maxMs": 914.5
+        },
+        "statusCounts": {
+          "200": 100
+        },
+        "errorSamples": [],
+        "database": {
+          "before": 3,
+          "after": 104,
+          "expectedDelta": 101,
+          "actualDelta": 101,
+          "countMatches": true
+        },
+        "duplicateProbe": {
+          "statuses": [
+            200,
+            200
+          ],
+          "allSuccessful": true,
+          "replayRecognized": true,
+          "exactlyOneRow": true
+        },
+        "concurrentRoomPolling": {
+          "requests": 300,
+          "errors": 0,
+          "p50Ms": 249.9,
+          "p95Ms": 897.6
+        },
+        "moderationAndProjection": {
+          "status": 200,
+          "moderationStatus": 200,
+          "moderationLatencyMs": 381.4,
+          "moderationResponseMs": 1303,
+          "projectionObservedMs": 1334.9,
+          "correctPointer": true
+        },
+        "browserProjection": {
+          "observedMs": 3509.7,
+          "correctPointer": true,
+          "reducedMotion": true
+        }
+      }
+    }
+  ],
+  "votingPerformance": [
+    {
+      "style": "bars",
+      "motion": "no-preference",
+      "frames": 52,
+      "durationMs": 2016.6000000000004,
+      "p50Ms": 33.400000000000546,
+      "p95Ms": 50.099999999999454,
+      "over50Ms": 4,
+      "longTasks": [],
+      "labelsStationary": true,
+      "quality": "quiet",
+      "measurement": "Headless Chromium RAF scheduling, not a physical projector or GPU benchmark"
+    },
+    {
+      "style": "rows",
+      "motion": "no-preference",
+      "frames": 56,
+      "durationMs": 2016.6000000000004,
+      "p50Ms": 33.30000000000109,
+      "p95Ms": 50.100000000000364,
+      "over50Ms": 3,
+      "longTasks": [],
+      "labelsStationary": true,
+      "quality": "quiet",
+      "measurement": "Headless Chromium RAF scheduling, not a physical projector or GPU benchmark"
+    },
+    {
+      "style": "donut",
+      "motion": "no-preference",
+      "frames": 54,
+      "durationMs": 2033.2000000000007,
+      "p50Ms": 33.30000000000291,
+      "p95Ms": 50,
+      "over50Ms": 2,
+      "longTasks": [],
+      "labelsStationary": true,
+      "quality": "quiet",
+      "measurement": "Headless Chromium RAF scheduling, not a physical projector or GPU benchmark"
+    },
+    {
+      "style": "comparison",
+      "motion": "no-preference",
+      "frames": 55,
+      "durationMs": 2033.300000000003,
+      "p50Ms": 33.39999999999782,
+      "p95Ms": 50,
+      "over50Ms": 2,
+      "longTasks": [],
+      "labelsStationary": true,
+      "quality": "quiet",
+      "measurement": "Headless Chromium RAF scheduling, not a physical projector or GPU benchmark"
+    },
+    {
+      "style": "bars",
+      "motion": "reduce",
+      "frames": 121,
+      "durationMs": 2016.6000000000001,
+      "p50Ms": 16.699999999999818,
+      "p95Ms": 16.700000000000273,
+      "over50Ms": 0,
+      "longTasks": [],
+      "labelsStationary": true,
+      "quality": "quiet",
+      "measurement": "Headless Chromium RAF scheduling, not a physical projector or GPU benchmark"
+    },
+    {
+      "style": "rows",
+      "motion": "reduce",
+      "frames": 121,
+      "durationMs": 2016.5999999999995,
+      "p50Ms": 16.699999999999818,
+      "p95Ms": 16.700000000000728,
+      "over50Ms": 0,
+      "longTasks": [],
+      "labelsStationary": true,
+      "quality": "quiet",
+      "measurement": "Headless Chromium RAF scheduling, not a physical projector or GPU benchmark"
+    },
+    {
+      "style": "donut",
+      "motion": "reduce",
+      "frames": 121,
+      "durationMs": 2016.5,
+      "p50Ms": 16.69999999999891,
+      "p95Ms": 16.799999999999272,
+      "over50Ms": 0,
+      "longTasks": [],
+      "labelsStationary": true,
+      "quality": "quiet",
+      "measurement": "Headless Chromium RAF scheduling, not a physical projector or GPU benchmark"
+    },
+    {
+      "style": "comparison",
+      "motion": "reduce",
+      "frames": 121,
+      "durationMs": 2016.5,
+      "p50Ms": 16.69999999999891,
+      "p95Ms": 16.700000000000728,
+      "over50Ms": 0,
+      "longTasks": [],
+      "labelsStationary": true,
+      "quality": "quiet",
+      "measurement": "Headless Chromium RAF scheduling, not a physical projector or GPU benchmark"
+    }
+  ],
+  "roomPerformance": [
+    {
+      "room4KProfile": "no-preference",
+      "variant": "normal",
+      "quality": "quiet",
+      "warmupFrames": 30,
+      "durationMs": 2033.2000000000003,
+      "frames": 60,
+      "p50Ms": 33.30000000000018,
+      "p95Ms": 50,
+      "over50Ms": 0,
+      "longTasks": [],
+      "measurement": "Headless Chromium scheduling; physical projector performance is not inferred."
+    },
+    {
+      "room4KProfile": "reduce",
+      "variant": "reduced",
+      "quality": "quiet",
+      "warmupFrames": 30,
+      "durationMs": 2000.0000000000002,
+      "frames": 120,
+      "p50Ms": 16.699999999999818,
+      "p95Ms": 16.799999999999727,
+      "over50Ms": 0,
+      "longTasks": [],
+      "measurement": "Headless Chromium scheduling; physical projector performance is not inferred."
+    }
+  ],
+  "backup": {
+    "sha256": "35c1d0e20b1565685d8ffda953d72bf6c778f952963838a2aaaee59273d83853",
+    "bytes": 81722,
+    "preservedExistingTables": 20,
+    "allExistingColumnValuesPreserved": true,
+    "integrity": "ok",
+    "foreignKeyViolations": 0,
+    "counts": {
+      "discussion_sessions": 5,
+      "submissions": 24,
+      "voting_events": 1,
+      "voting_votes": 5,
+      "admin_activity": 99
+    },
+    "liveSessions": 1,
+    "openVotingEvents": 0,
+    "latestContribution": "2026-11-08T16:08:52.910Z",
+    "latestActivity": "2026-11-08T15:55:32.718Z"
+  },
+  "rollback": {
+    "oldApiReadsMigratedRoundOne": 200,
+    "preservedVoteTotal": 5,
+    "oldRoomReads": 5,
+    "applicationRollbackRehearsed": "historical Worker modules against restored migrated SQLite through local D1 read adapter",
+    "restriction": "Old API unsafe after round 2; retain round-aware API thereafter"
+  },
+  "production": {
+    "status": "awaiting safe-window confirmation",
+    "migrationApplied": false,
+    "deployed": false,
+    "reason": "Active Room View and admin polling observed. No production writes performed."
+  },
+  "originalSessionControls": "byte-identical source fingerprints retained"
+}

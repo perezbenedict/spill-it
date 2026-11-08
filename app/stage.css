@@ -129,12 +129,11 @@
 .stage-announcement-preview .stage-announcement-heading { font-size: 1.5rem; }
 .stage-announcement-preview .stage-announcement-subtitle { font-size: .95rem; }
 .stage-announcement-preview .stage-quotation-mark { font-size: 3rem; }
-.stage-cursor { position: absolute; left: 0; top: 0; z-index: 80; width: 1px; height: 1px; pointer-events: none; }
-.stage-cursor-ring, .stage-cursor-dot { position: absolute; left: 0; top: 0; border-radius: 50%; pointer-events: none; transform: translate(-50%, -50%); }
-.stage-cursor-ring { width: 22px; height: 22px; border: 1px solid rgba(196,181,253,.5); transition: width .16s ease, height .16s ease, border-color .16s ease; }
-.stage-cursor-dot { width: 3px; height: 3px; background: #c4b5fd; }
-.stage-cursor[data-interactive="true"] .stage-cursor-ring { width: 30px; height: 30px; border-color: rgba(196,181,253,.8); }
-.stage-cursor[data-pressed="true"] .stage-cursor-ring { width: 16px; height: 16px; }
+.stage-cursor { position: absolute; left: 0; top: 0; z-index: 80; width: 1px; height: 1px; pointer-events: none; transition: opacity .18s ease; }
+.stage-cursor[data-fading="true"] { opacity: 0; }
+.stage-cursor-flame { position: absolute; left: 7px; top: 6px; width: 11px; height: 19px; overflow: visible; color: #c4b5fd; opacity: .8; transform-origin: 50% 8%; transition: transform .14s ease, color .14s ease, opacity .14s ease; }
+.stage-cursor[data-interactive="true"] .stage-cursor-flame { transform: scale(1.18); color: #efe4ff; opacity: 1; }
+.stage-cursor[data-pressed="true"] .stage-cursor-flame { transform: scale(.82); }
 .stage-cursor-setting { display: inline-flex; align-items: center; justify-content: center; width: 2.75rem; height: 2.75rem; flex-shrink: 0; border: 1px solid rgba(var(--stage-light), .18); border-radius: 50%; color: #c4b5fd; background: rgba(20,11,37,.75); opacity: .6; transition: opacity .2s ease, border-color .2s ease; }
 .stage-cursor-setting:hover, .stage-cursor-setting:focus-visible { opacity: 1; border-color: rgba(var(--stage-light), .55); }
 .stage-cursor-setting:focus-visible { outline: 2px solid #c4b5fd; outline-offset: 3px; }
@@ -146,5 +145,5 @@
 @media (prefers-reduced-motion: reduce) {
   .stage-lightfield, .stage-wing, .stage-orbit, .stage-emblem-watermark { animation: none !important; }
   .stage-cursor { display: none; }
-  .stage-cursor-setting, .stage-cursor-ring { transition: none; }
+  .stage-cursor, .stage-cursor-setting, .stage-cursor-flame { transition: none; }
 }

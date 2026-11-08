@@ -237,7 +237,8 @@ CREATE TABLE IF NOT EXISTS voting_events (
  ever_public INTEGER NOT NULL DEFAULT 0 CHECK(ever_public IN (0,1)),
  created_at TEXT NOT NULL,
  updated_at TEXT NOT NULL,
- closed_at TEXT
+ closed_at TEXT,
+ current_round INTEGER NOT NULL DEFAULT 1 CHECK(current_round > 0)
 );
 CREATE INDEX IF NOT EXISTS voting_events_created ON voting_events(created_at DESC);
 CREATE INDEX IF NOT EXISTS voting_events_session ON voting_events(session_id);
@@ -258,28 +259,80 @@ CREATE TABLE IF NOT EXISTS voting_options (
  position INTEGER NOT NULL,
  UNIQUE(id,question_id)
 );
+CREATE TABLE IF NOT EXISTS voting_rounds (
+ event_id TEXT NOT NULL REFERENCES voting_events(id) ON DELETE CASCADE,
+ round_number INTEGER NOT NULL CHECK(round_number > 0),
+ created_at TEXT NOT NULL,
+ opened_at TEXT,
+ last_opened_at TEXT,
+ closed_at TEXT,
+ reopen_count INTEGER NOT NULL DEFAULT 0,
+ ever_public INTEGER NOT NULL DEFAULT 0 CHECK(ever_public IN (0,1)),
+ PRIMARY KEY(event_id,round_number)
+);
+CREATE TRIGGER IF NOT EXISTS standalone_voting_round_created AFTER INSERT ON voting_events
+BEGIN
+ INSERT INTO voting_rounds(event_id,round_number,created_at,closed_at,ever_public)
+ VALUES(NEW.id,1,NEW.created_at,NEW.closed_at,NEW.ever_public);
+END;
+
 CREATE TABLE IF NOT EXISTS voting_votes (
  event_id TEXT NOT NULL REFERENCES voting_events(id) ON DELETE CASCADE,
  question_id TEXT NOT NULL,
  participant_id TEXT NOT NULL,
  option_id TEXT NOT NULL,
  created_at INTEGER NOT NULL,
- PRIMARY KEY(question_id,participant_id),
+ round_number INTEGER NOT NULL DEFAULT 1 CHECK(round_number > 0),
+ PRIMARY KEY(question_id,round_number,participant_id),
  FOREIGN KEY(question_id,event_id) REFERENCES voting_questions(id,event_id) ON DELETE CASCADE,
- FOREIGN KEY(option_id,question_id) REFERENCES voting_options(id,question_id) ON DELETE CASCADE
+ FOREIGN KEY(option_id,question_id) REFERENCES voting_options(id,question_id) ON DELETE CASCADE,
+ FOREIGN KEY(event_id,round_number) REFERENCES voting_rounds(event_id,round_number) ON DELETE CASCADE
 );
-CREATE INDEX IF NOT EXISTS voting_votes_option ON voting_votes(option_id);
-CREATE INDEX IF NOT EXISTS voting_votes_event_time ON voting_votes(event_id,created_at);
+CREATE INDEX IF NOT EXISTS voting_votes_option ON voting_votes(option_id,round_number);
+CREATE INDEX IF NOT EXISTS voting_votes_event_time ON voting_votes(event_id,round_number,created_at);
 CREATE TRIGGER IF NOT EXISTS standalone_vote_admission BEFORE INSERT ON voting_votes
 WHEN NOT EXISTS (
  SELECT 1 FROM voting_events e JOIN voting_questions q ON q.event_id=e.id
  JOIN voting_options o ON o.question_id=q.id
- WHERE e.id=NEW.event_id AND e.status='open' AND q.id=NEW.question_id
- AND q.ballot_type='single' AND o.id=NEW.option_id
+ WHERE e.id=NEW.event_id AND e.status='open' AND e.current_round=NEW.round_number
+ AND q.id=NEW.question_id AND q.ballot_type='single' AND o.id=NEW.option_id
 )
-BEGIN SELECT RAISE(ABORT,'voting_closed'); END;
+BEGIN SELECT RAISE(ABORT,'voting_closed_or_round_changed'); END;
 CREATE TRIGGER IF NOT EXISTS standalone_vote_version AFTER INSERT ON voting_votes
 BEGIN
  UPDATE voting_events SET results_version=results_version+1 WHERE id=NEW.event_id;
 END;
 INSERT OR IGNORE INTO spill_schema_migrations(version) VALUES('006_voting');
+INSERT OR IGNORE INTO spill_schema_migrations(version) VALUES('007_voting_rounds');
+
+-- Archive operational history without deleting event data or audit records.
+CREATE TABLE IF NOT EXISTS activity_history_batches (
+ id TEXT PRIMARY KEY,
+ actor_id TEXT,
+ created_at TEXT NOT NULL,
+ cutoff_rowid INTEGER NOT NULL,
+ archived_count INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE IF NOT EXISTS activity_archives (
+ activity_id TEXT PRIMARY KEY REFERENCES admin_activity(id) ON DELETE CASCADE,
+ archived_at TEXT NOT NULL,
+ batch_id TEXT NOT NULL REFERENCES activity_history_batches(id)
+);
+CREATE INDEX IF NOT EXISTS activity_archive_batch ON activity_archives(batch_id);
+CREATE INDEX IF NOT EXISTS activity_global_time ON admin_activity(created_at DESC,id DESC);
+CREATE TRIGGER IF NOT EXISTS activity_archive_protected_guard BEFORE INSERT ON activity_archives
+WHEN NOT EXISTS (SELECT 1 FROM admin_activity WHERE id=NEW.activity_id AND action IN (
+ 'moderation','status_draft','status_live','status_paused','status_closed','enqueue','remove','reorder','clearQueue','advance','project','createPoll','openPoll','closePoll','projectPoll','clearProjection','clearPoll','setReactions','configureStage','voting_create','voting_edit','voting_open','voting_close','voting_settings','voting_present','voting_reopen','voting_newRound','voting_new_round','voting_startRound','voting_start_round'
+))
+BEGIN SELECT RAISE(ABORT,'protected_activity'); END;
+CREATE TRIGGER IF NOT EXISTS activity_security_delete_guard BEFORE DELETE ON admin_activity
+WHEN OLD.action NOT IN (
+ 'moderation','status_draft','status_live','status_paused','status_closed','enqueue','remove','reorder','clearQueue','advance','project','createPoll','openPoll','closePoll','projectPoll','clearProjection','clearPoll','setReactions','configureStage','voting_create','voting_edit','voting_open','voting_close','voting_settings','voting_present','voting_reopen','voting_newRound','voting_new_round','voting_startRound','voting_start_round'
+)
+BEGIN SELECT RAISE(ABORT,'protected_activity'); END;
+CREATE TRIGGER IF NOT EXISTS activity_security_update_guard BEFORE UPDATE ON admin_activity
+WHEN OLD.action NOT IN (
+ 'moderation','status_draft','status_live','status_paused','status_closed','enqueue','remove','reorder','clearQueue','advance','project','createPoll','openPoll','closePoll','projectPoll','clearProjection','clearPoll','setReactions','configureStage','voting_create','voting_edit','voting_open','voting_close','voting_settings','voting_present','voting_reopen','voting_newRound','voting_new_round','voting_startRound','voting_start_round'
+)
+BEGIN SELECT RAISE(ABORT,'protected_activity'); END;
+INSERT OR IGNORE INTO spill_schema_migrations(version) VALUES('008_activity');

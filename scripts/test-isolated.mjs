@@ -195,8 +195,28 @@ try {
     const pages = await Promise.all([`/vote/${event.code}`, `/vote/${event.code}/stage`].map(route => fetch(previewURL + route)));
     if (pages.some(response => !response.ok)) throw new Error('Compiled voting pages failed.');
     event = (await votingCall(`/admin/voting/${event.id}`, { action: 'close', expectedRevision: event.revision })).event;
+    const proxyAdmin = async payload => {
+      const response = await fetch(`${previewURL}/api/voting/admin/${event.id}`, { method: 'POST', headers: { Origin: previewURL, 'Content-Type': 'application/json', Cookie: `spill_admin_session=${adminToken}` }, body: JSON.stringify({ expectedRevision: event.revision, ...payload }) });
+      if (!response.ok) throw new Error('Compiled voting lifecycle proxy failed.');
+      event = (await response.json()).event;
+    };
+    await proxyAdmin({ action: 'reopen' });
+    if (event.currentRound !== 1 || event.questions[0].totalVotes !== 1) throw new Error('Compiled reopening changed historical votes.');
+    await proxyAdmin({ action: 'close' });
+    await proxyAdmin({ action: 'newRound', confirmed: true });
+    const voteHeaders = { Origin: previewURL, 'Content-Type': 'application/json', Cookie: cookies.map(cookie => cookie.split(';')[0]).join('; ') };
+    const staleRound = await fetch(`${publicVoteURL}/vote`, { method: 'POST', headers: voteHeaders, body: JSON.stringify({ ...ballot, round: 1 }) });
+    const freshRound = await fetch(`${publicVoteURL}/vote`, { method: 'POST', headers: voteHeaders, body: JSON.stringify({ ...ballot, round: 2 }) });
+    if (event.currentRound !== 2 || staleRound.status !== 409 || !freshRound.ok) throw new Error('Compiled round identity isolation failed.');
+    await proxyAdmin({ action: 'close' });
+    const history = await fetch(`${previewURL}/api/voting/admin/${event.id}?round=1`, { headers: { Cookie: `spill_admin_session=${adminToken}` } });
+    const historyData = await history.json();
+    if (!history.ok || historyData.event.history.questions[0].totalVotes !== 1 || historyData.event.questions[0].totalVotes !== 1) throw new Error('Compiled round-history proxy failed.');
+    const activity = await fetch(`${previewURL}/api/activity?limit=2`, { headers: { Cookie: `spill_admin_session=${adminToken}` } });
+    const stageCentre = await fetch(`${previewURL}/admin/stage?session=${liveId}`, { headers: { Cookie: `spill_admin_session=${adminToken}` } });
+    if (!activity.ok || !stageCentre.ok) throw new Error('Compiled activity or Stage Control Centre failed.');
     await votingCall(`/admin/voting/${event.id}`, { action: 'delete', expectedRevision: event.revision, password });
-    summary.previewVoting = { publicRead: publicRead.status, adminRead: privateRead.status, vote: voteResponse.status, protectedCookie: true, duplicateRetry: true, voterPage: pages[0].status, projectorPage: pages[1].status };
+    summary.previewVoting = { publicRead: publicRead.status, adminRead: privateRead.status, vote: voteResponse.status, protectedCookie: true, duplicateRetry: true, voterPage: pages[0].status, projectorPage: pages[1].status, reopenPreservedVotes: true, roundTwoAccepted: freshRound.status, staleRound: staleRound.status, historyPreserved: true, activity: activity.status, stageCentre: stageCentre.status };
     console.log(JSON.stringify({ cloudflarePreview: routes, assets: summary.previewAssets }));
   }
   if (runE2E) {
@@ -211,12 +231,13 @@ try {
   if (runE2E) {
     const { readdir } = await import('node:fs/promises');
     const requestedSpecs = new Set((process.argv.includes('--spec') ? process.argv[process.argv.indexOf('--spec') + 1] : '').split(',').filter(Boolean));
+    const requestedGrep = process.argv.includes('--grep') ? process.argv[process.argv.indexOf('--grep') + 1] : null;
     const specs = (await readdir(path.join(root, 'tests/e2e'))).filter(f => f.endsWith('.spec.js') && (!requestedSpecs.size || requestedSpecs.has(f))).sort();
     if (!specs.length) throw new Error('No matching E2E spec.');
     for (const spec of specs) {
       await seed();
       const report = path.join(output, `${spec}.json`);
-      const result = await command('npx', ['playwright', 'test', spec, '--reporter=list,json', '--output', path.join(output, `${spec}-results`), ...(process.argv.includes('--update-snapshots') ? ['--update-snapshots=all'] : [])], `${spec}.log`, { PLAYWRIGHT_JSON_OUTPUT_FILE: report });
+      const result = await command('npx', ['playwright', 'test', spec, '--reporter=list,json', '--output', path.join(output, `${spec}-results`), ...(requestedGrep ? ['--grep', requestedGrep] : []), ...(process.argv.includes('--update-snapshots') ? ['--update-snapshots=all'] : [])], `${spec}.log`, { PLAYWRIGHT_JSON_OUTPUT_FILE: report });
       let stats = null;
       try { stats = JSON.parse(await readFile(report, 'utf8')).stats; } catch { /* a missing report is a failed release gate */ }
       const passed = result.code === 0 && stats && stats.skipped === 0 && stats.unexpected === 0 && stats.expected > 0;

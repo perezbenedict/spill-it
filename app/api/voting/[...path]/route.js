@@ -6,7 +6,7 @@ import { isValidPublicCode } from '@/lib/session-code';
 import { isSameOriginRequest } from '@/lib/request-origin';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const actions = new Set(['edit', 'open', 'close', 'archive', 'delete', 'settings', 'present']);
+const actions = new Set(['edit', 'open', 'close', 'reopen', 'newRound', 'archive', 'delete', 'settings', 'present']);
 
 async function proxy(request, context) {
   const { path = [] } = await context.params;
@@ -34,6 +34,7 @@ async function proxy(request, context) {
     if (!admin) body = {
       questionId: body.questionId,
       optionId: body.optionId,
+      round: body.round,
       participant_id: await getOrCreateParticipantId(`VOTE_${identifier}`),
     };
   }
@@ -41,8 +42,16 @@ async function proxy(request, context) {
   const headers = { Authorization: `Bearer ${env.SPILL_API_SECRET}`, 'Content-Type': 'application/json' };
   if (admin) headers['X-Admin-Token'] = await getAdminToken();
   const endpoint = admin ? `/admin/voting${identifier ? `/${identifier}` : ''}` : `/voting/${identifier}${operation ? '/vote' : ''}`;
+  let query = '';
+  if (admin && identifier && request.method === 'GET') {
+    const round = new URL(request.url).searchParams.get('round');
+    if (round !== null) {
+      if (!/^[1-9][0-9]{0,5}$/.test(round)) return NextResponse.json({ error: 'Choose a valid round.' }, { status: 400 });
+      query = `?round=${round}`;
+    }
+  }
   try {
-    const response = await fetch(`${env.SPILL_API_URL}${endpoint}`, {
+    const response = await fetch(`${env.SPILL_API_URL}${endpoint}${query}`, {
       method: request.method, headers, cache: 'no-store',
       body: body ? JSON.stringify(body) : undefined, signal: AbortSignal.timeout(15000),
     });

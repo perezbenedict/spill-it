@@ -28,6 +28,22 @@ assert.throws(() => execute("INSERT INTO voting_votes VALUES('vote-a','question-
 assert.throws(() => execute("INSERT INTO voting_votes VALUES('other','question-a','browser-b','option-a',2);"));
 execute("UPDATE voting_events SET status='closed' WHERE id='vote-a';");
 assert.throws(() => execute("INSERT INTO voting_votes VALUES('vote-a','question-a','browser-c','option-a',3);"));
+execute(readFileSync('api/migrations/007_voting_rounds.sql', 'utf8'));
+assert.equal(execute("SELECT event_id||':'||participant_id||':'||round_number||':'||created_at FROM voting_votes;"), 'vote-a:browser-a:1:1');
+assert.equal(execute("SELECT results_version FROM voting_events WHERE id='vote-a';"), '1');
+assert.equal(execute("SELECT COUNT(*) FROM voting_rounds WHERE event_id='vote-a' AND round_number=1;"), '1');
+execute("INSERT INTO voting_rounds(event_id,round_number,created_at) VALUES('vote-a',2,'2026-11-08'); UPDATE voting_events SET current_round=2,status='open' WHERE id='vote-a';");
+execute("INSERT INTO voting_votes(event_id,question_id,participant_id,option_id,created_at,round_number) VALUES('vote-a','question-a','browser-a','option-a',4,2);");
+assert.equal(execute('SELECT round_number,COUNT(*) FROM voting_votes GROUP BY round_number ORDER BY round_number;'), '1|1\n2|1');
+assert.throws(() => execute("INSERT INTO voting_votes(event_id,question_id,participant_id,option_id,created_at,round_number) VALUES('vote-a','question-a','browser-b','option-a',5,1);"));
+assert.throws(() => execute("INSERT INTO voting_votes(event_id,question_id,participant_id,option_id,created_at,round_number) VALUES('vote-a','question-a','browser-a','option-a',6,2);"));
+execute("UPDATE voting_events SET status='closed' WHERE id='vote-a';");
+assert.throws(() => execute("INSERT INTO voting_votes(event_id,question_id,participant_id,option_id,created_at,round_number) VALUES('vote-a','question-a','browser-b','option-a',7,2);"));
+execute(readFileSync('api/migrations/008_activity.sql', 'utf8'));
+execute("INSERT INTO admin_activity(id,session_id,action,created_at) VALUES('ordinary','session-b','configureStage','2026-11-08'),('security','session-b','security_login_failure','2026-11-08'); INSERT INTO activity_history_batches(id,created_at,cutoff_rowid) VALUES('batch','2026-11-08',999); INSERT INTO activity_archives(activity_id,archived_at,batch_id) VALUES('ordinary','2026-11-08','batch');");
+assert.throws(() => execute("INSERT INTO activity_archives(activity_id,archived_at,batch_id) VALUES('security','2026-11-08','batch');"));
+assert.throws(() => execute("DELETE FROM admin_activity WHERE id='security';"));
+assert.throws(() => execute("UPDATE admin_activity SET action='configureStage' WHERE id='security';"));
 assert.equal(execute('SELECT COUNT(*) FROM discussion_sessions;'), '2');
 assert.equal(execute('SELECT content FROM submissions;'), 'Preserve this contribution');
 assert.equal(execute('SELECT current_submission_id FROM presentation_state WHERE session_id=\'session-a\';'), 'contribution-a');
@@ -42,4 +58,4 @@ assert.equal(execute("SELECT current_submission_id IS NULL FROM presentation_sta
 assert.throws(() => execute("UPDATE presentation_state SET current_submission_id='contribution-a' WHERE session_id='session-a';"));
 execute("DELETE FROM discussion_sessions WHERE id='session-a';");
 assert.equal(execute("SELECT COUNT(*) FROM admin_activity WHERE action='delete_session';"), '1');
-console.log(JSON.stringify({ migrations: ['004_platform','005_stage','006_voting'], preservedSessions: 2, preservedContributions: 1, preservedProjection: true, crossSessionQueueRejected: true, hiddenProjectionRejected: true, duplicateVoteRejected: true, closedVoteRejected: true, deletionActivityRetained: true, integrity: 'ok', database }));
+console.log(JSON.stringify({ migrations: ['004_platform','005_stage','006_voting','007_voting_rounds','008_activity'], preservedSessions: 2, preservedContributions: 1, preservedProjection: true, crossSessionQueueRejected: true, hiddenProjectionRejected: true, duplicateVoteRejected: true, closedVoteRejected: true, historicalVotesPreserved: true, distinctRounds: true, securityAuditProtected: true, deletionActivityRetained: true, integrity: 'ok', database }));

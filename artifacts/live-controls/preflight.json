@@ -1,0 +1,20 @@
+{
+  "project": "spill-it",
+  "domain": "spill-it-4rw.pages.dev",
+  "priorPages": {
+    "id": "c932f6f3-0c4b-4a0b-96dd-d11c9759022a",
+    "commit": "09785a0d56d9c1b0e1cc1da981287631702abc7b"
+  },
+  "priorApi": {
+    "deployment": "8b245b40-ac51-4a0d-a776-5ec827922a8c",
+    "version": "07f507db-f0c4-49cb-b933-227325511482"
+  },
+  "initialCounts": {
+    "sessions": 5,
+    "contributions": 24,
+    "votingEvents": 1,
+    "votes": 5,
+    "activity": 99
+  },
+  "originalControlsSourcePreserved": true
+}

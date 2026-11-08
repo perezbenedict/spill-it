@@ -70,23 +70,14 @@ export function votingPercentages(counts) {
 
 const aggregateSql = `SELECT q.id AS question_id,q.event_id,q.text,q.ballot_type,q.position AS question_position,q.revealed,o.id AS option_id,o.label,o.position AS option_position,COUNT(v.option_id) AS votes
  FROM voting_questions q JOIN voting_options o ON o.question_id=q.id
- LEFT JOIN voting_votes v ON v.question_id=q.id AND v.option_id=o.id
+ LEFT JOIN voting_votes v ON v.question_id=q.id AND v.option_id=o.id AND v.round_number=%ROUND%
  WHERE q.event_id=(SELECT id FROM voting_events WHERE %FILTER%)
  GROUP BY q.id,o.id ORDER BY q.position,o.position`;
 
-async function snapshot(env, value, byCode = false) {
-  const filter = byCode ? 'public_code=?' : 'id=?';
-  // D1 batch reads share one transactional snapshot, including the version and
-  // aggregates, rather than pairing newer counts with an older response version.
-  const result = await env.DB.batch([
-    env.DB.prepare(`SELECT * FROM voting_events WHERE ${filter}`).bind(value),
-    env.DB.prepare(aggregateSql.replace('%FILTER%', filter)).bind(value),
-  ]);
-  const event = result[0].results[0];
-  if (!event) return null;
+function questionsFromRows(rows) {
   const questions = [];
   const grouped = new Map();
-  for (const row of result[1].results) {
+  for (const row of rows) {
     let question = grouped.get(row.question_id);
     if (!question) {
       question = { id: row.question_id, text: row.text, ballotType: row.ballot_type, revealed: !!row.revealed, options: [] };
@@ -94,7 +85,32 @@ async function snapshot(env, value, byCode = false) {
     }
     question.options.push({ id: row.option_id, label: row.label, votes: Number(row.votes) });
   }
-  return { event, questions };
+  return questions;
+}
+
+async function snapshot(env, value, byCode = false, historyRound = null) {
+  const filter = byCode ? 'public_code=?' : 'id=?';
+  // D1 batch reads share one transactional snapshot, including the version and
+  // aggregates, rather than pairing newer counts with an older response version.
+  const result = await env.DB.batch([
+    env.DB.prepare(`SELECT e.*,(SELECT ever_public FROM voting_rounds r WHERE r.event_id=e.id AND r.round_number=e.current_round) AS round_ever_public FROM voting_events e WHERE ${filter}`).bind(value),
+    env.DB.prepare(aggregateSql.replace('%FILTER%', filter).replace('%ROUND%', '(SELECT current_round FROM voting_events WHERE id=q.event_id)')).bind(value),
+    ...(!byCode ? [env.DB.prepare(`SELECT r.round_number AS roundNumber,r.created_at AS createdAt,r.opened_at AS openedAt,r.last_opened_at AS lastOpenedAt,r.closed_at AS closedAt,r.reopen_count AS reopenCount,r.ever_public AS previouslyPublic,COUNT(v.option_id) AS totalVotes FROM voting_rounds r LEFT JOIN voting_votes v ON v.event_id=r.event_id AND v.round_number=r.round_number WHERE r.event_id=? GROUP BY r.round_number ORDER BY r.round_number DESC LIMIT 50`).bind(value)] : []),
+    ...(!byCode && historyRound ? [env.DB.prepare(aggregateSql.replace('%FILTER%', filter).replace('%ROUND%', '?')).bind(historyRound, value), env.DB.prepare('SELECT round_number AS roundNumber,created_at AS createdAt,closed_at AS closedAt,reopen_count AS reopenCount,ever_public AS previouslyPublic FROM voting_rounds WHERE event_id=? AND round_number=?').bind(value, historyRound)] : []),
+  ]);
+  const event = result[0].results[0];
+  if (!event) return null;
+  const history = historyRound && result[4]?.results[0] ? { ...result[4].results[0], questions: questionsFromRows(result[3].results) } : null;
+  return { event, questions: questionsFromRows(result[1].results), rounds: result[2]?.results || [], history };
+}
+
+function resultQuestion(question) {
+  const counts = question.options.map(option => option.votes);
+  const total = counts.reduce((sum, count) => sum + count, 0);
+  const percentages = votingPercentages(counts);
+  const highest = Math.max(...counts);
+  const leaders = total ? question.options.filter(option => option.votes === highest).map(option => option.id) : [];
+  return { id: question.id, text: question.text, ballotType: question.ballotType, resultsVisible: true, options: question.options.map((option, index) => ({ ...option, percentage: percentages[index] })), totalVotes: total, leaderIds: leaders, outcome: !total ? 'empty' : leaders.length > 1 ? 'tied' : 'leading' };
 }
 
 function presentationOf(row, questions = []) {
@@ -115,23 +131,20 @@ function serialize(data, admin = false) {
     const base = { id: question.id, text: question.text, ballotType: question.ballotType, resultsVisible: visible, options: question.options.map(option => ({ id: option.id, label: option.label })) };
     if (admin) base.revealed = question.revealed;
     if (!visible) return base;
-    const counts = question.options.map(option => option.votes);
-    const total = counts.reduce((sum, count) => sum + count, 0);
-    const percentages = votingPercentages(counts);
-    const highest = Math.max(...counts);
-    const leaders = total ? question.options.filter(option => option.votes === highest).map(option => option.id) : [];
-    visibleVotes += total;
-    return { ...base, options: question.options.map((option, index) => ({ ...option, percentage: percentages[index] })), totalVotes: total, leaderIds: leaders, outcome: !total ? 'empty' : leaders.length > 1 ? 'tied' : 'leading' };
+    const result = resultQuestion(question);
+    visibleVotes += result.totalVotes;
+    return { ...base, ...result };
   });
   const selected = data.questions.find(question => question.id === presentation.questionId);
   return {
-    ...(admin ? { id: row.id, sessionId: row.session_id } : {}),
+    ...(admin ? { id: row.id, sessionId: row.session_id, rounds: data.rounds || [], history: data.history ? { ...data.history, questions: data.history.questions.map(resultQuestion) } : null } : {}),
     code: row.public_code, title: row.title, status: row.status,
+    currentRound: row.current_round || 1,
     revision: row.revision,
     // Hidden public versions expose configuration changes only. Visible public
     // versions derive exclusively from the counts actually authorized here.
     version: row.revision + (admin ? row.results_version : visibleVotes),
-    settings, presentation, previouslyPublic: !!row.ever_public,
+    settings, presentation, previouslyPublic: !!row.ever_public, roundPreviouslyPublic: !!row.round_ever_public,
     resultsVisible: !!selected && projectionAllowed(selected),
     questionCount: questions.length, questions,
     createdAt: row.created_at, updatedAt: row.updated_at, closedAt: row.closed_at,
@@ -188,16 +201,18 @@ export async function handleVotingCollection(request, env, admin) {
 
 export async function handleVotingAdmin(request, env, admin, id, verifyPassword) {
   if (!isUuid(id)) return fail('Voting event not found.', 404);
-  const data = await snapshot(env, id);
+  const requestedRound = new URL(request.url).searchParams.get('round');
+  if (requestedRound !== null && (!/^[1-9][0-9]{0,5}$/.test(requestedRound))) return fail('Choose a valid voting round.');
+  const data = await snapshot(env, id, false, request.method === 'GET' && requestedRound ? Number(requestedRound) : null);
   if (!data) return fail('Voting event not found.', 404);
-  if (request.method === 'GET') return reply({ event: serialize(data, true) });
+  if (request.method === 'GET') return requestedRound && !data.history ? fail('Voting round not found.', 404) : reply({ event: serialize(data, true) });
   if (request.method !== 'POST') return fail('Method not allowed.', 405);
   const input = await jsonBody(request);
   if (input.response) return input.response;
   const body = input.body;
   if (!Number.isInteger(body.expectedRevision) || body.expectedRevision < 0) return fail('Refresh before changing this voting event.');
   if (body.expectedRevision !== data.event.revision) return conflict();
-  const actions = ['edit', 'open', 'close', 'archive', 'delete', 'settings', 'present'];
+  const actions = ['edit', 'open', 'reopen', 'newRound', 'close', 'archive', 'delete', 'settings', 'present'];
   if (!actions.includes(body.action)) return fail('Unknown voting operation.');
   if (data.event.status === 'archived' && body.action !== 'delete') return fail('Archived voting events are read-only.', 409);
   if (body.action === 'delete') {
@@ -222,11 +237,27 @@ export async function handleVotingAdmin(request, env, admin, id, verifyPassword)
     statements.push(guarded(`DELETE FROM voting_questions WHERE event_id=? AND ${guard}`, id));
     statements.push(...questionStatements(env, id, draft.questions, guard, guardParams));
   } else if (body.action === 'open') {
-    if (data.event.status !== 'draft') return fail('Only draft voting events can be opened. Closed totals are final.', 409);
+    if (data.event.status !== 'draft') return fail('Use Reopen Voting for a closed event.', 409);
     statements.push(guarded(`UPDATE voting_events SET status='open' WHERE id=? AND status='draft' AND ${guard}`, id));
+    statements.push(guarded(`UPDATE voting_rounds SET opened_at=COALESCE(opened_at,?),last_opened_at=? WHERE event_id=? AND round_number=? AND ${guard}`, now(), now(), id, data.event.current_round));
+  } else if (body.action === 'reopen' || body.action === 'newRound') {
+    if (data.event.status !== 'closed') return fail('Close voting before reopening or starting another round.', 409);
+    const fresh = body.action === 'newRound';
+    if (fresh && body.confirmed !== true) return fail('Confirm that a new round starts a separate set of votes.');
+    if (fresh && data.event.current_round >= 999999) return fail('This event has reached its round limit.', 409);
+    nextSettings = { ...settings, participantResults: false };
+    presentation = { ...presentation, revealId: fresh ? uuid() : presentation.revealId };
+    statements.push(guarded(`UPDATE voting_events SET status='open',closed_at=NULL,current_round=current_round+?,settings=?,presentation=? WHERE id=? AND ${guard}`, fresh ? 1 : 0, JSON.stringify(nextSettings), JSON.stringify(presentation), id));
+    statements.push(guarded(`UPDATE voting_questions SET revealed=0 WHERE event_id=? AND ${guard}`, id));
+    if (fresh) {
+      statements.push(guarded(`INSERT INTO voting_rounds(event_id,round_number,created_at,opened_at,last_opened_at) SELECT id,current_round,?,?,? FROM voting_events WHERE id=? AND ${guard}`, now(), now(), now(), id));
+    } else {
+      statements.push(guarded(`UPDATE voting_rounds SET opened_at=COALESCE(opened_at,?),last_opened_at=?,closed_at=NULL,reopen_count=reopen_count+1 WHERE event_id=? AND round_number=? AND ${guard}`, now(), now(), id, data.event.current_round));
+    }
   } else if (body.action === 'close') {
     if (data.event.status !== 'open') return fail('This voting event is not open.', 409);
     statements.push(guarded(`UPDATE voting_events SET status='closed',closed_at=? WHERE id=? AND status='open' AND ${guard}`, now(), id));
+    statements.push(guarded(`UPDATE voting_rounds SET closed_at=? WHERE event_id=? AND round_number=? AND ${guard}`, now(), id, data.event.current_round));
   } else if (body.action === 'archive') {
     if (data.event.status !== 'closed') return fail('Close voting before archiving.', 409);
     statements.push(guarded(`UPDATE voting_events SET status='archived' WHERE id=? AND status='closed' AND ${guard}`, id));
@@ -254,10 +285,13 @@ export async function handleVotingAdmin(request, env, admin, id, verifyPassword)
     statements.push(guarded(`UPDATE voting_events SET presentation=? WHERE id=? AND ${guard}`, JSON.stringify(presentation), id));
   }
   const selected = data.questions.find(question => question.id === presentation.questionId);
-  const nextStatus = body.action === 'close' ? 'closed' : body.action === 'archive' ? 'archived' : data.event.status;
+  const nextStatus = ['open','reopen','newRound'].includes(body.action) ? 'open' : body.action === 'close' ? 'closed' : body.action === 'archive' ? 'archived' : data.event.status;
   const projectedPublic = presentation.content === 'results' && ['open', 'closed'].includes(nextStatus) &&
     (nextSettings.resultsMode === 'live' || (nextStatus === 'closed' && (releasedQuestion || (selected?.revealed && !(settings.resultsMode === 'live' && nextSettings.resultsMode === 'hidden')))));
-  if (projectedPublic || (nextStatus === 'closed' && nextSettings.participantResults)) statements.push(guarded(`UPDATE voting_events SET ever_public=1 WHERE id=? AND ${guard}`, id));
+  if (projectedPublic || (nextStatus === 'closed' && nextSettings.participantResults)) {
+    statements.push(guarded(`UPDATE voting_events SET ever_public=1 WHERE id=? AND ${guard}`, id));
+    statements.push(guarded(`UPDATE voting_rounds SET ever_public=1 WHERE event_id=? AND round_number=(SELECT current_round FROM voting_events WHERE id=?) AND ${guard}`, id, id));
+  }
   statements.push(activity(env, admin, data.event, body.action, guard, guardParams));
   if (body.action === 'delete') statements.push(guarded(`DELETE FROM voting_events WHERE id=? AND ${guard}`, id));
   const changed = await env.DB.batch(statements);
@@ -278,25 +312,28 @@ export async function handleVotingPublic(request, env, code, operation) {
   if (input.response) return input.response;
   const body = input.body;
   if (!isUuid(body.participant_id) || !isUuid(body.questionId) || !isUuid(body.optionId)) return fail('Choose a valid answer.');
-  const event = await env.DB.prepare('SELECT id,status FROM voting_events WHERE public_code=?').bind(code).first();
+  const event = await env.DB.prepare('SELECT id,status,current_round FROM voting_events WHERE public_code=?').bind(code).first();
   if (!event || event.status === 'draft') return fail('Voting event not found.', 404);
+  const round = body.round === undefined ? 1 : body.round;
+  if (!Number.isInteger(round) || round < 1) return fail('Choose a valid voting round.');
+  if (round !== event.current_round) return reply({ error: 'The voting round changed. Review the current question and vote again.', code: 'round_changed' }, 409);
   const option = await env.DB.prepare('SELECT o.id FROM voting_options o JOIN voting_questions q ON q.id=o.question_id WHERE o.id=? AND q.id=? AND q.event_id=? AND q.ballot_type=\'single\'').bind(body.optionId, body.questionId, event.id).first();
   if (!option) return fail('Choose an answer from this ballot.');
-  const previous = () => env.DB.prepare('SELECT option_id FROM voting_votes WHERE event_id=? AND question_id=? AND participant_id=?').bind(event.id, body.questionId, body.participant_id).first();
+  const previous = () => env.DB.prepare('SELECT option_id FROM voting_votes WHERE event_id=? AND question_id=? AND participant_id=? AND round_number=?').bind(event.id, body.questionId, body.participant_id, round).first();
   const existing = await previous();
-  if (existing) return existing.option_id === body.optionId ? reply({ ok: true, duplicate: true }) : fail('This browser has already voted on this question.', 409);
+  if (existing) return existing.option_id === body.optionId ? reply({ ok: true, duplicate: true, round }) : fail('This browser has already voted on this question in this round.', 409);
   if (event.status === 'archived') return fail('Voting event not found.', 404);
   if (event.status !== 'open') return fail('Voting is closed.', 409);
   const eventLimited = await authAdmission(env, `ballot-event:${event.id}`, 2400, 60);
   if (eventLimited) return eventLimited;
-  const limited = await authAdmission(env, `ballot:${event.id}:${body.participant_id}`, 10, 60);
+  const limited = await authAdmission(env, `ballot:${event.id}:${round}:${body.participant_id}`, 10, 60);
   if (limited) return limited;
-  const inserted = await env.DB.prepare(`INSERT OR IGNORE INTO voting_votes(event_id,question_id,participant_id,option_id,created_at)
-    SELECT e.id,q.id,?,?,? FROM voting_events e JOIN voting_questions q ON q.event_id=e.id
-    JOIN voting_options o ON o.question_id=q.id WHERE e.id=? AND e.status='open' AND q.id=? AND q.ballot_type='single' AND o.id=?
-    RETURNING option_id`).bind(body.participant_id, body.optionId, Date.now(), event.id, body.questionId, body.optionId).first();
-  if (inserted) return reply({ ok: true, duplicate: false });
+  const inserted = await env.DB.prepare(`INSERT OR IGNORE INTO voting_votes(event_id,question_id,participant_id,option_id,created_at,round_number)
+    SELECT e.id,q.id,?,?,?,? FROM voting_events e JOIN voting_questions q ON q.event_id=e.id
+    JOIN voting_options o ON o.question_id=q.id WHERE e.id=? AND e.status='open' AND e.current_round=? AND q.id=? AND q.ballot_type='single' AND o.id=?
+    RETURNING option_id`).bind(body.participant_id, body.optionId, Date.now(), round, event.id, round, body.questionId, body.optionId).first();
+  if (inserted) return reply({ ok: true, duplicate: false, round });
   const replay = await previous();
-  if (replay) return replay.option_id === body.optionId ? reply({ ok: true, duplicate: true }) : fail('This browser has already voted on this question.', 409);
-  return fail('Voting closed before your answer was received.', 409);
+  if (replay) return replay.option_id === body.optionId ? reply({ ok: true, duplicate: true, round }) : fail('This browser has already voted on this question in this round.', 409);
+  return fail('Voting closed or the round changed before your answer was received.', 409);
 }
