@@ -28,5 +28,7 @@ export async function GET(request, { params }) {
     currentId: result.body.currentId,
     submission: result.body.currentSubmission,
     status: result.body.session?.status ?? null,
+    topic: result.body.session?.topic ?? null,
+    title: result.body.session?.title ?? null,
   });
 }

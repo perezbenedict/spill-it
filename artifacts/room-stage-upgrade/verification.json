@@ -1,0 +1,128 @@
+{
+  "unitTests": 42,
+  "browserTests": 79,
+  "tests": [
+    {
+      "spec": "room-performance.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-07T23:25:22.267Z",
+        "duration": 9973.587000000001,
+        "expected": 2,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "run": "isolated-2026-11-07T23-25-16-829Z-22ed02e5"
+    },
+    {
+      "spec": "stage-verification.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-07T23:25:38.402Z",
+        "duration": 261384.22999999998,
+        "expected": 32,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "run": "isolated-2026-11-07T23-25-32-912Z-f8f34f3c"
+    },
+    {
+      "spec": "room-premium.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-07T23:30:05.811Z",
+        "duration": 96935.348,
+        "expected": 9,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "run": "isolated-2026-11-07T23-30-00-991Z-bbef4544"
+    },
+    {
+      "spec": "fullscreen-projection.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-07T23:31:48.603Z",
+        "duration": 14251.771,
+        "expected": 3,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "run": "isolated-2026-11-07T23-31-43-679Z-ef43e4d0"
+    },
+    {
+      "spec": "accessibility.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-07T23:32:08.751Z",
+        "duration": 15547.899,
+        "expected": 12,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "run": "isolated-2026-11-07T23-32-03-546Z-5a682d20"
+    },
+    {
+      "spec": "platform.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-08T03:42:18.179Z",
+        "duration": 78203.728,
+        "expected": 20,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "run": "isolated-2026-11-08T03-42-13-037Z-8015bf7d"
+    },
+    {
+      "spec": "stage-controls.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-08T03:41:56.212Z",
+        "duration": 16146.161000000002,
+        "expected": 1,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "run": "isolated-2026-11-08T03-41-50-411Z-ea4eec9e"
+    }
+  ],
+  "profiles": [
+    {
+      "room4KProfile": "no-preference",
+      "variant": "normal",
+      "quality": "quiet",
+      "warmupFrames": 30,
+      "durationMs": 2016.5999999999995,
+      "frames": 52,
+      "p50Ms": 33.399999999999636,
+      "p95Ms": 50.100000000000364,
+      "over50Ms": 9,
+      "longTasks": [],
+      "measurement": "Headless Chromium scheduling; physical projector performance is not inferred."
+    },
+    {
+      "room4KProfile": "reduce",
+      "variant": "reduced",
+      "quality": "quiet",
+      "warmupFrames": 30,
+      "durationMs": 2016.6000000000001,
+      "frames": 121,
+      "p50Ms": 16.699999999999818,
+      "p95Ms": 16.799999999999955,
+      "over50Ms": 0,
+      "longTasks": [],
+      "measurement": "Headless Chromium scheduling; physical projector performance is not inferred."
+    }
+  ],
+  "scope": "Room View, its polling response and tests only",
+  "migrations": "none",
+  "profiling": "4K headless Chromium; adaptive assessment plus 30 warm-up frames; two-second steady-state measurement; no physical hardware certification"
+}

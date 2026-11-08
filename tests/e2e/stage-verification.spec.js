@@ -79,6 +79,9 @@ for (const reducedMotion of ['no-preference', 'reduce']) {
         await expect(stage).toHaveAttribute('data-current-contribution-id', fixture.id);
         const quote = page.locator(`[data-presented-contribution="${fixture.id}"] blockquote`);
         await expect(quote).toHaveText(fixture.content);
+        const fontSize = await quote.evaluate(element => parseFloat(getComputedStyle(element).fontSize));
+        expect(fontSize).toBeGreaterThanOrEqual(20);
+        if (width === 3840) expect(fontSize).toBeGreaterThanOrEqual({ short: 140, medium: 80, maximum: 60 }[name]);
         expect(await quote.evaluate(element => element.scrollWidth <= element.clientWidth + 1)).toBe(true);
         expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
         const main = await page.locator('main').boundingBox();

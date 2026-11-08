@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import RoomControls from "@/components/room/RoomControls";
+import StageAtmosphere from "@/components/room/StageAtmosphere";
 import RoomEngagement from "@/components/platform/RoomEngagement";
 import StagePresentation from "@/components/platform/StagePresentation";
 import "@/app/stage.css";
@@ -27,11 +28,11 @@ function categoryLabel(key) {
 // rather than shrinking maximum-length contributions below reading size.
 function quoteStyle(content) {
   const length = content?.length ?? 0;
-  if (length > 800) return { fontSize: "clamp(1.25rem, min(2.2vw, 3.1vh), 3rem)", lineHeight: 1.35, maxWidth: "52ch" };
-  if (length > 550) return { fontSize: "clamp(1.5rem, 2.6vw, 2.25rem)", lineHeight: 1.35, maxWidth: "42ch" };
-  if (length > 300) return { fontSize: "clamp(1.75rem, 3.2vw, 2.75rem)", lineHeight: 1.3, maxWidth: "36ch" };
-  if (length > 160) return { fontSize: "clamp(2rem, 4vw, 3.5rem)", lineHeight: 1.25, maxWidth: "28ch" };
-  return { fontSize: "clamp(2rem, min(5vw, 8vh), 8rem)", lineHeight: 1.2, maxWidth: "24ch" };
+  if (length > 800) return { fontSize: "clamp(1.25rem, min(2.2vw, 3.1vh), 4rem)", lineHeight: 1.35, maxWidth: "52ch" };
+  if (length > 550) return { fontSize: "clamp(1.5rem, min(2.6vw, 3.6vh), 4.5rem)", lineHeight: 1.35, maxWidth: "48ch" };
+  if (length > 300) return { fontSize: "clamp(1.75rem, min(3.2vw, 4.6vh), 6rem)", lineHeight: 1.3, maxWidth: "42ch" };
+  if (length > 160) return { fontSize: "clamp(2rem, min(4vw, 6vh), 8rem)", lineHeight: 1.25, maxWidth: "32ch" };
+  return { fontSize: "clamp(2rem, min(5vw, 8vh), 10rem)", lineHeight: 1.2, maxWidth: "24ch" };
 }
 
 export default function RoomDisplay({
@@ -80,6 +81,8 @@ export default function RoomDisplay({
   const [transitionVersion, setTransitionVersion] = useState(0);
   const [connection, setConnection] = useState("connecting");
   const [sessionStatus, setSessionStatus] = useState(session.status);
+  const [sessionTopic, setSessionTopic] = useState(session.topic?.trim() || session.title);
+  const [ambientQuality, setAmbientQuality] = useState('assessing');
   const [pollPresented, setPollPresented] = useState(false);
   const currentIdRef = useRef(currentId);
   const displayedIdRef = useRef(displayedRow?.id ?? null);
@@ -247,6 +250,8 @@ export default function RoomDisplay({
         if (disposed || !data) throw new Error("poll failed");
         setConnection("live");
         if (data.status) setSessionStatus(data.status);
+        if (typeof data.topic === "string" && data.topic.trim()) setSessionTopic(data.topic.trim());
+        else if (typeof data.title === "string" && data.title.trim()) setSessionTopic(data.title.trim());
         const nextId = data.currentId ?? null;
         const row = data.submission ?? null;
         if (row) rowsRef.current.set(row.id, row);
@@ -292,6 +297,7 @@ export default function RoomDisplay({
   }, [pollUrl]);
 
   const isClosed = sessionStatus === "closed";
+  const topic = sessionTopic;
   const statusLine =
     sessionStatus === "paused"
       ? "Submissions paused"
@@ -306,6 +312,7 @@ export default function RoomDisplay({
       data-atmosphere={stage?.atmosphere || 'midnight'}
       data-overlay={overlay?.kind || ''}
       data-session-status={sessionStatus}
+      data-ambient-quality={ambientQuality}
       data-presentation-phase={presentationPhase}
       data-presentation-transition-version={transitionVersion}
       data-current-contribution-id={displayedRow?.id ?? ""}
@@ -314,54 +321,17 @@ export default function RoomDisplay({
       <div className="stage-lightfield" aria-hidden="true" />
       <div className="stage-contour" aria-hidden="true" />
       <div className="stage-horizon" aria-hidden="true" />
-      {/* Layered ambient light moves on transforms only and becomes static
-          when the viewer prefers reduced motion. */}
-      <motion.div
-        aria-hidden="true"
-        className="pointer-events-none absolute -inset-[12%] opacity-60"
-        style={{
-          background:
-            "radial-gradient(60% 55% at 22% 18%, rgba(167,139,250,0.20), transparent 60%), radial-gradient(55% 50% at 80% 82%, rgba(109,74,184,0.22), transparent 60%)",
-        }}
-        animate={
-          reduceMotion
-            ? undefined
-            : { x: ["-2%", "3%", "-2%"], y: ["-1%", "2%", "-1%"], scale: [1, 1.04, 1] }
-        }
-        transition={{ duration: 28, ease: "easeInOut", repeat: Infinity }}
-      />
-      <motion.div
-        aria-hidden="true"
-        className="pointer-events-none absolute left-1/2 top-1/2 h-[min(76vh,52rem)] w-[min(90vw,72rem)] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-30"
-        style={{
-          background:
-            "radial-gradient(closest-side, rgba(196,181,253,0.12), rgba(109,74,184,0.05) 52%, transparent 76%)",
-        }}
-        animate={
-          reduceMotion
-            ? undefined
-            : { opacity: [0.2, 0.34, 0.2], scale: [0.98, 1.035, 0.98] }
-        }
-        transition={{ duration: 16, ease: "easeInOut", repeat: Infinity }}
-      />
-      <motion.div
-        aria-hidden="true"
-        className="hidden"
-        animate={reduceMotion ? undefined : { rotate: [0, 360], opacity: [0.28, 0.5, 0.28] }}
-        transition={{ rotate: { duration: 72, ease: "linear", repeat: Infinity }, opacity: { duration: 14, ease: "easeInOut", repeat: Infinity } }}
-      />
-      <motion.div
-        aria-hidden="true"
-        className="hidden"
-        animate={reduceMotion ? undefined : { rotate: [360, 0], y: [0, -10, 0] }}
-        transition={{ rotate: { duration: 88, ease: "linear", repeat: Infinity }, y: { duration: 12, ease: "easeInOut", repeat: Infinity } }}
-      />
+      <StageAtmosphere onQualityChange={setAmbientQuality} />
 
-      <header className="relative z-10 flex flex-col gap-4 px-5 pt-5 sm:px-8 sm:pt-7 lg:px-10 lg:pt-8">
+      <header className="stage-header relative z-10 flex shrink-0 flex-col gap-4 px-5 pt-5 sm:px-8 sm:pt-7 lg:px-10 lg:pt-8">
         <div className="flex min-w-0 items-center justify-between gap-4">
-          <div className="flex min-w-0 items-center gap-3">
-          <span className="text-xl font-bold tracking-tight">Spill It</span>
-          <span className="stage-eyebrow hidden sm:inline">{sessionStatus === 'live' ? 'Live' : sessionStatus}</span>
+          <div className="stage-brand-lockup flex min-w-0 flex-wrap items-center gap-3">
+          <span className="text-lg font-semibold tracking-tight sm:text-xl">Spill It</span>
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.span key={sessionStatus} initial={reduceMotion ? false : { opacity: 0, y: 3 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: reduceMotion ? 0 : 0.2 }} className="stage-status-mark stage-eyebrow inline-flex items-center gap-2" role="status">
+              {sessionStatus === 'live' ? 'Live' : sessionStatus}
+            </motion.span>
+          </AnimatePresence>
           <span className="inline-flex h-7 w-7" role="img" aria-label="Spill It">
             <svg
               viewBox="0 0 120 120"
@@ -411,26 +381,23 @@ export default function RoomDisplay({
           ) : null}
         </div>
 
-        <div className="flex min-h-12 flex-col items-center justify-center gap-1.5 text-center sm:min-h-16">
-          {chapter && <motion.p key={chapter.id} initial={reduceMotion ? false : { opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} className="stage-eyebrow max-w-full [overflow-wrap:anywhere]" data-active-chapter={chapter.id}>{chapter.title}</motion.p>}
+        <div className="stage-topic-band flex min-h-12 flex-col items-center justify-center gap-2 text-center sm:min-h-16">
           <AnimatePresence mode="wait" initial={false}>
-            {displayedRow ? (
+            {chapter && <motion.p key={chapter.id} initial={reduceMotion ? false : { opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: reduceMotion ? 0 : 0.25 }} className="stage-chapter stage-eyebrow max-w-full [overflow-wrap:anywhere]" data-active-chapter={chapter.id}>{chapter.title}</motion.p>}
+          </AnimatePresence>
+          <AnimatePresence mode="wait" initial={false}>
               <motion.div
-                key={`topic-${displayedRow.id}`}
+                key={`topic-${topic}`}
                 initial={reduceMotion ? false : { opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -8 }}
                 transition={{ duration: reduceMotion ? 0 : 0.45, ease: REVEAL_EASE }}
-                className="min-w-0 max-w-[42ch] [overflow-wrap:anywhere]"
+                className="min-w-0 w-full [overflow-wrap:anywhere]"
               >
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-gold sm:text-sm sm:tracking-[0.28em]">
-                  Now discussing
-                </p>
-                <p className="mt-1.5 font-display text-[clamp(1.125rem,2vw,1.75rem)] leading-snug text-gold-light">
-                  {session.topic?.trim() || session.title}
+                <p className="stage-topic-title font-display leading-snug text-gold-light">
+                  {topic}
                 </p>
               </motion.div>
-            ) : null}
           </AnimatePresence>
           <AnimatePresence mode="wait" initial={false}>
             {statusLine ? (
@@ -485,7 +452,7 @@ export default function RoomDisplay({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -12, scale: 0.99, transition: { duration: 0.2, ease: REVEAL_EASE } }}
               transition={{ duration: reduceMotion ? 0 : 0.5, ease: REVEAL_EASE }}
-              className="relative z-10 my-auto flex w-full shrink-0 flex-col items-center text-center"
+              className="stage-contribution relative z-10 my-auto flex w-full shrink-0 flex-col items-center text-center"
               data-presented-contribution={displayedRow.id}
             >
               <motion.div
@@ -499,7 +466,7 @@ export default function RoomDisplay({
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: reduceMotion ? 0 : 0.72, ease: REVEAL_EASE }}
               />
-              <motion.div initial={reduceMotion ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: reduceMotion ? 0 : 0.3, delay: reduceMotion ? 0 : 0.15 }} className="flex flex-wrap items-center justify-center gap-3">
+              <motion.div initial={reduceMotion ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: reduceMotion ? 0 : 0.3, delay: reduceMotion ? 0 : 0.15 }} className="stage-contribution-meta flex flex-wrap items-center justify-center gap-3">
                 <Badge variant="info" className="px-3 py-1 text-sm uppercase tracking-[0.2em]">
                   {categoryLabel(displayedRow.category)}
                 </Badge>
@@ -510,11 +477,11 @@ export default function RoomDisplay({
                   </span>
                 ) : null}
               </motion.div>
-              <motion.p initial={reduceMotion ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: reduceMotion ? 0 : 0.3, delay: reduceMotion ? 0 : 0.2 }} className="mt-6 max-w-full text-[clamp(0.9375rem,1.4vw,1.25rem)] font-semibold uppercase tracking-[0.24em] text-gold [overflow-wrap:anywhere]">
+              <motion.p initial={reduceMotion ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: reduceMotion ? 0 : 0.3, delay: reduceMotion ? 0 : 0.2 }} className="stage-author mt-5 max-w-full text-[clamp(0.875rem,1.1vw,1.125rem)] font-medium tracking-[0.16em] text-gold-light [overflow-wrap:anywhere]">
                 {displayedRow.nickname}
               </motion.p>
               <blockquote
-                className="mt-8 w-full text-balance font-display text-ink [overflow-wrap:anywhere]"
+                className="stage-quote mt-7 w-full text-balance font-display text-ink [overflow-wrap:anywhere]"
                 style={quoteStyle(displayedRow.content)}
               >
                 {displayedRow.content}
@@ -522,12 +489,12 @@ export default function RoomDisplay({
             </motion.div>
           ) : presentationPhase === "settled" ? (
             <motion.div
-              key={isClosed ? "ended" : "waiting"}
+              key={isClosed ? "ended" : sessionStatus === "paused" ? "paused" : "waiting"}
               initial={reduceMotion ? false : { opacity: 0, y: 20, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -14, scale: 0.98 }}
               transition={{ duration: reduceMotion ? 0 : 0.5, ease: REVEAL_EASE }}
-              className="relative my-auto flex w-full shrink-0 flex-col items-center text-center [overflow-wrap:anywhere]"
+              className="stage-idle relative my-auto flex w-full shrink-0 flex-col items-center text-center [overflow-wrap:anywhere]"
             >
               <div
                 aria-hidden="true"
@@ -557,10 +524,11 @@ export default function RoomDisplay({
                   </>
                 ) : (
                   <>
+                    <p className="stage-idle-kicker stage-eyebrow mb-5">{sessionStatus === "paused" ? "A pause in the conversation" : "The floor is open"}</p>
                     <p className="font-display text-[clamp(2rem,4.5vw,3.5rem)] leading-[1.2] text-ink">
-                      {session.topic?.trim() || session.title}
+                      {topic}
                     </p>
-                    <p className="mt-5 text-lg text-muted sm:text-2xl">Waiting for the next thought…</p>
+                    <p className="mt-5 max-w-[34ch] text-balance text-lg leading-relaxed text-muted sm:text-xl">{sessionStatus === "paused" ? "A little space to let these thoughts settle." : "Waiting for the next thought…"}</p>
                   </>
                 )}
               </div>
