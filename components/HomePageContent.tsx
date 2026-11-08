@@ -234,7 +234,7 @@ export default function HomePageContent({ session, provided }: HomePageContentPr
 
       {/* Developer credit — low-priority, understated */}
       <footer className="relative z-10 mt-12 flex justify-center">
-        <p className="developer-credit text-center">Coded by Perez Benedict</p>
+        <p className="developer-credit text-center">Developed by Perez Benedict</p>
       </footer>
     </main>
   );
