@@ -63,5 +63,26 @@ this Mac, not physical projector/GPU certification or a universal 60 fps claim.
 
 Evidence and seven representative state screenshots are in
 `artifacts/room-stage-upgrade/`. `verification.json` names the selected runs.
-No database migration or API Worker deployment is needed. Production release
-references and read-only verification are recorded after deployment.
+No database migration or API Worker deployment was needed.
+
+## Production release
+
+- Implementation commit: `46dc24289103aacbf2770a86afacf20e2ebf9f98`, pushed to
+  `main`.
+- Pages project: `spill-it`; production deployment:
+  `2a2c2883-5c60-4a52-b3ea-0703e22bbb18`.
+- Production: `https://spill-it-4rw.pages.dev`.
+- Actual production Chromium checks passed at 390×844 reduced motion,
+  1920×1080 normal motion, and 3840×2160 in both modes: Room and polling returned
+  200, the topic matched the authoritative session, no horizontal overflow or
+  runtime errors occurred, and unauthorized viewers had no presenter controls.
+- Watermark opacity was 0.052; normal rotation was 54 seconds and reduced-motion
+  animation was disabled. Desktop selected full ambient motion, while the 4K
+  software-rendered check selected quiet secondary effects with rotation intact.
+- Read-only before/after checks preserved all three sessions, the one live
+  session, 19 contributions and every presentation pointer, revision and timestamp.
+  No event state, credentials or database schema was changed for this release.
+
+Production evidence: `artifacts/room-stage-upgrade/{production,deployment}.json`.
+Existing open projector tabs retain their loaded bundle until refreshed; no
+forced reload was performed during deployment.

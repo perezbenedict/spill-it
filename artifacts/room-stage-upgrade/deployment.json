@@ -1,0 +1,20 @@
+{
+  "deployment": {
+    "Id": "2a2c2883-5c60-4a52-b3ea-0703e22bbb18",
+    "Environment": "Production",
+    "Branch": "main",
+    "Source": "46dc242",
+    "Deployment": "https://2a2c2883.spill-it-4rw.pages.dev",
+    "Status": "1 minute ago",
+    "Build": "https://dash.cloudflare.com/3c0bdf6a1e868d79ba2a1caac4d4377a/pages/view/spill-it/2a2c2883-5c60-4a52-b3ea-0703e22bbb18"
+  },
+  "productionURL": "https://spill-it-4rw.pages.dev",
+  "sessions": 3,
+  "liveSessions": 1,
+  "contributions": 19,
+  "sessionsPreserved": true,
+  "presentationPreserved": true,
+  "contributionsPreserved": true,
+  "databaseMigration": "none",
+  "apiWorkerDeployment": "unchanged"
+}

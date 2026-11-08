@@ -1,0 +1,71 @@
+{
+  "origin": "https://spill-it-4rw.pages.dev",
+  "checks": [
+    {
+      "width": 390,
+      "height": 844,
+      "motion": "reduce",
+      "status": 200,
+      "pollingStatus": 200,
+      "topicMatches": true,
+      "horizontalOverflow": false,
+      "watermarkOpacity": 0.052,
+      "watermarkDuration": "0s",
+      "watermarkAnimation": "none",
+      "decorative": true,
+      "quality": "quiet",
+      "topicVisible": true,
+      "presenterControls": false
+    },
+    {
+      "width": 1920,
+      "height": 1080,
+      "motion": "no-preference",
+      "status": 200,
+      "pollingStatus": 200,
+      "topicMatches": true,
+      "horizontalOverflow": false,
+      "watermarkOpacity": 0.052,
+      "watermarkDuration": "54s",
+      "watermarkAnimation": "stage-emblem-turn",
+      "decorative": true,
+      "quality": "full",
+      "topicVisible": true,
+      "presenterControls": false
+    },
+    {
+      "width": 3840,
+      "height": 2160,
+      "motion": "no-preference",
+      "status": 200,
+      "pollingStatus": 200,
+      "topicMatches": true,
+      "horizontalOverflow": false,
+      "watermarkOpacity": 0.052,
+      "watermarkDuration": "54s",
+      "watermarkAnimation": "stage-emblem-turn",
+      "decorative": true,
+      "quality": "quiet",
+      "topicVisible": true,
+      "presenterControls": false
+    },
+    {
+      "width": 3840,
+      "height": 2160,
+      "motion": "reduce",
+      "status": 200,
+      "pollingStatus": 200,
+      "topicMatches": true,
+      "horizontalOverflow": false,
+      "watermarkOpacity": 0.052,
+      "watermarkDuration": "0s",
+      "watermarkAnimation": "none",
+      "decorative": true,
+      "quality": "quiet",
+      "topicVisible": true,
+      "presenterControls": false
+    }
+  ],
+  "runtimeErrors": 0,
+  "productionMutationRequests": 0
+}
