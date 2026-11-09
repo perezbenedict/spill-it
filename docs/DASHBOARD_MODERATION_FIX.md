@@ -10,6 +10,8 @@ No Worker change, migration or data rewrite is needed. Existing server-side revi
 
 ## Verification
 
-Lint, all 93 unit tests, ten isolated Playwright cases, `cf-build` and `cf-bundle` passed. Coverage includes dashboard Approve/Reject, missing/stale revisions, explicit retry after refresh, duplicate clicks, safe action feedback, full-feed moderation and admin/projector recovery. The bundled public assets contain no private credential values.
+Lint, all 95 unit tests, eleven isolated Playwright cases, `cf-build` and `cf-bundle` passed. Coverage includes dashboard Approve/Reject, missing/stale revisions, explicit retry after refresh, duplicate clicks, safe action feedback, full-feed moderation and admin/projector recovery. The bundled public assets contain no private credential values.
 
 A fresh production D1 export was obtained through the connected Cloudflare API after the CLI export endpoint rejected its OAuth credentials. The export was restored privately: integrity OK and zero foreign-key violations. No credentials were rotated. See `artifacts/moderation-fix` for sanitized evidence and final deployment verification.
+
+Live verification exposed a pre-existing locale/timezone text mismatch in moderation timestamps. Dashboard and feed now share a deterministic UTC formatter with explicit UTC labels and ISO tooltips. A cross-timezone browser regression covers both views. A stale-retry test also exposed controls re-enabling before refreshed props committed; React transitions now keep them disabled through the refresh. Both issues were corrected and the full targeted checks rerun successfully. No contribution data or moderation history was changed during release verification.

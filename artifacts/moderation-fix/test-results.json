@@ -1,13 +1,13 @@
 {
   "isolation": "loopback Worker, disposable D1, generated local credentials",
-  "output": "/Users/perezbenedict/Documents/SPILL/artifacts/isolated-2026-11-09T13-56-08-860Z-7e672966",
+  "output": "/Users/perezbenedict/Documents/SPILL/artifacts/isolated-2026-11-09T14-08-40-130Z-a6905f7c",
   "tests": [
     {
       "spec": "admin-room-recovery.spec.js",
       "passed": true,
       "stats": {
-        "startTime": "2026-11-09T13:56:25.592Z",
-        "duration": 19296.766,
+        "startTime": "2026-11-09T14:08:58.695Z",
+        "duration": 18941.115,
         "expected": 6,
         "skipped": 0,
         "unexpected": 0,
@@ -18,9 +18,9 @@
       "spec": "dashboard-moderation.spec.js",
       "passed": true,
       "stats": {
-        "startTime": "2026-11-09T13:56:46.654Z",
-        "duration": 3158.861,
-        "expected": 4,
+        "startTime": "2026-11-09T14:09:20.415Z",
+        "duration": 4296.321,
+        "expected": 5,
         "skipped": 0,
         "unexpected": 0,
         "flaky": 0

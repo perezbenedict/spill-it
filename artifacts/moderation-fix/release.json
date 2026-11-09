@@ -1,13 +1,15 @@
 {
-  "status": "tested; deployment pending",
+  "status": "final corrected build tested; deployment pending",
   "lint": "passed",
-  "unitTests": 93,
-  "e2eCases": 10,
+  "unitTests": 95,
+  "e2eCases": 11,
   "e2eSkipped": 0,
   "e2eFlaky": 0,
   "cf-build": "passed",
   "cf-bundle": "passed",
   "schemaMigration": "none",
   "apiWorkerChange": "none",
-  "publicAssetSecretMatches": 0
+  "publicAssetSecretMatches": 0,
+  "timestampHydration": "Deterministic UTC text in dashboard/feed; cross-timezone browser regression passed.",
+  "refreshRecovery": "Controls remain disabled until refreshed server props commit."
 }

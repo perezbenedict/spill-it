@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { moderationTimestamp } from "@/lib/moderation-time";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Check, EyeOff, Monitor, Pin, Radio, Trash2 } from "lucide-react";
 import { CATEGORIES } from "@/lib/constants";
@@ -42,14 +43,7 @@ const POLL_INTERVAL_MS = 3500;
 // gets a Show more toggle, so long posts stay scannable without hiding review.
 const CLAMP_THRESHOLD = 220;
 
-function shortTimestamp(iso) {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return iso ?? "";
-  return `${date.toLocaleDateString(undefined, { day: "numeric", month: "short" })}, ${date.toLocaleTimeString(
-    undefined,
-    { hour: "2-digit", minute: "2-digit" }
-  )}`;
-}
+
 
 const cardActionClassName = "min-h-10";
 const indicatorClassName =
@@ -110,6 +104,7 @@ export default function SubmissionFeed({
   currentId: currentIdProp,
 }) {
   const router = useRouter();
+  const [refreshingModeration, startModerationRefresh] = useTransition();
   const reduceMotion = useReducedMotion();
 
   const [rows, setRowsState] = useState(() => seedRows(submissions));
@@ -192,6 +187,7 @@ export default function SubmissionFeed({
   }
   const isBusy = (id, actionKey) => busyRef.current.has(`${id}|${actionKey}`);
   const cardBusy = (id) => {
+    if (refreshingModeration) return true;
     const prefix = `${id}|`;
     for (const key of busyRef.current) {
       if (key.startsWith(prefix)) return true;
@@ -370,7 +366,7 @@ export default function SubmissionFeed({
       return next;
     });
     setCurrentId(beforeCurrent);
-    if (result?.refreshRequired) router.refresh();
+    if (result?.refreshRequired) startModerationRefresh(() => router.refresh());
     if (actionKey !== "delete") setError(result?.error || FALLBACK_ERROR);
     return result;
   }
@@ -644,11 +640,11 @@ export default function SubmissionFeed({
             </Badge>
             <time
               dateTime={row.created_at}
-              title={new Date(row.created_at).toLocaleString()}
+              title={row.created_at}
               suppressHydrationWarning
               className="shrink-0 whitespace-nowrap text-xs text-muted"
             >
-              {shortTimestamp(row.created_at)}
+              {moderationTimestamp(row.created_at)}
             </time>
             {row.is_pinned ? (
               <span className={indicatorClassName}>

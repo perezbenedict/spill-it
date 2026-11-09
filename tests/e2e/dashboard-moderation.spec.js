@@ -97,3 +97,23 @@ test('full moderation feed still approves and rejects with revision protection',
   expect((await current(approved.id)).revision).toBe(approved.revision + 1);
   expect((await current(rejected.id)).revision).toBe(rejected.revision + 1);
 });
+
+test('dashboard and feed hydrate consistently in a different browser timezone', async ({ browser }) => {
+  const row = await contribution();
+  const context = await browser.newContext({ baseURL: E2E.baseURL, timezoneId: 'America/Los_Angeles' });
+  await authorize(context);
+  const page = await context.newPage();
+  const errors = [];
+  page.on('pageerror', error => errors.push(error.message));
+  try {
+    await page.goto('/admin');
+    await expect(card(page, row.content)).toBeVisible();
+    await expect(card(page, row.content).locator('time')).toContainText('UTC');
+    await page.goto(`/admin/sessions/${E2E.adminSessionId}/live`);
+    const feedRow = page.locator('article').filter({ hasText: row.content });
+    await expect(feedRow).toBeVisible();
+    await expect(feedRow.locator('time')).toContainText('UTC');
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    expect(errors).toEqual([]);
+  } finally { await context.close(); }
+});

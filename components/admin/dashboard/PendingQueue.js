@@ -1,8 +1,9 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { moderationTimestamp } from "@/lib/moderation-time";
 import { ArrowRight } from "lucide-react";
 import { CATEGORIES } from "@/lib/constants";
 import Badge from "@/components/ui/Badge";
@@ -16,27 +17,21 @@ const CATEGORY_LABELS = Object.fromEntries(
 
 const FALLBACK_ERROR = "Something went wrong. Please try again.";
 
-function shortTimestamp(iso) {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return iso ?? "";
-  return `${date.toLocaleDateString(undefined, { day: "numeric", month: "short" })}, ${date.toLocaleTimeString(
-    undefined,
-    { hour: "2-digit", minute: "2-digit" }
-  )}`;
-}
+
 
 // Dashboard review queue: the first pending submissions with one-click
 // decisions. Approving/hiding calls the same server actions as the full feed;
 // rows leave only after confirmation, and router.refresh() re-syncs counts.
 export default function PendingQueue({ items, pendingCount, feedHref }) {
   const router = useRouter();
+  const [refreshing, startRefresh] = useTransition();
   const [busyId, setBusyId] = useState(null);
   const inFlight = useRef(false);
   const [error, setError] = useState(null);
   const [handled, setHandled] = useState(() => new Set());
 
   async function run(item, action) {
-    if (inFlight.current) return;
+    if (inFlight.current || refreshing) return;
     inFlight.current = true;
     const { id, revision } = item;
     setBusyId(id);
@@ -45,11 +40,11 @@ export default function PendingQueue({ items, pendingCount, feedHref }) {
       const result = await action(id, revision);
       if (!result?.ok) {
         setError(result?.error || FALLBACK_ERROR);
-        if (result?.refreshRequired) router.refresh();
+        if (result?.refreshRequired) startRefresh(() => router.refresh());
         return;
       }
       setHandled((prev) => new Set(prev).add(id));
-      router.refresh();
+      startRefresh(() => router.refresh());
     } catch {
       setError(FALLBACK_ERROR);
     } finally {
@@ -61,7 +56,7 @@ export default function PendingQueue({ items, pendingCount, feedHref }) {
   const visible = items.filter((item) => !handled.has(item.id));
 
   return (
-    <section aria-labelledby="needs-review-heading" className="flex flex-col gap-3">
+    <section aria-busy={refreshing || undefined} aria-labelledby="needs-review-heading" className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2
           id="needs-review-heading"
@@ -110,10 +105,10 @@ export default function PendingQueue({ items, pendingCount, feedHref }) {
                 </Badge>
                 <time
                   dateTime={item.created_at}
-                  title={new Date(item.created_at).toLocaleString()}
+                  title={item.created_at}
                   className="shrink-0 whitespace-nowrap text-xs text-muted"
                 >
-                  {shortTimestamp(item.created_at)}
+                  {moderationTimestamp(item.created_at)}
                 </time>
               </div>
               <p className="mt-2 line-clamp-2 whitespace-pre-wrap break-words text-sm text-ink">
@@ -123,7 +118,7 @@ export default function PendingQueue({ items, pendingCount, feedHref }) {
                 <Button
                   size="sm"
                   loading={busyId === item.id}
-                  disabled={busyId != null}
+                  disabled={busyId != null || refreshing}
                   onClick={() => run(item, approve)}
                 >
                   Approve
@@ -131,7 +126,7 @@ export default function PendingQueue({ items, pendingCount, feedHref }) {
                 <Button
                   size="sm"
                   variant="secondary"
-                  disabled={busyId != null}
+                  disabled={busyId != null || refreshing}
                   onClick={() => run(item, hide)}
                 >
                   Reject
