@@ -1,5 +1,5 @@
 {
-  "status": "final corrected build tested; deployment pending",
+  "status": "deployed and verified",
   "lint": "passed",
   "unitTests": 95,
   "e2eCases": 11,
@@ -11,5 +11,9 @@
   "apiWorkerChange": "none",
   "publicAssetSecretMatches": 0,
   "timestampHydration": "Deterministic UTC text in dashboard/feed; cross-timezone browser regression passed.",
-  "refreshRecovery": "Controls remain disabled until refreshed server props commit."
+  "refreshRecovery": "Controls remain disabled until refreshed server props commit.",
+  "runtimeCommit": "ad297b373671884b5f18a88d11d013cebe108871",
+  "productionURL": "https://spill-it-4rw.pages.dev",
+  "pagesDeployment": "2c9dba1e-21ba-497f-8bd6-47e2affaa2bd",
+  "productionVerification": "Read-only checks passed; no browser errors or attempted writes. All 25 tables unchanged."
 }

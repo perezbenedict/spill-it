@@ -1,0 +1,10 @@
+{
+  "tablesCompared": 25,
+  "changedTables": [],
+  "allExistingDataPreserved": true,
+  "integrity": "ok",
+  "foreignKeyViolations": 0,
+  "byteIdenticalToBackup": true,
+  "contributions": 25,
+  "activityEntries": 160
+}

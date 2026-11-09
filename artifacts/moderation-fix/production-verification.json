@@ -1,0 +1,12 @@
+{
+  "success": true,
+  "readOnly": true,
+  "dashboard": 200,
+  "fullModerationFeed": 200,
+  "visibleDashboardActions": 1,
+  "allPendingRowsHaveRevisions": true,
+  "staticAssets": 6,
+  "attemptedWrites": 0,
+  "pageErrors": 0,
+  "note": "Real contributions were not moderated. Approve/Reject execution was verified against disposable isolated data."
+}
