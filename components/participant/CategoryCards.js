@@ -58,8 +58,8 @@ export default function CategoryCards({ available = [], selected = null, onSelec
                 "category-choice relative flex min-h-16 w-full items-start gap-3 overflow-hidden rounded-card border bg-surface p-4 text-left transition-[border-color,background-color,box-shadow] duration-200",
                 "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold",
                 isSelected
-                  ? "border-gold/70 bg-gold/10 shadow-[inset_0_1px_0_rgba(196,181,253,0.14),0_10px_26px_-18px_rgba(167,139,250,0.4)]"
-                  : "border-white/10 hover:border-gold/45 hover:bg-white/5"
+                  ? "border-gold/50 bg-gold/10 shadow-[inset_0_1px_0_rgba(196,181,253,0.14),0_10px_26px_-18px_rgba(167,139,250,0.4)]"
+                  : "border-white/10 hover:bg-gold/5 hover:shadow-[0_12px_24px_-20px_rgba(5,2,16,0.5)]"
               )}
             >
               <span

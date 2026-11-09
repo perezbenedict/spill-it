@@ -1,0 +1,130 @@
+{
+  "isolation": "loopback Worker, disposable D1, generated local credentials",
+  "output": "/Users/perezbenedict/Documents/SPILL/artifacts/isolated-2026-11-09T11-21-42-641Z-c81ac0d8",
+  "tests": [
+    {
+      "spec": "platform.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-09T11:21:59.408Z",
+        "duration": 80641.544,
+        "expected": 20,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      }
+    },
+    {
+      "spec": "public-polish.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-09T11:23:21.530Z",
+        "duration": 22678.936,
+        "expected": 4,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      }
+    },
+    {
+      "spec": "resource-bulk-delete.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-09T11:23:46.688Z",
+        "duration": 2198.4739999999997,
+        "expected": 7,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      }
+    },
+    {
+      "spec": "theme-coverage.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-09T11:23:50.722Z",
+        "duration": 18570.148999999998,
+        "expected": 2,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      }
+    },
+    {
+      "spec": "theme.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-09T11:24:11.667Z",
+        "duration": 7016.669000000001,
+        "expected": 5,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      }
+    }
+  ],
+  "loads": [],
+  "previewAssets": 9,
+  "preview": [
+    {
+      "route": "/",
+      "status": 200
+    },
+    {
+      "route": "/admin/login",
+      "status": 200
+    },
+    {
+      "route": "/join/ABCDEFGH",
+      "status": 200
+    },
+    {
+      "route": "/qr/ABCDEFGH",
+      "status": 200
+    },
+    {
+      "route": "/room/ABCDEFGH",
+      "status": 200
+    }
+  ],
+  "privateArtifacts": [
+    {
+      "route": "/cloudflare/next-env.mjs",
+      "status": 404
+    },
+    {
+      "route": "/server-functions/default/index.mjs",
+      "status": 404
+    },
+    {
+      "route": "/worker.js",
+      "status": 404
+    },
+    {
+      "route": "/_worker.js",
+      "status": 404
+    }
+  ],
+  "previewStandalone": {
+    "created": 201,
+    "publicRead": 200,
+    "projector": 200,
+    "admin": 200,
+    "savedContentPrivate": true
+  },
+  "previewVoting": {
+    "publicRead": 200,
+    "adminRead": 200,
+    "vote": 200,
+    "protectedCookie": true,
+    "duplicateRetry": true,
+    "voterPage": 200,
+    "projectorPage": 200,
+    "reopenPreservedVotes": true,
+    "roundTwoAccepted": 200,
+    "staleRound": 409,
+    "historyPreserved": true,
+    "activity": 200,
+    "stageCentre": 200
+  }
+}

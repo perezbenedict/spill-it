@@ -156,7 +156,7 @@ export default function NicknamePicker({
                     "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold",
                     isSelected
                       ? "border-gold bg-gold/10 shadow-[0_0_14px_rgba(167,139,250,0.2)]"
-                      : "border-white/10 hover:border-gold/70 hover:bg-white/5"
+                      : "border-white/10 hover:bg-gold/5"
                   )}
                 >
                   <span className="truncate">{option}</span>

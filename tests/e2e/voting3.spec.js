@@ -88,6 +88,9 @@ test('live publication, visibility reversal and moderator revision conflicts are
   const hidden = (await publicEvent(event.code)).body.event;
   expect(hidden.previouslyPublic).toBe(true);
   expectRedacted(hidden);
+  expect((await action(event.id, 'delete', { password: E2E.adminPassword })).status).toBe(409);
+  expect((await action(event.id, 'close')).status).toBe(200);
+  expect((await action(event.id, 'present', { questionId: event.questions[0].id, content: 'hidden' })).status).toBe(200);
   expect((await action(event.id, 'delete', { password: 'incorrect-password' })).status).toBe(401);
   expect((await action(event.id, 'delete', { password: E2E.adminPassword })).status).toBe(200);
   expect((await publicEvent(event.code)).status).toBe(404);

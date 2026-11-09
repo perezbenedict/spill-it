@@ -11,6 +11,7 @@ import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import Input from '@/components/ui/Input';
 import Dialog from '@/components/ui/Dialog';
+import BulkDeleteSelection from '@/components/admin/BulkDeleteSelection';
 import '@/app/stage.css';
 
 const ATMOSPHERES = { midnight: 'Midnight Violet', electric: 'Electric Aura', reflection: 'Soft Reflection', royal: 'Royal Amethyst', celestial: 'Celestial Night', velvet: 'Velvet Glow', aurora: 'Aurora Violet' };
@@ -148,6 +149,7 @@ function SelectedStage({ stageId }) {
 export default function StandaloneStageCentre({ stageId, canDelete = false }) {
   const router = useRouter();
   const [items, setItems] = useState([]);
+  const [selected, setSelected] = useState({});
   const [nextCursor, setNextCursor] = useState(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const loadingMoreRef = useRef(false);
@@ -208,6 +210,7 @@ export default function StandaloneStageCentre({ stageId, canDelete = false }) {
     try {
       await request(`/api/stages/admin/${deletion.id}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'delete', expectedRevision: deletion.revision, confirmed: true, password: deletePassword }) });
       deletedIds.current.add(deletion.id);
+      setSelected(previous => { const next = { ...previous }; delete next[deletion.id]; return next; });
       setItems(previous => previous.filter(row => row.id !== deletion.id));
       setDeletion(null); setDeletePassword(''); setSuccess('Standalone stage deleted.');
       if (stageId === deletion.id) router.replace('/admin/stage?mode=standalone');
@@ -217,7 +220,7 @@ export default function StandaloneStageCentre({ stageId, canDelete = false }) {
     } finally { deletingRef.current = false; setDeleting(false); }
   }
   return <div className="space-y-6"><header><p className="text-xs uppercase tracking-[.18em] text-gold-light">Spill It · live operations</p><h1 className="mt-2 font-display text-4xl">Standalone Stage</h1><p className="mt-3 text-sm text-muted">Prepare a persistent projector stage without creating a discussion. Saved content stays with this stage.</p></header>
-    <Card className="space-y-4"><form onSubmit={create} className="flex flex-col gap-3 sm:flex-row sm:items-end"><label className="min-w-0 flex-1 text-sm">Stage title (optional)<Input className="mt-2" maxLength={200} value={title} onChange={e => setTitle(e.target.value)}/></label><Button type="submit" disabled={creating}>Create standalone stage</Button></form>{error && <div><p role="alert" className="text-sm">{error}</p><Button variant="ghost" onClick={load}>Reload stages</Button></div>}<h2 className="font-display text-xl">Saved standalone stages</h2>{items.length ? <ul className="flex flex-wrap gap-3">{items.map(row => <li key={row.id} className="flex flex-wrap items-center gap-1"><Link href={`/admin/stage?mode=standalone&stage=${row.id}`} aria-current={stageId === row.id ? 'page' : undefined} className="inline-flex min-h-11 items-center rounded-control border border-white/20 px-3 py-2 text-sm text-gold-light">{row.title || 'Untitled stage'} · {row.code}</Link>{canDelete && <Button variant="ghost" size="sm" aria-label={`Delete ${row.title || 'Untitled stage'} · ${row.code}`} onClick={() => openDelete(row)}>Delete</Button>}</li>)}</ul> : <p className="text-sm text-muted">Create a stage above, or reload to revisit saved stages.</p>}{nextCursor && <Button variant="secondary" loading={loadingMore} onClick={loadMore}>Load more stages</Button>}</Card>
+    <Card className="space-y-4"><form onSubmit={create} className="flex flex-col gap-3 sm:flex-row sm:items-end"><label className="min-w-0 flex-1 text-sm">Stage title (optional)<Input className="mt-2" maxLength={200} value={title} onChange={e => setTitle(e.target.value)}/></label><Button type="submit" disabled={creating}>Create standalone stage</Button></form>{error && <div><p role="alert" className="text-sm">{error}</p><Button variant="ghost" onClick={load}>Reload stages</Button></div>}<h2 className="font-display text-xl">Saved standalone stages</h2>{canDelete && <BulkDeleteSelection records={items} resource="standalone stages" endpoint="/api/stages/admin" selected={selected} setSelected={setSelected} onDeleted={ids => { ids.forEach(id => deletedIds.current.add(id)); setItems(previous => previous.filter(row => !ids.includes(row.id))); if (ids.includes(stageId)) router.replace('/admin/stage?mode=standalone'); }}/>}{items.length ? <ul className="flex flex-wrap gap-3">{items.map(row => <li key={row.id} className="flex flex-wrap items-center gap-1">{canDelete && <input type="checkbox" aria-label={`Select stage ${row.title || 'Untitled stage'} · ${row.code}`} checked={Boolean(selected[row.id])} onChange={event => setSelected(previous => { const next = { ...previous }; if (event.target.checked && Object.keys(next).length < 50) next[row.id] = row; else delete next[row.id]; return next; })} className="h-5 w-5 accent-violet-500"/>}<Link href={`/admin/stage?mode=standalone&stage=${row.id}`} aria-current={stageId === row.id ? 'page' : undefined} className="inline-flex min-h-11 items-center rounded-control border border-white/20 px-3 py-2 text-sm text-gold-light">{row.title || 'Untitled stage'} · {row.code}</Link>{canDelete && <Button variant="ghost" size="sm" aria-label={`Delete ${row.title || 'Untitled stage'} · ${row.code}`} onClick={() => openDelete(row)}>Delete</Button>}</li>)}</ul> : <p className="text-sm text-muted">Create a stage above, or reload to revisit saved stages.</p>}{nextCursor && <Button variant="secondary" loading={loadingMore} onClick={loadMore}>Load more stages</Button>}</Card>
     <StageFeedback message={success} onDismiss={() => setSuccess('')}/>
     <Dialog open={!!deletion} onClose={closeDelete} title="Delete standalone stage?" description="This permanently deletes this stage’s saved announcements, prompts, configuration and public link.">
       {deletion && <form onSubmit={removeStage} className="space-y-4">

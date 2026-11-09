@@ -23,12 +23,12 @@ export default function TopicCard({ topic }) {
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: reducedMotion ? 0 : -8, scale: reducedMotion ? 1 : 0.97 }}
         transition={timing}
-        className="relative overflow-hidden rounded-card border border-gold/30 bg-surface/70 p-6 shadow-[0_10px_45px_-14px_rgba(167,139,250,0.55)] backdrop-blur-sm sm:p-7"
+        className="participant-topic-card relative overflow-hidden rounded-card border border-gold/15 bg-surface/70 p-6 shadow-[0_12px_32px_-22px_rgba(5,2,16,0.55)] backdrop-blur-sm sm:p-7"
       >
         {/* Ambient glow moves independently without affecting card layout. */}
         <motion.span
           aria-hidden="true"
-          className="pointer-events-none absolute -inset-[18%] bg-[radial-gradient(65%_55%_at_50%_35%,rgba(196,181,253,0.28),transparent_70%)]"
+          className="participant-topic-light pointer-events-none absolute inset-0 rounded-[inherit] bg-[radial-gradient(65%_55%_at_50%_35%,rgba(196,181,253,0.16),transparent_70%)]"
           animate={
             reducedMotion
               ? undefined
@@ -36,10 +36,7 @@ export default function TopicCard({ topic }) {
           }
           transition={{ duration: 9, ease: "easeInOut", repeat: Infinity }}
         />
-        <span
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-gold/50 to-transparent"
-        />
+
         <div className="relative flex flex-col gap-3.5">
           <span className="flex w-fit items-center gap-2 rounded-pill border border-gold/25 bg-gold/10 px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-gold">
             <Sparkles aria-hidden="true" className="h-3 w-3" />

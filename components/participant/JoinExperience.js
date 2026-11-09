@@ -26,7 +26,7 @@ function BackArrow({ onClick, label }) {
       whileHover={reducedMotion ? undefined : { x: -2, scale: 1.03 }}
       whileTap={reducedMotion ? undefined : { scale: 0.96 }}
       transition={{ duration: 0.18, ease: "easeOut" }}
-      className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-control border border-white/10 text-ink/70 hover:border-gold/60 hover:text-gold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+      className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-control border border-white/10 text-ink/70 transition-[background-color,color,box-shadow] duration-200 hover:bg-gold/10 hover:text-gold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
     >
       <ArrowLeft aria-hidden="true" className="h-4 w-4" strokeWidth={2.5} />
     </motion.button>
@@ -45,7 +45,7 @@ function NextArrow({ onClick, label, disabled }) {
       whileHover={disabled || reducedMotion ? undefined : { x: 2, scale: 1.03 }}
       whileTap={disabled || reducedMotion ? undefined : { scale: 0.96 }}
       transition={{ duration: 0.18, ease: "easeOut" }}
-      className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-control border border-white/10 text-ink/70 hover:border-gold/60 hover:text-gold disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+      className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-control border border-white/10 text-ink/70 transition-[background-color,color,box-shadow] duration-200 hover:bg-gold/10 hover:text-gold disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
     >
       <ArrowRight aria-hidden="true" className="h-4 w-4" strokeWidth={2.5} />
     </motion.button>
@@ -159,17 +159,8 @@ export default function JoinExperience({ session, usedNicknames = [] }) {
   const sessionTopic = session.topic?.trim() || session.title;
 
   return (
-    <section className="relative isolate overflow-x-clip">
-      <motion.div
-        aria-hidden="true"
-        className="pointer-events-none absolute -inset-x-8 -top-10 -z-10 h-56 rounded-full bg-[radial-gradient(circle,rgba(167,139,250,0.10),transparent_68%)]"
-        animate={
-          reducedMotion
-            ? undefined
-            : { x: [0, 10, -6, 0], y: [0, 5, 10, 0], opacity: [0.65, 0.9, 0.7, 0.65] }
-        }
-        transition={{ duration: 14, ease: "easeInOut", repeat: Infinity }}
-      />
+    <section className="relative isolate">
+
       {/* Persistent top chrome: step-back arrow (where it exists) + back-to-home. */}
       <motion.header
         {...revealProps(0)}

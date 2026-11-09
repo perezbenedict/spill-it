@@ -1,3 +1,4 @@
+import AnimatedBackground from "@/components/background/AnimatedBackground";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import ErrorState from "@/components/ui/ErrorState";
@@ -40,9 +41,11 @@ export async function generateMetadata({ params }) {
 
 function PageShell({ children }) {
   return (
+    <AnimatedBackground>
     <main className="mx-auto flex min-h-screen w-full max-w-lg flex-col items-center justify-center px-gutter py-section">
       {children}
     </main>
+    </AnimatedBackground>
   );
 }
 
@@ -77,7 +80,9 @@ export default async function JoinPage({ params }) {
   // Live, paused and closed sessions all render JoinExperience, which shows the
   // topic plus an honest notice for the non-live states.
   return (
-    <main className="mx-auto w-full max-w-lg px-gutter py-section">
+    <AnimatedBackground>
+    <main className="participant-page-shell min-h-screen w-full px-gutter py-section">
+      <div className="mx-auto w-full max-w-lg">
       <JoinExperience
         session={{
           code: session.public_code,
@@ -91,6 +96,8 @@ export default async function JoinPage({ params }) {
         }}
         usedNicknames={usedNicknames}
       />
+      </div>
     </main>
+    </AnimatedBackground>
   );
 }

@@ -1,0 +1,130 @@
+{
+  "isolation": "loopback Worker, disposable D1, generated local credentials",
+  "output": "/Users/perezbenedict/Documents/SPILL/artifacts/isolated-2026-11-09T11-11-07-165Z-f3330c67",
+  "tests": [
+    {
+      "spec": "public-polish.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-09T11:11:16.624Z",
+        "duration": 22547.442000000003,
+        "expected": 4,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      }
+    },
+    {
+      "spec": "resource-bulk-delete.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-09T11:11:41.701Z",
+        "duration": 2368.368,
+        "expected": 6,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      }
+    },
+    {
+      "spec": "stage-centre.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-09T11:11:46.294Z",
+        "duration": 31617.068000000003,
+        "expected": 6,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      }
+    },
+    {
+      "spec": "theme.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-09T11:12:20.297Z",
+        "duration": 6083.9130000000005,
+        "expected": 5,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      }
+    },
+    {
+      "spec": "voting3.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-09T11:12:27.925Z",
+        "duration": 12105.710000000001,
+        "expected": 6,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      }
+    }
+  ],
+  "loads": [],
+  "previewAssets": 9,
+  "preview": [
+    {
+      "route": "/",
+      "status": 200
+    },
+    {
+      "route": "/admin/login",
+      "status": 200
+    },
+    {
+      "route": "/join/ABCDEFGH",
+      "status": 200
+    },
+    {
+      "route": "/qr/ABCDEFGH",
+      "status": 200
+    },
+    {
+      "route": "/room/ABCDEFGH",
+      "status": 200
+    }
+  ],
+  "privateArtifacts": [
+    {
+      "route": "/cloudflare/next-env.mjs",
+      "status": 404
+    },
+    {
+      "route": "/server-functions/default/index.mjs",
+      "status": 404
+    },
+    {
+      "route": "/worker.js",
+      "status": 404
+    },
+    {
+      "route": "/_worker.js",
+      "status": 404
+    }
+  ],
+  "previewStandalone": {
+    "created": 201,
+    "publicRead": 200,
+    "projector": 200,
+    "admin": 200,
+    "savedContentPrivate": true
+  },
+  "previewVoting": {
+    "publicRead": 200,
+    "adminRead": 200,
+    "vote": 200,
+    "protectedCookie": true,
+    "duplicateRetry": true,
+    "voterPage": 200,
+    "projectorPage": 200,
+    "reopenPreservedVotes": true,
+    "roundTwoAccepted": 200,
+    "staleRound": 409,
+    "historyPreserved": true,
+    "activity": 200,
+    "stageCentre": 200
+  }
+}

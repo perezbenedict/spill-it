@@ -6,6 +6,7 @@ import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import Input from '@/components/ui/Input';
 import Dialog from '@/components/ui/Dialog';
+import BulkDeleteSelection from '@/components/admin/BulkDeleteSelection';
 import useVoting from './useVoting';
 import VotingQR from './VotingQR';
 import VotingCharts from './VotingCharts';
@@ -37,13 +38,27 @@ function EventEditor({ event, sessions, busy, save }) {
   </form>;
 }
 
-export function VotingCollection({ sessions=[] }) {
+export function VotingCollection({ sessions=[], canDelete=false }) {
   const {data,error,busy,mutate,refresh}=useVoting('/api/voting/admin', { collection: true });
   const [filter,setFilter]=useState('all');
+  const [selected,setSelected]=useState({});
+  const [deletedIds,setDeletedIds]=useState([]);
+  const [older,setOlder]=useState([]);
+  const [cursor,setCursor]=useState(undefined);
+  const [loadingMore,setLoadingMore]=useState(false);
+  const [pageError,setPageError]=useState('');
+  const loadingMoreRef=useRef(false);
+  async function loadMore(){
+    const next=cursor===undefined?data?.nextCursor:cursor;
+    if(!next||loadingMoreRef.current)return;
+    loadingMoreRef.current=true;setLoadingMore(true);setPageError('');
+    try{const response=await fetch(`/api/voting/admin?cursor=${encodeURIComponent(next)}`,{cache:'no-store',signal:AbortSignal.timeout(15000)});const body=await response.json();if(!response.ok)throw Error(body.error||'Could not load older voting events.');setOlder(previous=>[...previous,...body.events]);setCursor(body.nextCursor||null);}
+    catch(failure){setPageError(failure.message);}finally{loadingMoreRef.current=false;setLoadingMore(false);}
+  }
   const router=useRouter();
   async function create(payload){const result=await mutate(payload);if(result?.event?.id)router.push(`/admin/voting/${result.event.id}`);return result;}
-  const events=(data?.events||[]).filter(event=>filter==='all'||event.status===filter);
-  return <div className="space-y-6"><header><p className="voting-eyebrow">Independent audience voting</p><h1 className="mt-2 font-display text-4xl">A question. A roomful of voices.</h1><p className="mt-3 max-w-2xl text-sm text-muted">Share a direct link or QR. People vote immediately, without entering a discussion or choosing a nickname.</p></header>{error&&<p role="alert" className="voting-sync-error">{error}</p>}<Card><details><summary className="cursor-pointer font-display text-2xl">Create a voting event</summary><div className="mt-5"><EventEditor sessions={sessions} busy={busy} save={create}/></div></details></Card><Card className="space-y-4"><div className="flex flex-wrap items-center justify-between gap-3"><h2 className="font-display text-2xl">Voting events</h2><label className="text-sm">Show<select className="voting-select ml-2" value={filter} onChange={e=>setFilter(e.target.value)}>{['all','draft','open','closed','archived'].map(value=><option key={value} value={value}>{value}</option>)}</select></label><Button variant="ghost" size="sm" onClick={refresh}>Refresh</Button></div>{!data&&!error?<p role="status">Connecting…</p>:!events.length?<p className="text-sm text-muted">No voting events in this view.</p>:<ul className="divide-y divide-white/10">{events.map(event=><li key={event.id} className="flex flex-wrap items-center justify-between gap-3 py-4"><div className="min-w-0"><Link href={`/admin/voting/${event.id}`} className="break-words font-semibold text-gold-light underline-offset-4 hover:underline">{event.title}</Link><p className="mt-1 text-xs uppercase tracking-wide text-muted">{event.status} · {event.questionCount ?? event.questions?.length ?? 0} questions</p></div><Link href={`/admin/voting/${event.id}`} className="text-sm underline underline-offset-4">Manage vote</Link></li>)}</ul>}</Card></div>;
+  const events=[...new Map([...older,...(data?.events||[])].map(event=>[event.id,event])).values()].sort((a,b)=>b.createdAt.localeCompare(a.createdAt)||b.id.localeCompare(a.id)).filter(event=>!deletedIds.includes(event.id)&&(filter==='all'||event.status===filter));
+  return <div className="space-y-6"><header><p className="voting-eyebrow">Independent audience voting</p><h1 className="mt-2 font-display text-4xl">A question. A roomful of voices.</h1><p className="mt-3 max-w-2xl text-sm text-muted">Share a direct link or QR. People vote immediately, without entering a discussion or choosing a nickname.</p></header>{error&&<p role="alert" className="voting-sync-error">{error}</p>}<Card><details><summary className="cursor-pointer font-display text-2xl">Create a voting event</summary><div className="mt-5"><EventEditor sessions={sessions} busy={busy} save={create}/></div></details></Card><Card className="space-y-4"><div className="flex flex-wrap items-center justify-between gap-3"><h2 className="font-display text-2xl">Voting events</h2><label className="text-sm">Show<select className="voting-select ml-2" value={filter} onChange={e=>setFilter(e.target.value)}>{['all','draft','open','closed','archived'].map(value=><option key={value} value={value}>{value}</option>)}</select></label><Button variant="ghost" size="sm" onClick={refresh}>Refresh</Button></div>{canDelete&&<BulkDeleteSelection records={events} resource="voting events" endpoint="/api/voting/admin" selected={selected} setSelected={setSelected} onDeleted={ids => { setDeletedIds(previous => [...previous,...ids]); refresh(); }}/>} {!data&&!error?<p role="status">Connecting…</p>:!events.length?<p className="text-sm text-muted">No voting events in this view.</p>:<ul className="divide-y divide-white/10">{events.map(event=><li key={event.id} className="flex flex-wrap items-center justify-between gap-3 py-4">{canDelete&&<input type="checkbox" aria-label={`Select voting event ${event.title}`} checked={Boolean(selected[event.id])} onChange={e => setSelected(previous => { const next={...previous}; if(e.target.checked&&Object.keys(next).length<50)next[event.id]=event;else delete next[event.id];return next; })} className="h-5 w-5 accent-violet-500"/>}<div className="min-w-0"><Link href={`/admin/voting/${event.id}`} className="break-words font-semibold text-gold-light underline-offset-4 hover:underline">{event.title}</Link><p className="mt-1 text-xs uppercase tracking-wide text-muted">{event.status} · {event.questionCount ?? event.questions?.length ?? 0} questions</p></div><Link href={`/admin/voting/${event.id}`} className="text-sm underline underline-offset-4">Manage vote</Link></li>)}</ul>}{pageError&&<p role="alert">{pageError}</p>}{(cursor===undefined?data?.nextCursor:cursor)&&<Button variant="secondary" loading={loadingMore} onClick={loadMore}>Load older voting events</Button>}</Card></div>;
 }
 
 export function VotingAdministration({ id,sessions=[] }) {

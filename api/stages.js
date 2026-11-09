@@ -116,6 +116,7 @@ export async function handleStandaloneStages(request, env, admin, identifier, pu
   const parsed = await jsonBody(request);
   if (parsed.response) return parsed.response;
   const { body } = parsed;
+  if (!identifier && body.action === 'bulkDelete') return bulkDelete(request, env, admin, body, verifyPassword);
   if (!titleInput(body.title)) return fail('Use a title of up to 200 characters.');
   if (!identifier) {
     for (let attempt = 0; attempt < 5; attempt++) {
@@ -183,11 +184,31 @@ export async function handleStandaloneStages(request, env, admin, identifier, pu
   delete stage.cleared;
   try {
     const results = await env.DB.batch([
-      env.DB.prepare('UPDATE standalone_stages SET stage_config=?,title=?,revision=revision+1,mutation_id=?,updated_at=? WHERE id=? AND revision=? RETURNING revision').bind(JSON.stringify({ ...stage, returnOverlay, presentationCleared }), body.title === undefined ? row.title : body.title.trim(), mutationId, timestamp, identifier, body.expectedRevision),
+      env.DB.prepare('UPDATE standalone_stages SET stage_config=?,title=?,revision=revision+1,mutation_id=?,updated_at=? WHERE id=? AND revision=? AND (? IS NULL OR EXISTS(SELECT 1 FROM voting_events WHERE public_code=? AND status IN (\'open\',\'closed\'))) AND (? IS NULL OR EXISTS(SELECT 1 FROM voting_events WHERE public_code=? AND status IN (\'open\',\'closed\'))) RETURNING revision').bind(JSON.stringify({ ...stage, returnOverlay, presentationCleared }), body.title === undefined ? row.title : body.title.trim(), mutationId, timestamp, identifier, body.expectedRevision, stage.overlay?.kind === 'voting' ? stage.overlay.eventCode : null, stage.overlay?.kind === 'voting' ? stage.overlay.eventCode : null, returnOverlay?.kind === 'voting' ? returnOverlay.eventCode : null, returnOverlay?.kind === 'voting' ? returnOverlay.eventCode : null),
       env.DB.prepare('INSERT INTO admin_activity(id,session_id,actor_id,action,target_id,created_at) SELECT ?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM standalone_stages WHERE id=? AND mutation_id=?)').bind(crypto.randomUUID(), identifier, admin.user.id, body.action === 'clearStage' ? 'standalone_clear' : 'standalone_configure', identifier, timestamp, identifier, mutationId),
     ]);
     if (!results[0].results?.length) return conflict();
     const updated = await env.DB.prepare('SELECT * FROM standalone_stages WHERE id=?').bind(identifier).first();
     return reply({ item: await stageItem(env, updated) });
   } catch { return fail('Could not apply this change. Refresh and try again.', 409); }
+}
+
+
+async function bulkDelete(request, env, admin, body, verifyPassword) {
+  if (admin?.user?.role !== 'admin') return fail('Administrator access is required.', 403);
+  if (body.confirmed !== true || !Array.isArray(body.items) || !body.items.length || body.items.length > 50 || body.items.some(item => !object(item) || !isUuid(item.id) || !Number.isSafeInteger(item.revision) || item.revision < 0) || new Set(body.items.map(item => item.id)).size !== body.items.length) return fail('Confirm between 1 and 50 distinct records with their selected revisions.');
+  if (typeof verifyPassword !== 'function') return fail('Password verification is unavailable.', 503);
+  const verified = await verifyPassword(request, env, admin, body.password);
+  if (!verified?.ok) return verified?.response || fail('Password verification failed.', 403);
+  const statements = [];
+  const timestamp = new Date().toISOString();
+  for (const item of body.items) {
+    statements.push(env.DB.prepare('DELETE FROM standalone_stages WHERE id=? AND revision=? RETURNING id').bind(item.id, item.revision));
+    statements.push(env.DB.prepare("INSERT INTO admin_activity(id,session_id,actor_id,action,target_id,created_at) SELECT ?,?,?,'standalone_delete',?,? WHERE changes()=1").bind(crypto.randomUUID(), item.id, admin.user.id, item.id, timestamp));
+  }
+  try {
+    const result = await env.DB.batch(statements);
+    const results = body.items.map((item, i) => ({ id: item.id, status: result[i * 2].results?.length ? 'deleted' : 'rejected', reason: result[i * 2].results?.length ? null : 'Stage changed or was already deleted. Review and select it again.' }));
+    return reply({ results, deletedIds: results.filter(item => item.status === 'deleted').map(item => item.id) });
+  } catch { return fail('The transaction failed. Nothing was deleted. Refresh before retrying.', 503); }
 }

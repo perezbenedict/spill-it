@@ -170,6 +170,11 @@ export async function handlePlatform(request, env, admin, sessionId, verifyPassw
       ? previous.overlay?.kind === stage.overlay.kind ? resumableOverlay(stored.returnOverlay) : resumableOverlay(previous.overlay)
       : null;
     if (!stage.overlay && overrideOverlay(previous.overlay)) stage.overlay = resumableOverlay(stored.returnOverlay);
+    const votingCodes = [...new Set([stage.overlay, returnOverlay].filter(item => item?.kind === 'voting').map(item => item.eventCode))];
+    if (votingCodes.length) {
+      const eligibility = votingCodes.map(() => "EXISTS(SELECT 1 FROM voting_events WHERE public_code=? AND status IN ('open','closed'))").join(' AND ');
+      statements[0] = env.DB.prepare(`UPDATE platform_state SET revision=revision+1,mutation_id=? WHERE session_id=? AND revision=? AND ${eligibility} RETURNING revision`).bind(mutationId, sessionId, body.expectedRevision, ...votingCodes);
+    }
     statements.push(guarded(`UPDATE platform_state SET stage_config=? WHERE session_id=? AND ${guard}`, JSON.stringify({ ...stage, returnOverlay }), sessionId));
   } else if (body.action === 'enqueue') {
     const eligible = await env.DB.prepare("SELECT id FROM submissions WHERE id=? AND session_id=? AND moderation_status='approved' AND hidden_from_presentation=0").bind(body.submissionId || '', sessionId).first();

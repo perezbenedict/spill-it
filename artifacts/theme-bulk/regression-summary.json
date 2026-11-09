@@ -1,0 +1,162 @@
+{
+  "method": "Latest passing executed result per spec after fixes; intermediate failures documented in release notes.",
+  "tests": [
+    {
+      "spec": "admin-bulk-delete.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-09T11:00:00.721Z",
+        "duration": 9240.169,
+        "expected": 3,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "sourceRun": "isolated-2026-11-09T10-59-48-592Z-94839ed3"
+    },
+    {
+      "spec": "public-polish.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-09T11:23:21.530Z",
+        "duration": 22678.936,
+        "expected": 4,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "sourceRun": "isolated-2026-11-09T11-21-42-641Z-c81ac0d8"
+    },
+    {
+      "spec": "resource-bulk-delete.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-09T11:23:46.688Z",
+        "duration": 2198.4739999999997,
+        "expected": 7,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "sourceRun": "isolated-2026-11-09T11-21-42-641Z-c81ac0d8"
+    },
+    {
+      "spec": "stage-centre.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-09T11:11:46.294Z",
+        "duration": 31617.068000000003,
+        "expected": 6,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "sourceRun": "isolated-2026-11-09T11-11-07-165Z-f3330c67"
+    },
+    {
+      "spec": "stage-management.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-09T11:04:52.702Z",
+        "duration": 4521.339,
+        "expected": 6,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "sourceRun": "isolated-2026-11-09T10-59-48-592Z-94839ed3"
+    },
+    {
+      "spec": "theme.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-09T11:24:11.667Z",
+        "duration": 7016.669000000001,
+        "expected": 5,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "sourceRun": "isolated-2026-11-09T11-21-42-641Z-c81ac0d8"
+    },
+    {
+      "spec": "voting-rounds.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-09T11:05:08.995Z",
+        "duration": 8567.461000000001,
+        "expected": 6,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "sourceRun": "isolated-2026-11-09T10-59-48-592Z-94839ed3"
+    },
+    {
+      "spec": "voting3.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-09T11:12:27.925Z",
+        "duration": 12105.710000000001,
+        "expected": 6,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "sourceRun": "isolated-2026-11-09T11-11-07-165Z-f3330c67"
+    },
+    {
+      "spec": "platform.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-09T11:21:59.408Z",
+        "duration": 80641.544,
+        "expected": 20,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "sourceRun": "isolated-2026-11-09T11-21-42-641Z-c81ac0d8"
+    },
+    {
+      "spec": "public-journey.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-09T11:14:13.607Z",
+        "duration": 6289.392,
+        "expected": 5,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "sourceRun": "isolated-2026-11-09T11-12-49-142Z-d00fc35c"
+    },
+    {
+      "spec": "standalone-stage.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-09T11:14:22.548Z",
+        "duration": 39339.640999999996,
+        "expected": 5,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "sourceRun": "isolated-2026-11-09T11-12-49-142Z-d00fc35c"
+    },
+    {
+      "spec": "theme-coverage.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-09T11:25:57.615Z",
+        "duration": 20078.703999999998,
+        "expected": 2,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "sourceRun": "isolated-2026-11-09T11-25-51-641Z-d5ac19f7"
+    }
+  ],
+  "cases": 75
+}

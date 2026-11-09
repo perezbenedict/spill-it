@@ -43,6 +43,11 @@ async function proxy(request, context) {
   if (admin) headers['X-Admin-Token'] = await getAdminToken();
   const endpoint = admin ? `/admin/voting${identifier ? `/${identifier}` : ''}` : `/voting/${identifier}${operation ? '/vote' : ''}`;
   let query = '';
+  if (admin && !identifier && request.method === 'GET') {
+    const params = new URL(request.url).searchParams;
+    if (params.toString().length > 1000 || [...params.keys()].some(key => !['limit','cursor'].includes(key))) return NextResponse.json({ error:'Invalid voting filters.' }, { status:400 });
+    if (params.size) query = `?${params}`;
+  }
   if (admin && identifier && request.method === 'GET') {
     const round = new URL(request.url).searchParams.get('round');
     if (round !== null) {

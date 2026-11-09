@@ -1,0 +1,16 @@
+{
+  "sha256": "eebc4969513aed0646b26de705b6d99b9045ae006c7deb0ce1f472c77a51309e",
+  "integrity": "ok",
+  "foreignKeyViolations": 0,
+  "counts": {
+    "discussion_sessions": 5,
+    "submissions": 24,
+    "voting_events": 1,
+    "voting_votes": 1,
+    "standalone_stages": 2,
+    "admin_activity": 160
+  },
+  "liveDiscussions": 1,
+  "openVotes": 1,
+  "lastAction": "2026-11-09T10:57:16.688Z"
+}

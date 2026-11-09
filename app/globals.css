@@ -696,3 +696,5 @@ main h1, main h2, main h3 {
     scroll-behavior: auto !important;
   }
 }
+
+.category-choice:focus-visible { outline: 2px solid var(--color-gold); outline-offset: 2px; }

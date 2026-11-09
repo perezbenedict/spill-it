@@ -64,14 +64,13 @@ export default function HomePageContent({ session, provided }: HomePageContentPr
 
   return (
     <main
-      className="hero-page relative mx-auto flex min-h-screen w-full max-w-2xl flex-col justify-center overflow-x-clip px-gutter py-10 sm:px-8"
-      style={{ paddingBottom: "max(3rem, env(safe-area-inset-bottom))" }}
+      className="hero-page relative isolate min-h-screen w-full"
       onPointerMove={handlePointerMove}
     >
       {/* Ambient purple background movement + pointer-following glow (behind text) */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 z-0 overflow-hidden"
+        className="hero-atmosphere pointer-events-none absolute inset-0 z-0 overflow-clip"
       >
         {/* Slow-drifting purple layers */}
         <span className="absolute -left-24 top-[8%] h-[32rem] w-[32rem] animate-ambient-a rounded-full bg-[radial-gradient(circle,rgba(124,92,200,0.18),transparent_70%)]" />
@@ -112,6 +111,7 @@ export default function HomePageContent({ session, provided }: HomePageContentPr
         </svg>
       </div>
 
+      <div className="hero-content relative z-10 mx-auto flex min-h-screen w-full max-w-2xl flex-col justify-center px-gutter py-10 sm:px-8" style={{ paddingBottom: "max(3rem, env(safe-area-inset-bottom))" }}>
       <div className="relative z-10 flex flex-col items-center gap-5">
         {/* Rotating emblem watermark (behind content) */}
         <div
@@ -236,6 +236,7 @@ export default function HomePageContent({ session, provided }: HomePageContentPr
       <footer className="relative z-10 mt-12 flex justify-center">
         <p className="developer-credit text-center">Developed by Perez Benedict</p>
       </footer>
+      </div>
     </main>
   );
 }

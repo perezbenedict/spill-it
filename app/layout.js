@@ -1,5 +1,8 @@
 import { Manrope, Instrument_Serif } from "next/font/google";
 import "./globals.css";
+import "./theme.css";
+import { cookies } from "next/headers";
+import ThemeToggle from "@/components/theme/ThemeToggle";
 
 const instrumentSerif = Instrument_Serif({
   subsets: ["latin"],
@@ -19,14 +22,18 @@ export const metadata = {
   description: "Say what you really think.",
 };
 
-export default function RootLayout({ children }) {
+export default async function RootLayout({ children }) {
+  const preference = (await cookies()).get("spill_theme")?.value;
+  const theme = preference === "light" ? "light" : "dark";
   return (
     <html
       lang="en"
+      data-theme={theme}
       className={`${instrumentSerif.variable} ${manrope.variable}`}
     >
       <body className="font-body bg-midnight text-ink antialiased">
         {children}
+        <ThemeToggle initialTheme={theme}/>
       </body>
     </html>
   );

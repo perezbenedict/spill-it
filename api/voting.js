@@ -169,14 +169,27 @@ function questionStatements(env, eventId, questions, guard = '', params = []) {
   return statements;
 }
 
-export async function handleVotingCollection(request, env, admin) {
+export async function handleVotingCollection(request, env, admin, verifyPassword) {
   if (request.method === 'GET') {
-    const { results } = await env.DB.prepare('SELECT e.*,(SELECT COUNT(*) FROM voting_questions q WHERE q.event_id=e.id) AS question_count FROM voting_events e ORDER BY created_at DESC LIMIT 100').all();
-    return reply({ events: results.map(row => ({ ...serialize({ event: row, questions: [] }, true), questionCount: row.question_count })) });
+    const params = new URL(request.url).searchParams;
+    const limit = Number(params.get('limit') || 50);
+    if (!Number.isInteger(limit) || limit < 1 || limit > 50 || [...params.keys()].some(key => !['limit','cursor'].includes(key))) return fail('Use a voting page size from 1 to 50.');
+    let cursor;
+    if (params.has('cursor')) {
+      try { const value = params.get('cursor'); if (value.length > 500 || !/^[A-Za-z0-9_-]+$/.test(value)) throw Error(); cursor = JSON.parse(atob(value.replaceAll('-','+').replaceAll('_','/'))); if (!isUuid(cursor.id) || typeof cursor.at !== 'string' || cursor.at.length > 40 || !Number.isFinite(Date.parse(cursor.at))) throw Error(); }
+      catch { return fail('Refresh the voting list before loading another page.'); }
+    }
+    const sql = 'SELECT e.*,(SELECT COUNT(*) FROM voting_questions q WHERE q.event_id=e.id) AS question_count FROM voting_events e';
+    const query = cursor ? env.DB.prepare(sql + ' WHERE e.created_at<? OR (e.created_at=? AND e.id<?) ORDER BY e.created_at DESC,e.id DESC LIMIT ?').bind(cursor.at,cursor.at,cursor.id,limit+1) : env.DB.prepare(sql+' ORDER BY e.created_at DESC,e.id DESC LIMIT ?').bind(limit+1);
+    const rows = (await query.all()).results || [];
+    const results = rows.slice(0,limit); const last = results.at(-1);
+    const nextCursor = rows.length > limit && last ? btoa(JSON.stringify({ at:last.created_at,id:last.id })).replaceAll('+','-').replaceAll('/','_').replace(/=+$/,'') : null;
+    return reply({ events: results.map(row => ({ ...serialize({ event: row, questions: [] }, true), questionCount: row.question_count })), nextCursor });
   }
   if (request.method !== 'POST') return fail('Method not allowed.', 405);
   const input = await jsonBody(request);
   if (input.response) return input.response;
+  if (input.body.action === 'bulkDelete') return bulkDelete(request, env, admin, input.body, verifyPassword);
   const draft = draftInput(input.body);
   const settings = input.body.settings === undefined ? { ...DEFAULT_SETTINGS } : settingsInput(input.body.settings);
   if (!draft || !settings || !await sessionExists(env, draft.sessionId)) return fail('Use a title, up to ten questions, two to eight distinct choices each, and an existing optional discussion.');
@@ -216,14 +229,17 @@ export async function handleVotingAdmin(request, env, admin, id, verifyPassword)
   if (!actions.includes(body.action)) return fail('Unknown voting operation.');
   if (data.event.status === 'archived' && body.action !== 'delete') return fail('Archived voting events are read-only.', 409);
   if (body.action === 'delete') {
+    if (admin?.user?.role !== 'admin') return fail('Administrator access is required.', 403);
+    const eligible = await env.DB.prepare(`SELECT id FROM voting_events WHERE id=? AND status!='open' AND json_extract(presentation,'$.content')='hidden' AND NOT EXISTS(SELECT 1 FROM standalone_stages s,json_tree(CASE WHEN json_valid(s.stage_config) THEN s.stage_config ELSE '{}' END) j WHERE j.key='eventCode' AND j.value=voting_events.public_code) AND NOT EXISTS(SELECT 1 FROM platform_state s,json_tree(CASE WHEN json_valid(s.stage_config) THEN s.stage_config ELSE '{}' END) j WHERE j.key='eventCode' AND j.value=voting_events.public_code)`).bind(id).first();
+    if (!eligible) return fail('Close voting, hide its presentation and detach all stage references before deleting.', 409);
     const verified = await verifyPassword(request, env, admin, body.password);
-    if (verified.response) return verified.response;
+    if (!verified?.ok) return verified?.response || fail('Password verification failed.',403);
   }
   const mutationId = uuid();
   const guard = 'EXISTS(SELECT 1 FROM voting_events WHERE id=? AND mutation_id=?)';
   const guardParams = [id, mutationId];
   const guarded = (sql, ...params) => env.DB.prepare(sql).bind(...params, ...guardParams);
-  const statements = [env.DB.prepare('UPDATE voting_events SET revision=revision+1,mutation_id=?,updated_at=? WHERE id=? AND revision=? RETURNING revision').bind(mutationId, now(), id, body.expectedRevision)];
+  const statements = [env.DB.prepare(`UPDATE voting_events SET revision=revision+1,mutation_id=?,updated_at=? WHERE id=? AND revision=? ${body.action === 'delete' ? ` AND status!='open' AND json_extract(presentation,'$.content')='hidden' AND NOT EXISTS(SELECT 1 FROM standalone_stages s,json_tree(CASE WHEN json_valid(s.stage_config) THEN s.stage_config ELSE '{}' END) j WHERE j.key='eventCode' AND j.value=voting_events.public_code) AND NOT EXISTS(SELECT 1 FROM platform_state s,json_tree(CASE WHEN json_valid(s.stage_config) THEN s.stage_config ELSE '{}' END) j WHERE j.key='eventCode' AND j.value=voting_events.public_code)` : ''} RETURNING revision`).bind(mutationId, now(), id, body.expectedRevision)];
   const settings = settingsOf(data.event);
   let nextSettings = settings;
   let presentation = presentationOf(data.event, data.questions);
@@ -336,4 +352,24 @@ export async function handleVotingPublic(request, env, code, operation) {
   const replay = await previous();
   if (replay) return replay.option_id === body.optionId ? reply({ ok: true, duplicate: true, round }) : fail('This browser has already voted on this question in this round.', 409);
   return fail('Voting closed or the round changed before your answer was received.', 409);
+}
+
+
+async function bulkDelete(request, env, admin, body, verifyPassword) {
+  if (admin?.user?.role !== 'admin') return fail('Administrator access is required.', 403);
+  if (body.confirmed !== true || !Array.isArray(body.items) || !body.items.length || body.items.length > 50 || body.items.some(item => !object(item) || !isUuid(item.id) || !Number.isSafeInteger(item.revision) || item.revision < 0) || new Set(body.items.map(item => item.id)).size !== body.items.length) return fail('Confirm between 1 and 50 distinct records with their selected revisions.');
+  if (typeof verifyPassword !== 'function') return fail('Password verification is unavailable.', 503);
+  const verified = await verifyPassword(request, env, admin, body.password);
+  if (!verified?.ok) return verified?.response || fail('Password verification failed.', 403);
+  const statements = [];
+  const timestamp = new Date().toISOString();
+  for (const item of body.items) {
+    statements.push(env.DB.prepare(`DELETE FROM voting_events WHERE id=? AND revision=? AND status!='open' AND json_extract(presentation,'$.content')='hidden' AND NOT EXISTS(SELECT 1 FROM standalone_stages s,json_tree(CASE WHEN json_valid(s.stage_config) THEN s.stage_config ELSE '{}' END) j WHERE j.key='eventCode' AND j.value=voting_events.public_code) AND NOT EXISTS(SELECT 1 FROM platform_state s,json_tree(CASE WHEN json_valid(s.stage_config) THEN s.stage_config ELSE '{}' END) j WHERE j.key='eventCode' AND j.value=voting_events.public_code) RETURNING id`).bind(item.id, item.revision));
+    statements.push(env.DB.prepare("INSERT INTO admin_activity(id,session_id,actor_id,action,target_id,created_at) SELECT ?,?,?,'voting_delete',?,? WHERE changes()=1").bind(crypto.randomUUID(), item.id, admin.user.id, item.id, timestamp));
+  }
+  try {
+    const result = await env.DB.batch(statements);
+    const results = body.items.map((item, i) => ({ id: item.id, status: result[i * 2].results?.length ? 'deleted' : 'rejected', reason: result[i * 2].results?.length ? null : 'Changed, missing, open or projected. Close voting, hide its presentation and detach stage references before retrying.' }));
+    return reply({ results, deletedIds: results.filter(item => item.status === 'deleted').map(item => item.id) });
+  } catch { return fail('The transaction failed. Nothing was deleted. Refresh before retrying.', 503); }
 }

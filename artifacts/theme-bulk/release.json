@@ -1,0 +1,19 @@
+{
+  "status": "tested; release pending",
+  "unitPassed": 49,
+  "e2eLatestPassingCases": 75,
+  "e2eSpecs": 12,
+  "lint": "passed",
+  "cf-build": "passed",
+  "cf-bundle": "passed",
+  "schemaMigration": "none",
+  "publicAssetSecretMatches": 0,
+  "workerBytes": 7351152,
+  "screenshots": 62,
+  "accessibility": "Zero Axe violations in executed homepage/login, light management and both voter theme checks.",
+  "projectionPolicy": "Personal theme never changes audience projectors or QR/print presentations; those retain moderator atmospheres.",
+  "limitations": [
+    "No projector light appearance offered.",
+    "Automated checks are not complete manual WCAG or physical-projector certification."
+  ]
+}

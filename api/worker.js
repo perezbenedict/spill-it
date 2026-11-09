@@ -1657,7 +1657,7 @@ const worker = {
       const admin = await requireAdminUser(request, env);
       if (!admin) return json({ error: 'unauthorized' }, 401);
 
-      if (path === '/admin/voting') return await handleVotingCollection(request, env, admin);
+      if (path === '/admin/voting') return await handleVotingCollection(request, env, admin, verifyDestructiveAdminPassword);
       const votingAdminMatch = path.match(/^\/admin\/voting\/([^/]+)$/);
       if (votingAdminMatch) return await handleVotingAdmin(request, env, admin, votingAdminMatch[1], verifyDestructiveAdminPassword);
 
@@ -1668,7 +1668,7 @@ const worker = {
         return json({ user: admin.user });
       }
       if (path === '/admin/activity') return await handleActivity(request, env, admin);
-      if (path === '/admin/stages') return await handleStandaloneStages(request, env, admin);
+      if (path === '/admin/stages') return await handleStandaloneStages(request, env, admin, undefined, false, verifyDestructiveAdminPassword);
       const standaloneAdminMatch = path.match(/^\/admin\/stages\/([^/]+)$/);
       if (standaloneAdminMatch) return await handleStandaloneStages(request, env, admin, standaloneAdminMatch[1], false, verifyDestructiveAdminPassword);
 
