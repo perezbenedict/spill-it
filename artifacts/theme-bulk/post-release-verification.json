@@ -1,0 +1,18 @@
+{
+  "integrity": "ok",
+  "foreignKeyViolations": 0,
+  "existingTablesCompared": 25,
+  "changedTables": [],
+  "allExistingDataPreserved": true,
+  "byteIdenticalToPredeploy": true,
+  "counts": {
+    "discussion_sessions": 5,
+    "submissions": 24,
+    "voting_events": 1,
+    "voting_votes": 1,
+    "standalone_stages": 2,
+    "admin_activity": 160
+  },
+  "liveDiscussions": 1,
+  "openVotes": 1
+}

@@ -1,0 +1,14 @@
+{
+  "success": true,
+  "readOnly": true,
+  "checks": [
+    "theme default, switching and refresh",
+    "standalone bulk confirmation and cancellation",
+    "voting bulk confirmation and cancellation",
+    "projector isolation from personal light preference",
+    "original session controls and discussion management shortcut"
+  ],
+  "attemptedWrites": 0,
+  "pageErrors": 0,
+  "staticAssetsChecked": 6
+}

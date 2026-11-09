@@ -1,19 +1,24 @@
 {
-  "status": "tested; release pending",
+  "status": "deployed and verified",
   "unitPassed": 49,
-  "e2eLatestPassingCases": 75,
-  "e2eSpecs": 12,
+  "e2eLatestPassingCases": 76,
+  "e2eSpecs": 13,
   "lint": "passed",
   "cf-build": "passed",
   "cf-bundle": "passed",
   "schemaMigration": "none",
   "publicAssetSecretMatches": 0,
   "workerBytes": 7351152,
-  "screenshots": 62,
+  "screenshots": 64,
   "accessibility": "Zero Axe violations in executed homepage/login, light management and both voter theme checks.",
   "projectionPolicy": "Personal theme never changes audience projectors or QR/print presentations; those retain moderator atmospheres.",
   "limitations": [
     "No projector light appearance offered.",
     "Automated checks are not complete manual WCAG or physical-projector certification."
-  ]
+  ],
+  "runtimeCommit": "5024b2c2bbaae6447e27b6964dcec09853d761a9",
+  "productionURL": "https://spill-it-4rw.pages.dev",
+  "pagesDeployment": "340aec95-7e53-4d46-a3f2-59b02cb8add4",
+  "apiVersion": "e40c8ebe-d7b4-4b74-b97e-0e950032431d",
+  "productionVerification": "Read-only UI checks passed. All 25 existing tables unchanged; live/open states preserved."
 }

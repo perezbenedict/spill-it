@@ -156,7 +156,20 @@
         "flaky": 0
       },
       "sourceRun": "isolated-2026-11-09T11-25-51-641Z-d5ac19f7"
+    },
+    {
+      "spec": "light-participant.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-09T11:30:35.261Z",
+        "duration": 2768.79,
+        "expected": 1,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "sourceRun": "isolated-2026-11-09T11-30-25-394Z-d3812226"
     }
   ],
-  "cases": 75
+  "cases": 76
 }

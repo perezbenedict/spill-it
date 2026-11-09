@@ -19,3 +19,13 @@ No migration is required. Backups and release verification are kept outside publ
 See `artifacts/theme-bulk/release.json` for actual final results and release identifiers. The initial run caught a NOT NULL audit insert failure (transaction rolled back), missing category focus styling, and light-only contrast issues; these were corrected. Older visual baselines require approved updates for the new toggle and requested atmosphere/participant changes. Golden screenshot updates alone are not treated as visual approval; rendered screenshots are reviewed separately.
 
 Automated accessibility is scoped evidence, not complete WCAG certification. Physical projector/color calibration and manual assistive-technology review remain outside these automated checks.
+
+## Released 9 November 2026
+
+Runtime commit `5024b2c2bbaae6447e27b6964dcec09853d761a9`; Pages deployment `340aec95-7e53-4d46-a3f2-59b02cb8add4`; API version `e40c8ebe-d7b4-4b74-b97e-0e950032431d`.
+
+Lint, 49 unit tests, Cloudflare build/bundle and 76 selected E2E cases have passing results across the regression and corrective runs. These include existing discussion bulk deletion, new resource selection/deletion safeguards, projection/deletion concurrency, voting rounds, ordinary contribution recovery, theme persistence, light composer/success, and stage synchronization. Dark visual baselines passed without updating during the final assertion run after reviewed toggle/background changes were recorded. Sixty-four synthetic screenshots cover requested public widths, both themes and all five projector dimensions. Executed Axe checks reported zero violations after contrast corrections; complete manual WCAG certification is not claimed.
+
+Fresh production export restored with integrity OK and zero foreign-key violations. Multiple snapshots were unchanged during the observation window; last recorded vote was 10:04 UTC and admin operation 10:57 UTC. The release required no migration and did not close the live discussion or open vote. All 25 existing tables remain byte-for-byte unchanged in the SQL export: five discussions, 24 contributions, one voting event, one vote, two standalone stages and 160 activity entries.
+
+Live read-only verification passed for default Dark, switching and refresh persistence, both bulk confirmations and cancellation, original discussion controls, Manage Discussions shortcut, projector isolation, six static assets and private-build denial. Zero attempted writes and browser page errors. Destructive verification ran only against disposable local fixtures.
