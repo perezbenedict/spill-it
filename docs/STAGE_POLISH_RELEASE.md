@@ -39,3 +39,16 @@ Application rollback targets the prior Pages deployment `7f7577db-37e6-408d-901e
 See [release evidence](../artifacts/stage-polish/release.json), [regression summary](../artifacts/stage-polish/regression-summary.json), and [synthetic screenshots](../artifacts/stage-polish/screens).
 
 Automated checks cover isolated deletion authorization, password verification, confirmation, stale revision, simultaneous deletion, protected audit, unrelated-data preservation, active chapter privacy, both control workflows, failed and successful feedback, expired overlays, projector refresh, reduced motion, polling stability and responsive layouts. Headless frame scheduling is a local measurement, not a physical projector or GPU certification. Browser accessibility automation does not establish complete WCAG compliance. Physical projector review and manual assistive-technology assessment remain useful operational checks.
+
+## Completed release — 9 November 2026
+
+- Runtime commit: `135b1dbb4af264d87a2aef2e4192b9b4eddb709f`.
+- Production Pages deployment: `f6068db0-208b-42ed-ae34-d494e75abddf`.
+- API version: `aff909eb-db66-4bc6-8063-7daed12ee63f`, serving 100%.
+- Production: https://spill-it-4rw.pages.dev.
+- Lint, 49 unit tests, Cloudflare build and bundle passed. All 91 unique end-to-end cases have passing results across 17 regression specs and the final rebuilt-projector rerun. No tests were skipped or classified flaky.
+- The first 4K motion gate failed at approximately 66.7 ms p95. A compositing hint alone did not resolve it. Bounding the animated watermark in quiet mode corrected the cost without stopping rotation. The final normal-motion profile recorded 119 frames in 2000 ms, 16.8 ms p95, no long tasks and zero text movement; reduced motion recorded 121 frames in 2016.6 ms, 16.8 ms p95 and zero movement. These are headless Chromium scheduling measurements.
+- Mobile, 720p, 1080p, 1440p and 4K layouts passed, including maximum-length announcements with reachable scrolling. Ten tested idle/prompt/reflection/announcement/cleared views had zero automated Axe violations. Twenty-eight synthetic screenshots are retained.
+- Fresh backup restored successfully: integrity OK, zero foreign-key violations. No migration was necessary. All 25 existing tables and every previous row/column value are unchanged; post-release SQL export is byte-identical to the pre-deploy backup.
+- Production retains five discussions, 24 contributions, three standalone stages and 122 activity entries. It had zero dedicated voting events and votes before and after release. No existing stage was deleted or reconfigured.
+- Read-only live checks passed for authorization, new controls, active atmosphere, chapter visibility, deletion confirmation/cancellation, projector framing, unavailable links, fullscreen, reduced motion, original session controls, static assets and private-build denial. Zero attempted writes and zero browser page errors.

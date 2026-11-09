@@ -1,5 +1,5 @@
 {
-  "status": "tested; production deployment pending",
+  "status": "deployed and verified",
   "migration": "None required; no production rows rewritten.",
   "lint": "passed",
   "unit": {
@@ -25,7 +25,7 @@
     "2560x1440",
     "3840x2160"
   ],
-  "screenshots": 26,
+  "screenshots": 28,
   "build": {
     "cf-build": "passed",
     "cf-bundle": "passed"
@@ -35,5 +35,11 @@
     "Archive/restore is optional and was not added; deletion is permanent and explicitly confirmed.",
     "No physical-projector/GPU certification or complete manual assistive-technology assessment.",
     "No production deletion or configuration mutation is performed during release verification."
-  ]
+  ],
+  "runtimeCommit": "135b1dbb4af264d87a2aef2e4192b9b4eddb709f",
+  "productionURL": "https://spill-it-4rw.pages.dev",
+  "pagesDeployment": "f6068db0-208b-42ed-ae34-d494e75abddf",
+  "apiVersion": "aff909eb-db66-4bc6-8063-7daed12ee63f",
+  "apiDeployment": "2e77fd29-f934-4456-8f2c-2cb0780b2e70",
+  "productionVerification": "Read-only checks passed; zero attempted writes, zero page errors, unchanged data in all 25 existing tables."
 }

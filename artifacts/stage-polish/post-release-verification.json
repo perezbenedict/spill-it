@@ -1,0 +1,18 @@
+{
+  "integrity": "ok",
+  "foreignKeyViolations": 0,
+  "allExistingTablesCompared": 25,
+  "changedTables": [],
+  "allExistingRowsAndColumnsPreserved": true,
+  "counts": {
+    "discussion_sessions": 5,
+    "submissions": 24,
+    "voting_events": 0,
+    "voting_votes": 0,
+    "standalone_stages": 3,
+    "admin_activity": 122
+  },
+  "exportByteIdenticalToPredeploy": true,
+  "sha256": "ff2ebac723db72f34a44c9e34cad4e509152e62b7084f5255ad4e46b5abf9130",
+  "createdAt": "2026-11-09T00:40:51.701067+00:00"
+}

@@ -1,0 +1,43 @@
+{
+  "success": true,
+  "readOnly": true,
+  "checks": [
+    {
+      "anonymousAdminAccess": "login redirect"
+    },
+    {
+      "sharedAtmosphereAndChapterControls": true,
+      "activeAtmosphereAccurate": true,
+      "noBackgroundSuccessNotifications": true
+    },
+    {
+      "stageDeletionConfirmation": true,
+      "projectorWarning": true,
+      "passwordRequired": true,
+      "deletionNotPerformed": true
+    },
+    {
+      "premiumProjectorFrame": true,
+      "chapterVisibilityCorrect": true,
+      "reducedMotion": true,
+      "fullscreen": true
+    },
+    {
+      "unavailableProjectorState": true
+    },
+    {
+      "originalSessionWorkflow": true,
+      "discussionPresentationRevisionUnchanged": true
+    },
+    {
+      "stageRevisionAndSavedContentUnchanged": true
+    },
+    {
+      "staticAssets": 6,
+      "privateArtifacts": 404
+    }
+  ],
+  "attemptedWrites": 0,
+  "pageErrors": 0,
+  "note": "Deletion and live mutation feedback were exercised with disposable isolated data. Production checks opened and cancelled the confirmation only; no stages were deleted or reconfigured."
+}
