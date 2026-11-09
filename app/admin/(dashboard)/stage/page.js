@@ -11,13 +11,13 @@ export const dynamic = 'force-dynamic';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export default async function StagePage({ searchParams }) {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const query = await searchParams;
   const mode = Array.isArray(query?.mode) ? query.mode[0] : query?.mode;
   if (mode === 'standalone') {
     const stageId = Array.isArray(query?.stage) ? query.stage[0] : query?.stage;
     if (query?.stage !== undefined && (!stageId || !UUID.test(stageId))) notFound();
-    return <><StageModeChoice mode="standalone"/><StandaloneStageCentre key={stageId || 'new-stage'} stageId={stageId || null}/></>;
+    return <><StageModeChoice mode="standalone"/><StandaloneStageCentre stageId={stageId || null} canDelete={admin.role === 'admin'}/></>;
   }
   const token = await getAdminToken();
   const explicitSelection = query?.session !== undefined;

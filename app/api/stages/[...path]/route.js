@@ -5,7 +5,7 @@ import { isSameOriginRequest } from '@/lib/request-origin';
 import { isValidPublicCode } from '@/lib/session-code';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const actions = new Set(['configureStage', 'clearStage']);
+const actions = new Set(['configureStage', 'clearStage', 'delete']);
 async function readBody(request) {
   if (Number(request.headers.get('content-length')) > 100000) return null;
   const reader = request.body?.getReader();

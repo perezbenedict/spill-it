@@ -1,19 +1,65 @@
-.standalone-projector { position: relative; display: flex; flex-direction: column; width: 100%; height: 100vh; height: 100dvh; overflow: hidden; color: #f6f0e7; }
-.standalone-projector .standalone-projector-header { position: relative; z-index: 10; flex-shrink: 0; display: flex; align-items: center; flex-wrap: wrap; gap: 1rem 2rem; padding: clamp(.8rem, 2vh, 1.5rem) clamp(1rem, 3vw, 3rem); }
-.standalone-projector-brand { display: flex; align-items: center; gap: .7rem; color: #dacdf2; font-size: clamp(1rem, 1.4vw, 1.4rem); font-weight: 600; }
-.standalone-projector-emblem { width: 2rem; height: 2rem; flex-shrink: 0; }
-.standalone-projector-title { margin: 0; min-width: 0; max-width: 60ch; font-size: clamp(.9rem, 1.6vw, 1.6rem); color: #c5b6dc; overflow-wrap: anywhere; }
-.standalone-projector-content { position: relative; z-index: 10; flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; overflow-y: auto; overflow-x: hidden; padding: clamp(1.25rem, 4vh, 3rem) clamp(1rem, 4vw, 4rem); overscroll-behavior: contain; scrollbar-color: #6d4a91 transparent; }
+.standalone-projector { --projector-gutter: clamp(1.25rem, 4.3vw, 10rem); position: relative; display: flex; flex-direction: column; width: 100%; height: 100vh; height: 100dvh; overflow: hidden; color: #f6f0e7; }
+.standalone-projector::after { content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none; background: linear-gradient(90deg, #09051155, transparent 18%, transparent 82%, #09051155); }
+.standalone-projector .stage-lightfield { opacity: .5; }
+.standalone-projector .stage-emblem-position { left: 78%; top: 53%; width: min(96vh, 78vw); }
+.standalone-projector .stage-emblem-watermark { opacity: .065; animation-duration: 120s; will-change: transform; backface-visibility: hidden; }
+.standalone-projector .stage-orbit-outer { left: 63%; top: 56%; width: 102%; height: 88%; border-color: rgba(var(--stage-light), .09); animation-duration: 70s; }
+.standalone-projector .stage-orbit-inner { left: 62%; width: 93%; height: 73%; border-color: rgba(var(--stage-light), .055); }
+.standalone-projector .stage-wing { opacity: .3; }
+.standalone-projector .stage-contour { inset: 17% -26%; opacity: .6; }
+.standalone-projector .stage-floor-light { opacity: .4; }
+.standalone-projector-frame { position: absolute; z-index: 2; inset: clamp(.65rem, 1.4vw, 3rem); border-inline: 1px solid rgba(var(--stage-light), .11); pointer-events: none; }
+.standalone-projector-frame::before, .standalone-projector-frame::after { content: ''; position: absolute; width: clamp(1.5rem, 5vw, 8rem); height: 1px; background: rgba(var(--stage-light), .26); }
+.standalone-projector-frame::before { top: 0; left: 0; }
+.standalone-projector-frame::after { bottom: 0; right: 0; }
+.standalone-projector-frame span { position: absolute; width: 1px; height: 22%; background: linear-gradient(transparent, #c4b5fd99, transparent); opacity: .45; animation: standalone-edge-travel 30s ease-in-out infinite; }
+.standalone-projector-frame span:first-child { left: -1px; top: 15%; }
+.standalone-projector-frame span:last-child { right: -1px; bottom: 15%; animation-delay: -15s; }
+.standalone-projector .standalone-projector-header { position: relative; z-index: 10; flex-shrink: 0; display: flex; align-items: center; flex-wrap: wrap; gap: 1rem 2rem; margin-inline: var(--projector-gutter); padding: clamp(1.25rem, 3.5vh, 4rem) 0 clamp(1rem, 2.5vh, 3rem); border-bottom: 1px solid rgba(var(--stage-light), .13); background: none; }
+.standalone-projector > header > div:first-child::after { display: none; }
+.standalone-projector-brand { display: flex; align-items: center; gap: .85rem; color: #eee3ff; }
+.standalone-projector-emblem { width: clamp(2.4rem, 3.3vw, 5rem); height: auto; aspect-ratio: 1; flex-shrink: 0; }
+.standalone-projector-brand-name { font-family: var(--font-instrument-serif), serif; font-size: clamp(1.5rem, 2.2vw, 3.7rem); line-height: 1; }
+.standalone-projector-brand-name small { display: block; margin-top: .65rem; font-family: var(--font-sans), sans-serif; font-size: clamp(.6rem, .64vw, 1.15rem); letter-spacing: .15em; color: #c5b6dc; }
+.standalone-projector-title { margin: 0; min-width: 0; max-width: 34ch; font-size: clamp(.9rem, 1.25vw, 2rem); line-height: 1.4; color: #dacdf2; overflow-wrap: anywhere; }
+.standalone-projector-mode { margin-left: auto; font-size: clamp(.6rem, .7vw, 1.2rem); letter-spacing: .2em; text-transform: uppercase; color: #c5b6dc; }
+.standalone-projector-content { position: relative; z-index: 10; flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; overflow-y: auto; overflow-x: hidden; padding: clamp(1.5rem, 4vh, 5rem) var(--projector-gutter); overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: #6d4a91 transparent; }
 .standalone-projector-content > * { flex-shrink: 0; min-width: 0; max-width: 100%; }
-.standalone-projector-idle { margin: auto; text-align: center; padding-block: 2rem; overflow-wrap: anywhere; }
-.standalone-projector-idle h1 { font-family: var(--font-display), serif; font-size: clamp(2rem, 4.5vw, 5rem); line-height: 1.2; max-width: 24ch; margin: 1rem auto; }
-.standalone-projector-idle > p:not(.stage-eyebrow) { color: #c5b6dc; }
-.standalone-projector-voting { width: 100%; margin-block: auto; }
-.standalone-projector-footer { position: relative; z-index: 20; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .5rem 1rem; padding: .65rem clamp(1rem, 3vw, 3rem) max(.65rem, env(safe-area-inset-bottom)); font-size: .75rem; color: #c5b6dc; }
+.standalone-projector-scene { display: flex; flex-direction: column; align-items: center; width: 100%; min-width: 0; margin-block: auto; }
+.standalone-projector-scene > * { max-width: 100%; }
+.standalone-projector[data-stage-mode="cleared"] .stage-atmosphere { opacity: .5; }
+.standalone-projector-chapter { display: flex; align-items: baseline; justify-content: center; gap: .8rem 1.2rem; flex-wrap: wrap; width: 100%; padding-bottom: clamp(1.5rem, 3vh, 3rem); text-align: center; }
+.standalone-projector-chapter span { font-size: clamp(.6rem, .7vw, 1rem); text-transform: uppercase; letter-spacing: .2em; color: #c4b5fd; }
+.standalone-projector-chapter p { margin: 0; max-width: 60ch; font-size: clamp(1rem, 1.5vw, 2.6rem); font-family: var(--font-instrument-serif), serif; color: #e1d6ee; overflow-wrap: anywhere; }
+.standalone-projector-idle { margin: auto; width: 100%; text-align: center; padding-block: clamp(2rem, 5vh, 5rem); overflow-wrap: anywhere; }
+.standalone-projector-idle h1 { font-family: var(--font-instrument-serif), serif; font-size: clamp(2.5rem, min(6.7vw, 11vh), 12rem); font-weight: 400; letter-spacing: -.025em; line-height: 1.08; max-width: 20ch; margin: clamp(1.5rem, 3vh, 3rem) auto; text-wrap: balance; }
+.standalone-projector-idle > p:not(.stage-eyebrow) { color: #c5b6dc; font-size: clamp(1rem, 1.4vw, 2rem); }
+.standalone-projector-idle-rule { display: block; width: clamp(3rem, 6vw, 8rem); height: 1px; margin: clamp(2rem, 4vh, 4rem) auto 0; background: linear-gradient(90deg, transparent, #c4b5fd88, transparent); }
+.standalone-projector .stage-message { padding-block: clamp(1.25rem, 4vh, 4rem); }
+.standalone-projector .stage-message > div:first-child { width: clamp(3rem, 5vw, 6rem); margin-bottom: clamp(1.5rem, 3vh, 3rem); }
+.standalone-projector .stage-prompt { max-width: 28ch; font-size: clamp(2rem, min(5.2vw, 8.5vh), 10rem); font-weight: 400; line-height: 1.17; letter-spacing: -.018em; }
+.standalone-projector[data-stage-mode="prompt"] .stage-message { border-left: 1px solid rgba(var(--stage-light), .2); padding-inline: clamp(1rem, 2.5vw, 4rem); }
+.standalone-projector[data-stage-mode="reflection"] .stage-prompt { max-width: 30ch; font-style: italic; font-size: clamp(2rem, min(4.6vw, 7.5vh), 8rem); line-height: 1.28; color: #e5dcec; }
+.standalone-projector[data-stage-mode="reflection"] .stage-atmosphere { opacity: .45; }
+.standalone-projector[data-stage-mode="announcement"] .stage-emblem-watermark { opacity: .035; }
+.standalone-projector .stage-announcement { max-width: 110rem; }
+.standalone-projector .stage-announcement-message { letter-spacing: -.018em; }
+.standalone-projector .stage-announcement[data-announcement-style="notice"] { border-block-color: rgba(var(--stage-light), .25); }
+.standalone-projector-voting { width: 100%; margin-block: auto; padding-block: 1rem; }
+.standalone-projector .voting-stage-embedded { max-width: 110rem; margin-inline: auto; }
+.standalone-projector[data-stage-mode="voting"] .stage-emblem-watermark { opacity: .025; }
+.standalone-projector[data-stage-mode="unavailable"] .stage-atmosphere { opacity: .25; }
+.standalone-projector-footer { position: relative; z-index: 20; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .5rem 1rem; margin-inline: var(--projector-gutter); border-top: 1px solid rgba(var(--stage-light), .1); padding: clamp(.65rem, 1.7vh, 2rem) 0 max(.65rem, env(safe-area-inset-bottom)); font-size: clamp(.7rem, .7vw, 1rem); color: #c5b6dc; }
 .standalone-projector-connection { display: flex; gap: .5rem; flex-wrap: wrap; }
 .standalone-projector-controls { display: flex; align-items: center; gap: .5rem; margin-left: auto; }
-.standalone-projector-controls button, .standalone-projector-controls a { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: .5rem .8rem; border: 1px solid #bba6ed30; border-radius: 999px; background: #140b2580; color: #dacdf2; }
+.standalone-projector-controls button, .standalone-projector-controls a { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: .5rem .8rem; border: 1px solid #bba6ed30; border-radius: 999px; background: #140b2540; color: #dacdf2; }
 .standalone-projector-controls button:hover, .standalone-projector-controls a:hover { background: #bba6ed18; }
 .standalone-projector-controls button:focus-visible, .standalone-projector-controls a:focus-visible, .standalone-projector-content:focus-visible { outline: 2px solid #c4b5fd; outline-offset: 3px; }
 .standalone-projector-fullscreen-message { width: 100%; margin: 0; text-align: right; }
-@media (max-width: 480px) { .standalone-projector-controls { gap: .3rem; } .standalone-projector-controls button span { display: none; } .standalone-projector-title { width: 100%; } }
+@keyframes standalone-edge-travel { 0%, 100% { transform: translateY(-18%); opacity: .25; } 50% { transform: translateY(130%); opacity: .65; } }
+.standalone-projector[data-ambient-quality="quiet"] .standalone-projector-frame span { animation: none; }
+@media (max-width: 640px) { .standalone-projector-header { gap: .85rem; } .standalone-projector-brand-name small { letter-spacing: .08em; } .standalone-projector-mode { max-width: 12ch; text-align: right; line-height: 1.7; } .standalone-projector-title { order: 3; width: 100%; max-width: none; } .standalone-projector .stage-emblem-position { width: 120vw; left: 77%; } .standalone-projector-chapter { gap: .5rem; flex-direction: column; align-items: center; } .standalone-projector .stage-prompt { font-size: clamp(1.75rem, 7vw, 3rem); } }
+@media (max-width: 480px) { .standalone-projector-controls { gap: .3rem; } .standalone-projector-controls button span { display: none; } .standalone-projector-idle h1 { font-size: clamp(2.25rem, 9vw, 3.5rem); } }
+@media (max-height: 540px) and (min-width: 641px) { .standalone-projector-brand-name small { display: none; } .standalone-projector .standalone-projector-header { padding-block: .65rem; } .standalone-projector-content { padding-block: 1rem; } }
+@media (prefers-reduced-motion: no-preference) { .standalone-projector[data-ambient-quality="quiet"] .stage-emblem-position { max-width: 1040px; } }
+@media (prefers-reduced-motion: reduce) { .standalone-projector-frame span { animation: none; } .standalone-projector .stage-emblem-watermark { will-change: auto; } .standalone-projector .stage-atmosphere { transition: none; } }

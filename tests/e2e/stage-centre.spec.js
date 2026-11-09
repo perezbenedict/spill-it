@@ -122,7 +122,7 @@ test('a stale centre action cannot overwrite a moderator using the original work
   await shared(page).getByLabel('Reflection message', { exact: true }).fill('Keep this unsaved reflection.');
   await mutate('configureStage', { stage: { ...baseline.stage, overlay: { kind: 'prompt', text: 'A moderator projected this.', endsAt: null } } });
   await shared(page).getByRole('button', { name: 'Begin reflection', exact: true }).click();
-  await expect(shared(page).getByRole('alert')).toContainText('This discussion changed.');
+  await expect(shared(page).getByRole('alert').filter({ hasText: 'This discussion changed.' })).toContainText('This discussion changed.');
   await expect(shared(page).getByLabel('Reflection message', { exact: true })).toHaveValue('Keep this unsaved reflection.');
   expect((await state()).stage.overlay.text).toBe('A moderator projected this.');
   await page.unroute(`**/api/platform/admin/${E2E.adminSessionId}`);

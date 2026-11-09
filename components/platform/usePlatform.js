@@ -9,6 +9,7 @@ export default function usePlatform(path) {
   const live = useRef(true);
   const locked = useRef(false);
   const generation = useRef(0);
+  const mutationFailure = useRef('');
   const refresh = useCallback(async () => {
     const version = generation.current;
     try {
@@ -29,7 +30,7 @@ export default function usePlatform(path) {
   }, [refresh]);
   const mutate = async (payload) => {
     if (locked.current) return false;
-    locked.current = true; generation.current += 1; setBusy(true); setError('');
+    locked.current = true; generation.current += 1; mutationFailure.current = ''; setBusy(true); setError('');
     try {
       const response = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ expectedRevision: data?.revision, ...payload }), signal: AbortSignal.timeout(15000) });
       const body = await response.json();
@@ -39,8 +40,8 @@ export default function usePlatform(path) {
       }
       await refresh();
       return true;
-    } catch (failure) { if (live.current) setError(failure.message || 'Connection interrupted. Confirm the current state before retrying.'); return false; }
+    } catch (failure) { mutationFailure.current = failure.message || 'Connection interrupted. Confirm the current state before retrying.'; if (live.current) setError(mutationFailure.current); return false; }
     finally { locked.current = false; if (live.current) setBusy(false); }
   };
-  return { data, error, busy, updatedAt, refresh, mutate };
+  return { data, error, busy, updatedAt, refresh, mutate, mutationFailure };
 }

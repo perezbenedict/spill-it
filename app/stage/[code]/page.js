@@ -25,11 +25,12 @@ export default async function StandaloneStagePage({ params }) {
       const stage = data?.item;
       if (stage?.code === code && Number.isSafeInteger(stage.revision) && stage.stage) {
         item = { code, title: stage.title || '', revision: stage.revision,
-          stage: { atmosphere: stage.stage.atmosphere, overlay: stage.stage.overlay || null } };
+          stage: { atmosphere: stage.stage.atmosphere, overlay: stage.stage.overlay || null, cleared: stage.stage.cleared === true,
+            activeChapter: stage.stage.activeChapter?.id && typeof stage.stage.activeChapter.title === 'string'
+              ? { id: stage.stage.activeChapter.id, title: stage.stage.activeChapter.title } : null } };
       }
     }
   } catch { /* The public screen can reconnect through its proxy. */ }
-  if (missing) notFound();
   try {
     const token = await getAdminToken();
     if (token) {
@@ -37,5 +38,5 @@ export default async function StandaloneStagePage({ params }) {
       isAdmin = Boolean(result.ok && result.body?.user);
     }
   } catch { /* A public projector does not require an admin session. */ }
-  return <StandaloneStageDisplay code={code} initialItem={item} isAdmin={isAdmin} />;
+  return <StandaloneStageDisplay code={code} initialItem={item} initialMissing={missing} isAdmin={isAdmin} />;
 }

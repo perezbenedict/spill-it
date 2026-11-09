@@ -154,15 +154,18 @@ export async function handlePlatform(request, env, admin, sessionId, verifyPassw
   const statements = [env.DB.prepare('UPDATE platform_state SET revision=revision+1,mutation_id=? WHERE session_id=? AND revision=? RETURNING revision').bind(mutationId, sessionId, body.expectedRevision)];
   let target = body.submissionId || body.pollId || null;
   if (body.action === 'configureStage') {
-    const candidate = record(body.stage) && body.stage.announcements === undefined ? { ...body.stage, announcements: readStage(state).announcements } : body.stage;
+    const previous = readStage(state);
+    const stored = storedStage(state);
+    let candidate = record(body.stage) && body.stage.announcements === undefined ? { ...body.stage, announcements: previous.announcements } : body.stage;
+    if (record(candidate) && candidate.overlay?.endsAt && Date.parse(candidate.overlay.endsAt) <= Date.now() && JSON.stringify(candidate.overlay) === JSON.stringify(stored.overlay)) {
+      candidate = { ...candidate, overlay: previous.overlay };
+    }
     const stage = validateStage(candidate);
     if (!stage) return reply({ error: 'Use a valid atmosphere, up to 20 chapters, prompts and announcements, and a supported stage message. Timed messages must end within 24 hours.' }, 400);
     if (stage.overlay?.kind === 'voting') {
       const event = await env.DB.prepare("SELECT id FROM voting_events WHERE public_code=? AND status IN ('open','closed')").bind(stage.overlay.eventCode).first();
       if (!event) return reply({ error: 'Open a valid voting event before projecting it.' }, 400);
     }
-    const previous = readStage(state);
-    const stored = storedStage(state);
     const returnOverlay = overrideOverlay(stage.overlay)
       ? previous.overlay?.kind === stage.overlay.kind ? resumableOverlay(stored.returnOverlay) : resumableOverlay(previous.overlay)
       : null;

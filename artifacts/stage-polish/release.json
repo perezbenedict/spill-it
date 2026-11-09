@@ -1,0 +1,39 @@
+{
+  "status": "tested; production deployment pending",
+  "migration": "None required; no production rows rewritten.",
+  "lint": "passed",
+  "unit": {
+    "files": 10,
+    "passed": 49
+  },
+  "e2e": {
+    "uniqueLatestPassingCases": 91,
+    "specs": 17,
+    "skipped": 0,
+    "flaky": 0,
+    "initialPerformanceGateFailedAndWasCorrected": true,
+    "finalProjectorRerunCases": 8
+  },
+  "accessibility": {
+    "automatedAxeViolations": 0,
+    "scope": "Idle, prompt, reflection, maximum-length announcement and cleared states at 390x844 and 1920x1080; WCAG 2/2.1/2.2 AA rule tags."
+  },
+  "layouts": [
+    "390x844",
+    "1280x720",
+    "1920x1080",
+    "2560x1440",
+    "3840x2160"
+  ],
+  "screenshots": 26,
+  "build": {
+    "cf-build": "passed",
+    "cf-bundle": "passed"
+  },
+  "performance": "See performance.json; headless Chromium scheduling only.",
+  "limitations": [
+    "Archive/restore is optional and was not added; deletion is permanent and explicitly confirmed.",
+    "No physical-projector/GPU certification or complete manual assistive-technology assessment.",
+    "No production deletion or configuration mutation is performed during release verification."
+  ]
+}

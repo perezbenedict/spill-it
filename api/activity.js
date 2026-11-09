@@ -70,7 +70,7 @@ function condition(scope, cutoff) {
   return { sql: clauses.join(' AND '), args };
 }
 const labels = {
-  standalone_create: 'Standalone stage created', standalone_configure: 'Standalone presentation updated', standalone_clear: 'Standalone presentation cleared',
+  standalone_delete: 'Standalone stage permanently deleted', standalone_create: 'Standalone stage created', standalone_configure: 'Standalone presentation updated', standalone_clear: 'Standalone presentation cleared',
   moderation: 'Contribution moderation updated', status_draft: 'Discussion returned to draft', status_live: 'Discussion opened', status_paused: 'Discussion paused', status_closed: 'Discussion closed',
   enqueue: 'Contribution added to projection queue', remove: 'Contribution removed from projection queue', reorder: 'Projection queue reordered', clearQueue: 'Projection queue cleared', advance: 'Next contribution projected', project: 'Contribution projection changed', clearProjection: 'Discussion stage cleared',
   createPoll: 'Discussion poll created', openPoll: 'Discussion poll opened', closePoll: 'Discussion poll closed', projectPoll: 'Discussion poll results projected', clearPoll: 'Discussion poll results hidden', deletePoll: 'Discussion poll permanently deleted', setReactions: 'Audience reaction setting changed', configureStage: 'Stage presentation settings updated',

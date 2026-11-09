@@ -63,19 +63,22 @@ async function readStage(env, row, now = Date.now()) {
   const overlay = await eligibleOverlay(env, stored.overlay, now);
   const resume = await eligibleOverlay(env, stored.returnOverlay, now);
   const stage = validateStage({ ...emptyStage(), ...stored, overlay: overlay || resume }, now) || emptyStage();
-  return { ...stage, resumeOverlay: overlay && interrupts(overlay) ? resume : null };
+  return { ...stage, cleared: stored.presentationCleared === true && !stage.overlay, resumeOverlay: overlay && interrupts(overlay) ? resume : null };
 }
 
 async function stageItem(env, row, publicRead = false) {
   const stage = await readStage(env, row);
-  if (publicRead) return { title: row.title, code: row.public_code, revision: row.revision, stage: { atmosphere: stage.atmosphere, overlay: stage.overlay } };
+  if (publicRead) {
+    const selected = stage.chapters.find(chapter => chapter.id === stage.activeChapterId);
+    return { title: row.title, code: row.public_code, revision: row.revision, stage: { atmosphere: stage.atmosphere, activeChapter: selected ? { id: selected.id, title: selected.title } : null, overlay: stage.overlay, cleared: stage.cleared } };
+  }
   return { id: row.id, code: row.public_code, title: row.title, revision: row.revision, stage, createdAt: row.created_at, updatedAt: row.updated_at };
 }
 
 // Voting settings, question/QR publication and results stay owned by /admin/voting.
 // Configure that existing event there, then attach its open/closed public code as
 // { kind: 'voting', eventCode, endsAt: null }. Attachment never changes the event.
-export async function handleStandaloneStages(request, env, admin, identifier, publicRead = false) {
+export async function handleStandaloneStages(request, env, admin, identifier, publicRead = false, verifyPassword) {
   if (publicRead) {
     if (request.method !== 'GET') return fail('Method not allowed.', 405);
     if (!isCode(identifier)) return fail('Invalid stage code.');
@@ -86,8 +89,25 @@ export async function handleStandaloneStages(request, env, admin, identifier, pu
   if (!['GET', 'POST'].includes(request.method)) return fail('Method not allowed.', 405);
   if (identifier !== undefined && identifier !== null && !isUuid(identifier)) return fail('Invalid stage ID.');
   if (!identifier && request.method === 'GET') {
-    const rows = (await env.DB.prepare('SELECT * FROM standalone_stages ORDER BY updated_at DESC,id DESC LIMIT 50').all()).results || [];
-    return reply({ items: await Promise.all(rows.map(row => stageItem(env, row))) });
+    const params = new URL(request.url).searchParams;
+    const limit = Number(params.get('limit') || 50);
+    if (!Number.isInteger(limit) || limit < 1 || limit > 50 || [...params.keys()].some(key => !['limit', 'cursor'].includes(key))) return fail('Use a stage page size from 1 to 50.');
+    let cursor = null;
+    if (params.has('cursor')) {
+      try {
+        const value = params.get('cursor');
+        if (value.length > 500 || !/^[A-Za-z0-9_-]+$/.test(value)) throw Error();
+        cursor = JSON.parse(atob(value.replaceAll('-', '+').replaceAll('_', '/')));
+        if (!isUuid(cursor.id) || typeof cursor.at !== 'string' || cursor.at.length > 40 || !Number.isFinite(Date.parse(cursor.at))) throw Error();
+      } catch { return fail('Refresh the saved-stage list before loading another page.'); }
+    }
+    const query = cursor ? env.DB.prepare('SELECT * FROM standalone_stages WHERE updated_at<? OR (updated_at=? AND id<?) ORDER BY updated_at DESC,id DESC LIMIT ?').bind(cursor.at, cursor.at, cursor.id, limit + 1)
+      : env.DB.prepare('SELECT * FROM standalone_stages ORDER BY updated_at DESC,id DESC LIMIT ?').bind(limit + 1);
+    const rows = (await query.all()).results || [];
+    const page = rows.slice(0, limit);
+    const last = page.at(-1);
+    const nextCursor = rows.length > limit && last ? btoa(JSON.stringify({ at: last.updated_at, id: last.id })).replaceAll('+', '-').replaceAll('/', '_').replace(/=+$/, '') : null;
+    return reply({ items: await Promise.all(page.map(row => stageItem(env, row))), nextCursor });
   }
   if (identifier && request.method === 'GET') {
     const row = await env.DB.prepare('SELECT * FROM standalone_stages WHERE id=?').bind(identifier).first();
@@ -116,10 +136,27 @@ export async function handleStandaloneStages(request, env, admin, identifier, pu
     return fail('Could not allocate a stage code. Try again.', 503);
   }
   if (!Number.isInteger(body.expectedRevision) || body.expectedRevision < 0) return reply({ error: 'Refresh before making this change.', code: 'revision_required' }, 400);
-  if (!['configureStage', 'clearStage'].includes(body.action)) return fail('Unknown action.');
+  if (!['configureStage', 'clearStage', 'delete'].includes(body.action)) return fail('Unknown action.');
   const row = await env.DB.prepare('SELECT * FROM standalone_stages WHERE id=?').bind(identifier).first();
   if (!row) return fail('Stage not found.', 404);
   if (row.revision !== body.expectedRevision) return conflict();
+  if (body.action === 'delete') {
+    if (admin.user.role !== 'admin') return fail('Administrator access is required to delete a stage.', 403);
+    if (body.confirmed !== true) return fail('Confirm permanent stage deletion.');
+    if (typeof verifyPassword !== 'function') return fail('Password verification is unavailable. Try again later.', 503);
+    const verified = await verifyPassword(request, env, admin, body.password);
+    if (!verified?.ok) return verified?.response || fail('Password verification could not be confirmed.', 403);
+    const timestamp = new Date().toISOString();
+    try {
+      const results = await env.DB.batch([
+        env.DB.prepare('DELETE FROM standalone_stages WHERE id=? AND revision=? RETURNING id').bind(identifier, body.expectedRevision),
+        // changes() belongs to the preceding guarded delete in this transaction.
+        env.DB.prepare("INSERT INTO admin_activity(id,session_id,actor_id,action,target_id,created_at) SELECT ?,?,?,'standalone_delete',?,? WHERE changes()=1").bind(crypto.randomUUID(), identifier, admin.user.id, identifier, timestamp),
+      ]);
+      if (!results[0].results?.length) return conflict();
+      return reply({ ok: true });
+    } catch { return fail('Could not delete this stage. Refresh and try again.', 409); }
+  }
   const now = Date.now();
   const previous = await readStage(env, row, now);
   let stage;
@@ -142,9 +179,11 @@ export async function handleStandaloneStages(request, env, admin, identifier, pu
   }
   const timestamp = new Date(now).toISOString();
   const mutationId = crypto.randomUUID();
+  const presentationCleared = body.action === 'clearStage' || (!stage.overlay && (previous.cleared || Boolean(previous.overlay)));
+  delete stage.cleared;
   try {
     const results = await env.DB.batch([
-      env.DB.prepare('UPDATE standalone_stages SET stage_config=?,title=?,revision=revision+1,mutation_id=?,updated_at=? WHERE id=? AND revision=? RETURNING revision').bind(JSON.stringify({ ...stage, returnOverlay }), body.title === undefined ? row.title : body.title.trim(), mutationId, timestamp, identifier, body.expectedRevision),
+      env.DB.prepare('UPDATE standalone_stages SET stage_config=?,title=?,revision=revision+1,mutation_id=?,updated_at=? WHERE id=? AND revision=? RETURNING revision').bind(JSON.stringify({ ...stage, returnOverlay, presentationCleared }), body.title === undefined ? row.title : body.title.trim(), mutationId, timestamp, identifier, body.expectedRevision),
       env.DB.prepare('INSERT INTO admin_activity(id,session_id,actor_id,action,target_id,created_at) SELECT ?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM standalone_stages WHERE id=? AND mutation_id=?)').bind(crypto.randomUUID(), identifier, admin.user.id, body.action === 'clearStage' ? 'standalone_clear' : 'standalone_configure', identifier, timestamp, identifier, mutationId),
     ]);
     if (!results[0].results?.length) return conflict();

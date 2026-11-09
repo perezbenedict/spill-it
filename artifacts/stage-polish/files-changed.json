@@ -1,0 +1,23 @@
+[
+  "api/activity.js",
+  "api/platform.js",
+  "api/stages.js",
+  "api/worker.js",
+  "app/admin/(dashboard)/stage/page.js",
+  "app/api/stages/[...path]/route.js",
+  "app/stage/[code]/page.js",
+  "components/admin/StandaloneStageCentre.js",
+  "components/platform/AdminPlatform.js",
+  "components/platform/StageControls.js",
+  "components/platform/StageFeedback.js",
+  "components/platform/usePlatform.js",
+  "components/room/StandaloneStageDisplay.js",
+  "components/room/standalone-stage.css",
+  "docs/STAGE_POLISH_RELEASE.md",
+  "tests/e2e/stage-centre.spec.js",
+  "tests/e2e/stage-feedback.spec.js",
+  "tests/e2e/stage-management.spec.js",
+  "tests/e2e/standalone-performance.spec.js",
+  "tests/e2e/standalone-polish.spec.js",
+  "tests/unit/stage-feedback.test.jsx"
+]

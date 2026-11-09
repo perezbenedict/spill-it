@@ -1,0 +1,297 @@
+{
+  "isolation": "loopback Worker, disposable D1, generated local credentials",
+  "output": "See sourceRun on each spec. The final projector-only correction was rerun against the rebuilt bundle.",
+  "tests": [
+    {
+      "spec": "activity.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-09T00:23:38.444Z",
+        "duration": 2631.596,
+        "expected": 5,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "sourceRun": "isolated-2026-11-09T00-23-27-750Z-2cbe9b51"
+    },
+    {
+      "spec": "admin-room-recovery.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-09T00:23:43.217Z",
+        "duration": 17657.162999999997,
+        "expected": 6,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "sourceRun": "isolated-2026-11-09T00-23-27-750Z-2cbe9b51"
+    },
+    {
+      "spec": "fullscreen-projection.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-09T00:24:03.151Z",
+        "duration": 15202.821,
+        "expected": 3,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "sourceRun": "isolated-2026-11-09T00-23-27-750Z-2cbe9b51"
+    },
+    {
+      "spec": "nickname-reservation.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-09T00:24:20.272Z",
+        "duration": 590.342,
+        "expected": 1,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "sourceRun": "isolated-2026-11-09T00-23-27-750Z-2cbe9b51"
+    },
+    {
+      "spec": "platform.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-09T00:24:22.788Z",
+        "duration": 81329.45,
+        "expected": 20,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "sourceRun": "isolated-2026-11-09T00-23-27-750Z-2cbe9b51"
+    },
+    {
+      "spec": "public-journey.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-09T00:25:45.960Z",
+        "duration": 6522.617,
+        "expected": 5,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "sourceRun": "isolated-2026-11-09T00-23-27-750Z-2cbe9b51"
+    },
+    {
+      "spec": "qr-responsive.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-09T00:25:54.292Z",
+        "duration": 8799.805999999999,
+        "expected": 7,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "sourceRun": "isolated-2026-11-09T00-23-27-750Z-2cbe9b51"
+    },
+    {
+      "spec": "stage-centre.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-09T00:26:04.908Z",
+        "duration": 36729.608,
+        "expected": 6,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "sourceRun": "isolated-2026-11-09T00-23-27-750Z-2cbe9b51"
+    },
+    {
+      "spec": "stage-controls.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-09T00:26:43.492Z",
+        "duration": 15844.388,
+        "expected": 1,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "sourceRun": "isolated-2026-11-09T00-23-27-750Z-2cbe9b51"
+    },
+    {
+      "spec": "stage-feedback.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-09T00:27:01.172Z",
+        "duration": 34540.652,
+        "expected": 6,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "sourceRun": "isolated-2026-11-09T00-23-27-750Z-2cbe9b51"
+    },
+    {
+      "spec": "stage-management.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-09T00:27:37.714Z",
+        "duration": 5158.043,
+        "expected": 6,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "sourceRun": "isolated-2026-11-09T00-23-27-750Z-2cbe9b51"
+    },
+    {
+      "spec": "standalone-layout.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-09T00:36:09.652Z",
+        "duration": 17420.185999999998,
+        "expected": 3,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "sourceRun": "isolated-2026-11-09T00-36-01-095Z-abc784dd"
+    },
+    {
+      "spec": "standalone-performance.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-09T00:36:29.235Z",
+        "duration": 12650.643,
+        "expected": 2,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "sourceRun": "isolated-2026-11-09T00-36-01-095Z-abc784dd"
+    },
+    {
+      "spec": "standalone-polish.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-09T00:36:43.524Z",
+        "duration": 41353.248,
+        "expected": 3,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "sourceRun": "isolated-2026-11-09T00-36-01-095Z-abc784dd"
+    },
+    {
+      "spec": "standalone-stage.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-09T00:29:06.681Z",
+        "duration": 40126.365,
+        "expected": 5,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "sourceRun": "isolated-2026-11-09T00-23-27-750Z-2cbe9b51"
+    },
+    {
+      "spec": "voting-rounds.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-09T00:29:48.600Z",
+        "duration": 9195.126,
+        "expected": 6,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "sourceRun": "isolated-2026-11-09T00-23-27-750Z-2cbe9b51"
+    },
+    {
+      "spec": "voting3.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-09T00:29:59.583Z",
+        "duration": 12276.159,
+        "expected": 6,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "sourceRun": "isolated-2026-11-09T00-23-27-750Z-2cbe9b51"
+    }
+  ],
+  "loads": [],
+  "previewAssets": 8,
+  "preview": [
+    {
+      "route": "/",
+      "status": 200
+    },
+    {
+      "route": "/admin/login",
+      "status": 200
+    },
+    {
+      "route": "/join/ABCDEFGH",
+      "status": 200
+    },
+    {
+      "route": "/qr/ABCDEFGH",
+      "status": 200
+    },
+    {
+      "route": "/room/ABCDEFGH",
+      "status": 200
+    }
+  ],
+  "privateArtifacts": [
+    {
+      "route": "/cloudflare/next-env.mjs",
+      "status": 404
+    },
+    {
+      "route": "/server-functions/default/index.mjs",
+      "status": 404
+    },
+    {
+      "route": "/worker.js",
+      "status": 404
+    },
+    {
+      "route": "/_worker.js",
+      "status": 404
+    }
+  ],
+  "previewStandalone": {
+    "created": 201,
+    "publicRead": 200,
+    "projector": 200,
+    "admin": 200,
+    "savedContentPrivate": true
+  },
+  "previewVoting": {
+    "publicRead": 200,
+    "adminRead": 200,
+    "vote": 200,
+    "protectedCookie": true,
+    "duplicateRetry": true,
+    "voterPage": 200,
+    "projectorPage": 200,
+    "reopenPreservedVotes": true,
+    "roundTwoAccepted": 200,
+    "staleRound": 409,
+    "historyPreserved": true,
+    "activity": 200,
+    "stageCentre": 200
+  },
+  "verificationMethod": "Latest executed passing result per spec; not a claim that the earlier 4K performance failure passed.",
+  "initial4KPerformanceFailure": {
+    "p95Ms": 66.7,
+    "gateMs": 65,
+    "resolution": "Quiet-mode watermark compositing budget capped at 1040px while rotation remains active."
+  }
+}

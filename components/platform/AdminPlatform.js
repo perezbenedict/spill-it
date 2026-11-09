@@ -8,18 +8,36 @@ import Card from '@/components/ui/Card';
 import Input from '@/components/ui/Input';
 import Dialog from '@/components/ui/Dialog';
 import StageControls from './StageControls';
+import StageFeedback from './StageFeedback';
 
 export default function AdminPlatform({ sessionId, approved = [], insightsOnly = false }) {
-  const { data, error, busy, updatedAt, refresh, mutate } = usePlatform(`/api/platform/admin/${sessionId}`);
+  const { data, error, busy, updatedAt, refresh, mutate, mutationFailure } = usePlatform(`/api/platform/admin/${sessionId}`);
   const [question, setQuestion] = useState('');
   const [choices, setChoices] = useState(['', '']);
   const [confirmation, setConfirmation] = useState(null);
   const [password, setPassword] = useState('');
   const [notice, setNotice] = useState('');
+  const [actionError, setActionError] = useState('');
+  const [handledError, setHandledError] = useState('');
   const [panel, setPanel] = useState('queue');
   const queue = data?.queue || [];
   const polls = data?.polls || [];
-  const run = async (payload) => { setNotice(''); const ok = await mutate(payload); if (ok) setNotice('Saved and synchronized.'); return ok; };
+  const run = async (payload, sharedControl = false) => {
+    setNotice('');
+    setActionError('');
+    setHandledError('');
+    const ok = await mutate(payload);
+    if (!ok && sharedControl) {
+      const message = mutationFailure.current || 'Review the current state before retrying.';
+      setHandledError(message);
+      throw new Error(message);
+    }
+    if (!sharedControl) {
+      if (ok) setNotice(payload.action === 'configureStage' ? 'Returned to the previous presentation.' : 'Saved and synchronized.');
+      else setActionError(mutationFailure.current || 'The action could not be confirmed. Review the current state before retrying.');
+    }
+    return ok;
+  };
   const reorder = (index, delta) => { const ids = queue.map(row => row.id); [ids[index], ids[index + delta]] = [ids[index + delta], ids[index]]; run({ action: 'reorder', submissionIds: ids }); };
   const createPoll = async (event) => { event.preventDefault(); if (await run({ action: 'createPoll', question, options: choices.map(value => value.trim()) })) { setQuestion(''); setChoices(['', '']); } };
   const confirm = async () => { if (await run({ ...confirmation, ...(confirmation.action === 'deletePoll' ? { password } : {}) })) { setConfirmation(null); setPassword(''); } };
@@ -28,10 +46,10 @@ export default function AdminPlatform({ sessionId, approved = [], insightsOnly =
   return <section className="space-y-5" aria-label="Live event control centre">
     <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs uppercase tracking-[0.18em] text-gold-light">Event control centre</p><h2 className="mt-1 font-display text-2xl">{insightsOnly ? 'Session insights' : 'Shape the conversation'}</h2></div><div className="flex flex-wrap items-center gap-2"><span role="status" className="text-xs text-muted">{error ? 'Reconnecting · state may be stale' : updatedAt ? 'Synchronized' : 'Connecting…'}</span><Button variant="ghost" size="sm" onClick={refresh} disabled={busy}>Refresh</Button>{!insightsOnly && <Link className="text-sm text-gold-light underline underline-offset-4" href={`/admin/sessions/${sessionId}/insights`}>Insights & export</Link>}</div></div>
     {!insightsOnly && <div role="group" aria-label="Event control sections" className="flex flex-wrap gap-2">{[['queue', 'Projection queue'], ['engagement', 'Polls & reactions'], ['insights', 'Insights'], ['activity', 'Activity']].map(([key, label]) => <Button key={key} size="sm" variant={panel === key ? 'primary' : 'secondary'} aria-pressed={panel === key} onClick={() => setPanel(key)}>{label}</Button>)}</div>}
-    {error && <p role="alert" className="rounded-control border border-crimson/50 bg-crimson/10 p-3 text-sm">{error}</p>}
-    {notice && <p role="status" className="text-sm text-gold-light">{notice}</p>}
+    {error && error !== handledError && error !== actionError && <p role="alert" className="rounded-control border border-crimson/50 bg-crimson/10 p-3 text-sm">{error}</p>}
+    <StageFeedback message={notice} error={actionError} onMessageDismiss={() => setNotice('')} onDismiss={() => { setHandledError(actionError); setActionError(''); }}/>
     {!insightsOnly && data && <div className="flex flex-wrap items-center justify-between gap-3 rounded-control border border-gold/15 bg-midnight/30 px-4 py-3"><p role="status" aria-label="Current stage mode" className="text-sm text-muted">On screen · <span className="capitalize text-gold-light">{stageMode}</span></p><div className="flex flex-wrap gap-3">{data.stage?.overlay && <Button size="sm" variant="secondary" disabled={busy} onClick={() => run({ action: 'configureStage', stage: { ...data.stage, overlay: null } })}>Return to previous content</Button>}<Link href="/admin/voting" className="self-center text-sm text-gold-light underline underline-offset-4">Voting control centre</Link></div></div>}
-    {!insightsOnly && data && <details className="rounded-card border border-white/10 p-4"><summary className="cursor-pointer text-gold-light">Stage direction · atmosphere, chapters, prompts & reflection</summary><div className="mt-5"><StageControls stage={data.stage} revision={data.revision} busy={busy} run={run} /></div></details>}
+    {!insightsOnly && data && <details className="rounded-card border border-white/10 p-4"><summary className="cursor-pointer text-gold-light">Stage direction · atmosphere, chapters, prompts & reflection</summary><div className="mt-5"><StageControls stage={data.stage} revision={data.revision} busy={busy} run={payload => run(payload, true)} /></div></details>}
     {!data && !error && <p className="text-sm text-muted">Loading event state…</p>}
     {data && !insightsOnly && <>
       <Card hidden={panel !== 'queue'} className="space-y-4"><div className="flex flex-wrap items-center justify-between gap-3"><h3 className="font-display text-xl">Projection queue <span className="font-body text-sm text-muted">({queue.length})</span></h3><div className="flex flex-wrap gap-2"><Button onClick={() => run({ action: 'advance' })} disabled={busy || !queue.length}>Project next</Button><Button variant="secondary" onClick={() => setConfirmation({ action: 'clearQueue' })} disabled={busy || !queue.length}>Clear queue</Button></div></div><p className="text-sm text-muted">Only an explicit projection action changes the screen. Approval and queue changes never project automatically.</p>

@@ -1670,7 +1670,7 @@ const worker = {
       if (path === '/admin/activity') return await handleActivity(request, env, admin);
       if (path === '/admin/stages') return await handleStandaloneStages(request, env, admin);
       const standaloneAdminMatch = path.match(/^\/admin\/stages\/([^/]+)$/);
-      if (standaloneAdminMatch) return await handleStandaloneStages(request, env, admin, standaloneAdminMatch[1]);
+      if (standaloneAdminMatch) return await handleStandaloneStages(request, env, admin, standaloneAdminMatch[1], false, verifyDestructiveAdminPassword);
 
       const platformMatch = path.match(/^\/admin\/sessions\/([^/]+)\/(platform|export)$/);
       if (platformMatch && isUuid(platformMatch[1])) {
