@@ -332,7 +332,7 @@ export default function SubmissionFeed({
 
     let result = null;
     try {
-      result = await action(id, rows.get(id)?.revision);
+      result = await action(id, before?.revision);
     } catch {
       result = { error: FALLBACK_ERROR };
     }
@@ -370,6 +370,7 @@ export default function SubmissionFeed({
       return next;
     });
     setCurrentId(beforeCurrent);
+    if (result?.refreshRequired) router.refresh();
     if (actionKey !== "delete") setError(result?.error || FALLBACK_ERROR);
     return result;
   }

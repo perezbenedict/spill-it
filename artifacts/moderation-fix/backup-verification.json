@@ -1,0 +1,14 @@
+{
+  "integrity": "ok",
+  "foreignKeyViolations": 0,
+  "sha256": "e2f0a53e53445726cc252cd07c4a6ca6780ae9afb81466d8839d6aa4f210a51b",
+  "counts": {
+    "discussion_sessions": 5,
+    "submissions": 25,
+    "voting_events": 1,
+    "voting_votes": 1,
+    "standalone_stages": 2,
+    "admin_activity": 160
+  },
+  "lastAdminAction": "2026-11-09T10:57:16.688Z"
+}

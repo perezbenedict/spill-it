@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight } from "lucide-react";
@@ -27,21 +27,25 @@ function shortTimestamp(iso) {
 
 // Dashboard review queue: the first pending submissions with one-click
 // decisions. Approving/hiding calls the same server actions as the full feed;
-// rows leave the queue optimistically and router.refresh() re-syncs counts.
+// rows leave only after confirmation, and router.refresh() re-syncs counts.
 export default function PendingQueue({ items, pendingCount, feedHref }) {
   const router = useRouter();
   const [busyId, setBusyId] = useState(null);
+  const inFlight = useRef(false);
   const [error, setError] = useState(null);
   const [handled, setHandled] = useState(() => new Set());
 
-  async function run(id, action) {
-    if (busyId) return;
+  async function run(item, action) {
+    if (inFlight.current) return;
+    inFlight.current = true;
+    const { id, revision } = item;
     setBusyId(id);
     setError(null);
     try {
-      const result = await action(id);
+      const result = await action(id, revision);
       if (!result?.ok) {
         setError(result?.error || FALLBACK_ERROR);
+        if (result?.refreshRequired) router.refresh();
         return;
       }
       setHandled((prev) => new Set(prev).add(id));
@@ -49,6 +53,7 @@ export default function PendingQueue({ items, pendingCount, feedHref }) {
     } catch {
       setError(FALLBACK_ERROR);
     } finally {
+      inFlight.current = false;
       setBusyId(null);
     }
   }
@@ -119,7 +124,7 @@ export default function PendingQueue({ items, pendingCount, feedHref }) {
                   size="sm"
                   loading={busyId === item.id}
                   disabled={busyId != null}
-                  onClick={() => run(item.id, approve)}
+                  onClick={() => run(item, approve)}
                 >
                   Approve
                 </Button>
@@ -127,7 +132,7 @@ export default function PendingQueue({ items, pendingCount, feedHref }) {
                   size="sm"
                   variant="secondary"
                   disabled={busyId != null}
-                  onClick={() => run(item.id, hide)}
+                  onClick={() => run(item, hide)}
                 >
                   Reject
                 </Button>

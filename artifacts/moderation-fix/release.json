@@ -1,0 +1,13 @@
+{
+  "status": "tested; deployment pending",
+  "lint": "passed",
+  "unitTests": 93,
+  "e2eCases": 10,
+  "e2eSkipped": 0,
+  "e2eFlaky": 0,
+  "cf-build": "passed",
+  "cf-bundle": "passed",
+  "schemaMigration": "none",
+  "apiWorkerChange": "none",
+  "publicAssetSecretMatches": 0
+}
