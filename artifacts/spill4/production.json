@@ -1,0 +1,279 @@
+{
+  "startedAt": "2026-11-10T15:41:13.465594+00:00",
+  "commit": "b2685403748e69a1caf92dcf21546ee631b26eb1",
+  "folder": "/Users/perezbenedict/Library/Application Support/SPILL/backups/spill4-release-20261110T153840Z",
+  "backup": {
+    "bytes": 105764,
+    "sha256": "6231d03e7c20c8373ba640c85a4ac340538d20514a5488f96956faa7d2b54f2f",
+    "rehearsedTwice": true,
+    "integrity": "ok",
+    "foreignKeys": "ok",
+    "counts": {
+      "discussion_sessions": 5,
+      "submissions": 26,
+      "presentation_state": 5,
+      "admin_users": 1,
+      "admin_sessions": 4,
+      "nickname_reservations": 32,
+      "platform_state": 5,
+      "projection_queue": 0,
+      "polls": 1,
+      "poll_options": 3,
+      "poll_votes": 7,
+      "reaction_events": 1,
+      "admin_activity": 164,
+      "auth_rate_limits": 0,
+      "nickname_backfills": 2,
+      "legacy_nickname_claims": 0,
+      "spill_schema_migrations": 6,
+      "voting_events": 1,
+      "voting_questions": 1,
+      "voting_options": 2,
+      "voting_rounds": 1,
+      "voting_votes": 1,
+      "activity_history_batches": 0,
+      "activity_archives": 0,
+      "standalone_stages": 2
+    }
+  },
+  "rollback": {
+    "pagesDeployment": "2c9dba1e-21ba-497f-8bd6-47e2affaa2bd",
+    "apiDeployment": "852c2243-5b42-42de-a620-d93c6898d0a5",
+    "apiVersion": "e40c8ebe-d7b4-4b74-b97e-0e950032431d"
+  },
+  "baselineReadRoutes": 13,
+  "preserveOpenEventStatuses": true,
+  "bundleSha256": "efe7ef816e920f1d389abf95bd75e3dc7b1b7b036be6953f7a3466759bd0af0e",
+  "apiSmoke": {
+    "publicStatesPreserved": true,
+    "routes": 13,
+    "authenticatedDirector": 200,
+    "publicActivities": 200,
+    "unauthorizedDirector": 401,
+    "eventMutations": 0
+  },
+  "apiVersion": "4108c478-0d40-4a16-b994-0a2feb885a12",
+  "migration": {
+    "version": "010_director",
+    "queries": 9,
+    "durationMs": 3.6973,
+    "bookmark": "0000023c-00000006-0000511f-5f9cf3d55c7c6d738d95c92930108794"
+  },
+  "apiDeployment": "f8ac13dd-3fe8-487d-8fa4-19bb311e294e",
+  "pages": {
+    "id": "a8b596a0-c73c-4609-b689-34f5fd02a238",
+    "url": "https://a8b596a0.spill-it-4rw.pages.dev",
+    "production": "https://spill-it-4rw.pages.dev",
+    "status": "success",
+    "commit": "b2685403748e69a1caf92dcf21546ee631b26eb1"
+  },
+  "resolvedUploadIssue": "Initial --no-bundle upload rejected module format before deployment; standard Pages bundling succeeded. Previous frontend stayed live until successful switch.",
+  "dataVerification": {
+    "afterSha256": "34d79cbfa5ac412731ad8056e89aaf623444340fcf181e1bf35d32f4b066ea28",
+    "allPreviousRowsPreserved": true,
+    "integrity": "ok",
+    "foreignKeys": "ok",
+    "migrationRecordedOnce": true,
+    "tables": {
+      "discussion_sessions": {
+        "before": 5,
+        "after": 5,
+        "allPreviousValuesPreserved": true
+      },
+      "submissions": {
+        "before": 26,
+        "after": 26,
+        "allPreviousValuesPreserved": true
+      },
+      "presentation_state": {
+        "before": 5,
+        "after": 5,
+        "allPreviousValuesPreserved": true
+      },
+      "admin_users": {
+        "before": 1,
+        "after": 1,
+        "allPreviousValuesPreserved": true
+      },
+      "admin_sessions": {
+        "before": 4,
+        "after": 4,
+        "allPreviousValuesPreserved": true
+      },
+      "nickname_reservations": {
+        "before": 32,
+        "after": 32,
+        "allPreviousValuesPreserved": true
+      },
+      "platform_state": {
+        "before": 5,
+        "after": 5,
+        "allPreviousValuesPreserved": true
+      },
+      "projection_queue": {
+        "before": 0,
+        "after": 0,
+        "allPreviousValuesPreserved": true
+      },
+      "polls": {
+        "before": 1,
+        "after": 1,
+        "allPreviousValuesPreserved": true
+      },
+      "poll_options": {
+        "before": 3,
+        "after": 3,
+        "allPreviousValuesPreserved": true
+      },
+      "poll_votes": {
+        "before": 7,
+        "after": 7,
+        "allPreviousValuesPreserved": true
+      },
+      "reaction_events": {
+        "before": 1,
+        "after": 1,
+        "allPreviousValuesPreserved": true
+      },
+      "admin_activity": {
+        "before": 164,
+        "after": 164,
+        "allPreviousValuesPreserved": true
+      },
+      "auth_rate_limits": {
+        "before": 0,
+        "after": 0,
+        "allPreviousValuesPreserved": true
+      },
+      "nickname_backfills": {
+        "before": 2,
+        "after": 2,
+        "allPreviousValuesPreserved": true
+      },
+      "legacy_nickname_claims": {
+        "before": 0,
+        "after": 0,
+        "allPreviousValuesPreserved": true
+      },
+      "voting_events": {
+        "before": 1,
+        "after": 1,
+        "allPreviousValuesPreserved": true
+      },
+      "voting_questions": {
+        "before": 1,
+        "after": 1,
+        "allPreviousValuesPreserved": true
+      },
+      "voting_options": {
+        "before": 2,
+        "after": 2,
+        "allPreviousValuesPreserved": true
+      },
+      "voting_rounds": {
+        "before": 1,
+        "after": 1,
+        "allPreviousValuesPreserved": true
+      },
+      "voting_votes": {
+        "before": 1,
+        "after": 1,
+        "allPreviousValuesPreserved": true
+      },
+      "activity_history_batches": {
+        "before": 0,
+        "after": 0,
+        "allPreviousValuesPreserved": true
+      },
+      "activity_archives": {
+        "before": 0,
+        "after": 0,
+        "allPreviousValuesPreserved": true
+      },
+      "standalone_stages": {
+        "before": 2,
+        "after": 2,
+        "allPreviousValuesPreserved": true
+      }
+    }
+  },
+  "status": "Deployed and production verified",
+  "verifiedAt": "2026-11-10T15:48:34.512843+00:00",
+  "authorization": "Owner explicitly requested deployment after being informed of open event flags. Event states were preserved; no statuses were changed or production test submissions/votes created.",
+  "productionSmoke": {
+    "time": "2026-11-10T15:46:59.375Z",
+    "routes": [
+      {
+        "route": "authenticated Stage Centre / Live Director",
+        "status": 200
+      },
+      {
+        "route": "/",
+        "status": 200
+      },
+      {
+        "route": "/admin/login",
+        "status": 200
+      },
+      {
+        "route": "/join/[discussion]",
+        "status": 200
+      },
+      {
+        "route": "/qr/[discussion]",
+        "status": 200
+      },
+      {
+        "route": "/room/[discussion]",
+        "status": 200
+      },
+      {
+        "route": "/vote/[event]",
+        "status": 200
+      },
+      {
+        "route": "/vote/[event]/stage",
+        "status": 200
+      },
+      {
+        "route": "/stage/[event]",
+        "status": 200
+      },
+      {
+        "route": "/stage/[event]",
+        "status": 200
+      }
+    ],
+    "emittedAssets": 19,
+    "privateArtifacts": [
+      {
+        "route": "/cloudflare/next-env.mjs",
+        "status": 404
+      },
+      {
+        "route": "/server-functions/default/index.mjs",
+        "status": 404
+      },
+      {
+        "route": "/worker.js",
+        "status": 404
+      },
+      {
+        "route": "/_worker.js",
+        "status": 404
+      }
+    ],
+    "unauthorizedDirector": 401,
+    "aggregateExport": 200,
+    "publicActivityProxy": 200,
+    "rehearsal": "private local preview/take passed without production writes",
+    "browserErrors": 0,
+    "writeRequests": 0,
+    "browser": "Chromium; BrowserOS neo tools unavailable"
+  },
+  "limits": [
+    "Firefox UI verification remains blocked by the installed Firefox profile startup failure.",
+    "BrowserOS neo was unavailable; production visual verification used Chromium.",
+    "Polling and browser acknowledgements do not prove physical projector output."
+  ]
+}

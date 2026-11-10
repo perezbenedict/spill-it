@@ -1,6 +1,6 @@
-# Spill It 4.0 release candidate
+# Spill It 4.0 release
 
-Status: implemented in the existing repository on `spill-it-4`; production release held. Production has a live discussion and an open voting event. No production schema, API, Pages deployment, event status, contribution or ballot was changed by this upgrade.
+Status: deployed and verified on 10 November 2026 at **https://spill-it-4rw.pages.dev**. Runtime commit `b2685403748e69a1caf92dcf21546ee631b26eb1`. The owner explicitly requested deployment after the initial hold. The additive migration, API and frontend are live; all pre-existing database rows and values, open event statuses and presentation settings were preserved. See `SPILL_4_PRODUCTION.md` and `artifacts/spill4/production.json` for deployment and rollback references.
 
 ## What changed
 
@@ -41,11 +41,11 @@ Status: implemented in the existing repository on `spill-it-4`; production relea
 
 Final test results and sanitized measurements are recorded in `artifacts/spill4/verification.json`. Browser screenshots in `artifacts/spill4/screens` contain disposable local fixtures only. Test reports and traces with local credentials stay under ignored `artifacts/isolated-*` directories.
 
-The project-local Chromium/Firefox/WebKit runner is separate from BrowserOS neo. BrowserOS tools were not exposed in this session despite a connection request; no claim is made that authenticated production browser journeys were visually verified. Full write journeys use loopback Next, a disposable Worker/D1 and generated local credentials. No production test contribution or ballot was created.
+The project-local Chromium/Firefox/WebKit runner is separate from BrowserOS neo. BrowserOS tools were not exposed in this session despite a connection request; production browser verification used Chromium with an existing authorized session and all browser write requests blocked. The Stage Centre/Director, private rehearsal, participant/QR/projector, dedicated voting and both standalone stages passed; 19 emitted assets returned 200, four reserved artifact routes returned 404, and there were zero page errors or write requests. Full write journeys use loopback Next, a disposable Worker/D1 and generated local credentials. No production test contribution or ballot was created.
 
 ## Backup and migration
 
-A fresh owner-only production SQL backup was exported outside the repository. See `artifacts/spill4/migration.json` for its location, byte count and SHA-256. The final migration was applied twice to a restored copy, with every existing table row fingerprint preserved; integrity and foreign keys pass. Final migration checksum and counts are in `artifacts/spill4/migration-final.json`.
+A fresh owner-only production SQL backup was exported outside the repository. The deployment backup and post-release preservation comparison are recorded in `artifacts/spill4/production.json`; candidate migration rehearsals are retained as historical evidence. See `artifacts/spill4/migration.json` for its location, byte count and SHA-256. The final migration was applied twice to a restored copy, with every existing table row fingerprint preserved; integrity and foreign keys pass. Final migration checksum and counts are in `artifacts/spill4/migration-final.json`.
 
 Preserved data includes five discussions, 26 contributions, 32 nickname reservations, seven discussion-poll votes, the existing standalone voting event/round/vote, two standalone stages, all presentation pointers and configuration, credentials, admin sessions and activity history.
 
@@ -65,7 +65,7 @@ python3 scripts/rehearse-director.py --backup /protected/path/production.sql --r
 
 Roll back application deployments if needed and leave the additive tables in place. Do not DROP tables or restore an older full database merely to roll back code; that can erase newer event data. Preserve a new backup before any data recovery. Use the existing release/recovery runbook for reviewed reconciliation.
 
-The release branch is committed with Cloudflare's supported `[CF-Pages-Skip]` prefix to prevent an automatic Pages build when pushed. See [Cloudflare's Git integration documentation](https://developers.cloudflare.com/pages/configuration/git-integration/github-integration/#skipping-a-build-via-a-commit-message). `main` and production remain unchanged until a safe release window.
+The release branch is committed with Cloudflare's supported `[CF-Pages-Skip]` prefix to prevent an automatic Pages build when pushed. The owner-authorized production release used an explicit Pages deployment of the verified runtime bundle. See [Cloudflare's Git integration documentation](https://developers.cloudflare.com/pages/configuration/git-integration/github-integration/#skipping-a-build-via-a-commit-message). Git `main` remains unchanged; the runtime from `spill-it-4` is explicitly deployed to production. Documentation commits use the skip prefix to avoid a redundant build.
 
 ## Limits
 

@@ -1,6 +1,6 @@
 {
   "verifiedAt": "2026-11-10T14:52:08.638437+00:00",
-  "releaseStatus": "Implemented release candidate; production deployment and migration held for active events",
+  "releaseStatus": "Deployed and production verified on 10 November 2026",
   "lint": "passed",
   "unitTests": {
     "files": 14,
@@ -317,22 +317,6 @@
       "stageCentre": 200
     }
   },
-  "productionSafety": {
-    "checkedAt": "2026-11-10T14:50Z",
-    "liveDiscussions": 1,
-    "openVotingEvents": 1,
-    "productionMigrations": [
-      "004_platform",
-      "005_stage",
-      "006_voting",
-      "007_voting_rounds",
-      "008_activity",
-      "009_standalone_stages"
-    ],
-    "upgradeProductionWrites": false,
-    "deployment": false,
-    "backup": "Protected owner-only SQL export outside repository; migration rehearsed twice on restored copy"
-  },
   "visualReview": {
     "screens": "artifacts/spill4/screens",
     "darkAndLightDirector": [
@@ -367,5 +351,37 @@
     "Rehearsal is private client-only; audience participation is per browser, not proof of one physical person.",
     "New activity modes are discussion-scoped.",
     "Local load results do not certify distributed production capacity."
-  ]
+  ],
+  "preReleaseProductionSafety": {
+    "checkedAt": "2026-11-10T14:50Z",
+    "liveDiscussions": 1,
+    "openVotingEvents": 1,
+    "productionMigrations": [
+      "004_platform",
+      "005_stage",
+      "006_voting",
+      "007_voting_rounds",
+      "008_activity",
+      "009_standalone_stages"
+    ],
+    "upgradeProductionWrites": false,
+    "deployment": false,
+    "backup": "Protected owner-only SQL export outside repository; migration rehearsed twice on restored copy"
+  },
+  "productionRelease": {
+    "runtimeCommit": "b2685403748e69a1caf92dcf21546ee631b26eb1",
+    "pages": {
+      "id": "a8b596a0-c73c-4609-b689-34f5fd02a238",
+      "url": "https://a8b596a0.spill-it-4rw.pages.dev",
+      "production": "https://spill-it-4rw.pages.dev",
+      "status": "success",
+      "commit": "b2685403748e69a1caf92dcf21546ee631b26eb1"
+    },
+    "apiVersion": "4108c478-0d40-4a16-b994-0a2feb885a12",
+    "apiDeployment": "f8ac13dd-3fe8-487d-8fa4-19bb311e294e",
+    "migration": "010_director",
+    "dataPreserved": true,
+    "readOnlyBrowserSmokePassed": true,
+    "evidence": "artifacts/spill4/production.json"
+  }
 }
