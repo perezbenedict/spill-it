@@ -1,0 +1,8 @@
+{
+  "filesScanned": 82,
+  "configuredSecretValuesChecked": 1,
+  "publicAssetLeaks": [],
+  "reservedServerArtifactContainsBuildEnvironment": true,
+  "workerBytes": 7535310,
+  "workerSha256": "47e119d06b8ec6b7200d7eb97e0fe5751754f4fd81a19a25094bdcb230fc93a4"
+}

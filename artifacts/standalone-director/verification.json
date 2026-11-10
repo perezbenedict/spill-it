@@ -1,0 +1,254 @@
+{
+  "verifiedAt": "2026-11-10T16:52:09.426534+00:00",
+  "status": "Verified release candidate; production deployment pending",
+  "unitTests": {
+    "passed": 102,
+    "files": 15
+  },
+  "lint": "passed",
+  "migrations": "additive 011 applied twice; integrity/FK and standalone admission/cascade checks passed",
+  "builds": {
+    "next": "passed",
+    "openNextCloudflare": "passed",
+    "pagesBundle": "passed",
+    "apiDryRun": "passed; 195.97 KiB / gzip 38.14 KiB"
+  },
+  "browserCases": 110,
+  "browserProjects": [
+    "chromium",
+    "webkit"
+  ],
+  "passingSpecs": [
+    {
+      "spec": "spill4.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-10T16:25:31.510Z",
+        "duration": 76491.07,
+        "expected": 26,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "run": "isolated-2026-11-10T16-25-19-875Z-c819f801"
+    },
+    {
+      "spec": "stage-centre.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-10T16:11:19.067Z",
+        "duration": 77331.293,
+        "expected": 12,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "run": "isolated-2026-11-10T16-09-46-758Z-544e0105"
+    },
+    {
+      "spec": "stage3.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-10T16:12:39.299Z",
+        "duration": 147011.48,
+        "expected": 16,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "run": "isolated-2026-11-10T16-09-46-758Z-544e0105"
+    },
+    {
+      "spec": "standalone-stage.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-10T16:34:55.835Z",
+        "duration": 82366.087,
+        "expected": 10,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "run": "isolated-2026-11-10T16-25-19-875Z-c819f801"
+    },
+    {
+      "spec": "theme-coverage.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-10T16:21:09.415Z",
+        "duration": 68232.134,
+        "expected": 4,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "run": "isolated-2026-11-10T16-09-46-758Z-544e0105"
+    },
+    {
+      "spec": "standalone-layout.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-10T16:32:00.145Z",
+        "duration": 42174.258,
+        "expected": 6,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "run": "isolated-2026-11-10T16-25-19-875Z-c819f801"
+    },
+    {
+      "spec": "standalone-polish.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-10T16:32:44.951Z",
+        "duration": 128647.604,
+        "expected": 6,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "run": "isolated-2026-11-10T16-25-19-875Z-c819f801"
+    },
+    {
+      "spec": "standalone-director.spec.js",
+      "passed": true,
+      "stats": {
+        "startTime": "2026-11-10T16:46:29.866Z",
+        "duration": 61288.226,
+        "expected": 30,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "run": "isolated-2026-11-10T16-46-12-265Z-b8b69ef0"
+    }
+  ],
+  "finalDirectorCases": 30,
+  "compiledPages": {
+    "previewAssets": 10,
+    "preview": [
+      {
+        "route": "/",
+        "status": 200
+      },
+      {
+        "route": "/admin/login",
+        "status": 200
+      },
+      {
+        "route": "/join/ABCDEFGH",
+        "status": 200
+      },
+      {
+        "route": "/qr/ABCDEFGH",
+        "status": 200
+      },
+      {
+        "route": "/room/ABCDEFGH",
+        "status": 200
+      }
+    ],
+    "privateArtifacts": [
+      {
+        "route": "/cloudflare/next-env.mjs",
+        "status": 404
+      },
+      {
+        "route": "/server-functions/default/index.mjs",
+        "status": 404
+      },
+      {
+        "route": "/worker.js",
+        "status": 404
+      },
+      {
+        "route": "/_worker.js",
+        "status": 404
+      }
+    ],
+    "previewStandalone": {
+      "created": 201,
+      "publicRead": 200,
+      "projector": 200,
+      "admin": 200,
+      "savedContentPrivate": true
+    },
+    "previewStandaloneDirector": {
+      "privatePreview": true,
+      "take": true,
+      "hide": true,
+      "restore": true,
+      "clear": true,
+      "directSend": true,
+      "previewPreserved": true,
+      "independentAudience": true,
+      "protectedIdentity": true,
+      "joinPage": 200
+    },
+    "previewDirector": {
+      "privatePreview": true,
+      "idempotentTake": true,
+      "emergencyHide": true,
+      "restore": true,
+      "aggregateExport": true
+    },
+    "previewVoting": {
+      "publicRead": 200,
+      "adminRead": 200,
+      "vote": 200,
+      "protectedCookie": true,
+      "duplicateRetry": true,
+      "voterPage": 200,
+      "projectorPage": 200,
+      "reopenPreservedVotes": true,
+      "roundTwoAccepted": 200,
+      "staleRound": 409,
+      "historyPreserved": true,
+      "activity": 200,
+      "stageCentre": 200
+    }
+  },
+  "audienceLoad": {
+    "responses": 100,
+    "exactRetries": 100,
+    "total": 100,
+    "average": 3,
+    "scaleCounts": [
+      20,
+      20,
+      20,
+      20,
+      20
+    ],
+    "engines": [
+      "chromium",
+      "webkit"
+    ]
+  },
+  "privacy": [
+    "No discussion created or borrowed for standalone stages",
+    "Independent per-stage HttpOnly audience cookie namespace",
+    "Private cues and Preview do not change public reads",
+    "No public aggregates before reveal and five approved responses",
+    "Aggregate export omits word text, question text/IDs and participant identities"
+  ],
+  "visualReview": [
+    "dark/light desktop and mobile Director",
+    "Spill It emblem and name on both monitors",
+    "Clear Live and direct-send controls",
+    "standalone word cloud projector",
+    "independent participant and QR page"
+  ],
+  "resolvedChecks": [
+    "Corrected voting fixture create-status expectations and normalized-cue assertions",
+    "Corrected dropdown selectors and unique per-browser fixture names",
+    "Constrained the shared Stage Controls flex child to prevent mobile overflow",
+    "Stored large projector screenshots as file attachments to avoid JSON-reporter overflow"
+  ],
+  "limitations": [
+    "Firefox UI verification remains unavailable because installed Firefox cannot start",
+    "BrowserOS neo tools not exposed; isolated Chromium and WebKit used",
+    "Rehearsal is local; acknowledgements do not prove physical projector output"
+  ]
+}

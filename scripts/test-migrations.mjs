@@ -43,6 +43,8 @@ execute(readFileSync('api/migrations/008_activity.sql', 'utf8'));
 execute(readFileSync('api/migrations/009_standalone_stages.sql', 'utf8'));
 execute(readFileSync('api/migrations/010_director.sql','utf8'));
 execute(readFileSync('api/migrations/010_director.sql','utf8'));
+execute(readFileSync('api/migrations/011_standalone_director.sql','utf8'));
+execute(readFileSync('api/migrations/011_standalone_director.sql','utf8'));
 execute("INSERT INTO standalone_stages(id,public_code,created_at,updated_at) VALUES('stage-a','EFGHJKMN','2026-11-08','2026-11-08');");
 assert.equal(execute("SELECT title||':'||revision FROM standalone_stages WHERE id='stage-a';"), ':0');
 assert.equal(execute('SELECT COUNT(*) FROM discussion_sessions;'), '2');
@@ -65,4 +67,14 @@ assert.equal(execute("SELECT current_submission_id IS NULL FROM presentation_sta
 assert.throws(() => execute("UPDATE presentation_state SET current_submission_id='contribution-a' WHERE session_id='session-a';"));
 execute("DELETE FROM discussion_sessions WHERE id='session-a';");
 assert.equal(execute("SELECT COUNT(*) FROM admin_activity WHERE action='delete_session';"), '1');
-console.log(JSON.stringify({ migrations: ['004_platform','005_stage','006_voting','007_voting_rounds','008_activity','009_standalone_stages','010_director'], independentStageCreated: true, preservedSessions: 2, preservedContributions: 1, preservedProjection: true, crossSessionQueueRejected: true, hiddenProjectionRejected: true, duplicateVoteRejected: true, closedVoteRejected: true, historicalVotesPreserved: true, distinctRounds: true, securityAuditProtected: true, deletionActivityRetained: true, integrity: 'ok', database }));
+// Standalone activity admission and cleanup do not depend on a discussion row.
+execute("INSERT INTO stage_director_state(stage_id) VALUES('stage-a'); INSERT INTO stage_audience_activities(id,stage_id,kind,prompt,status,created_at) VALUES('audience-a','stage-a','scale','Standalone scale','open','2026-11-10'); INSERT INTO stage_audience_responses(activity_id,participant_id,item,moderation) VALUES('audience-a','browser-a','3','approved');");
+assert.throws(()=>execute("INSERT INTO stage_audience_responses(activity_id,participant_id,item,moderation) VALUES('audience-a','browser-b','6','approved');"));
+execute("UPDATE stage_audience_activities SET status='closed' WHERE id='audience-a';");
+assert.throws(()=>execute("INSERT INTO stage_audience_responses(activity_id,participant_id,item,moderation) VALUES('audience-a','browser-b','3','approved');"));
+execute("DELETE FROM standalone_stages WHERE id='stage-a';");
+assert.equal(execute('SELECT COUNT(*) FROM stage_director_state;'),'0');
+assert.equal(execute('SELECT COUNT(*) FROM stage_audience_responses;'),'0');
+assert.equal(execute('PRAGMA foreign_key_check;'),'');
+assert.equal(execute('PRAGMA integrity_check;'),'ok');
+console.log(JSON.stringify({ migrations: ['004_platform','005_stage','006_voting','007_voting_rounds','008_activity','009_standalone_stages','010_director','011_standalone_director'], independentStageCreated: true, preservedSessions: 2, preservedContributions: 1, preservedProjection: true, crossSessionQueueRejected: true, hiddenProjectionRejected: true, duplicateVoteRejected: true, closedVoteRejected: true, historicalVotesPreserved: true, distinctRounds: true, securityAuditProtected: true, deletionActivityRetained: true, integrity: 'ok', database }));

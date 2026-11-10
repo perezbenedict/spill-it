@@ -1,8 +1,8 @@
 "use client";
 import {useCallback,useEffect,useRef,useState} from 'react';
 
-export default function useDirector(id) {
-  const path=`/api/director/admin/${id}`;
+export default function useDirector(id,standalone=false) {
+  const path=`/api/director/${standalone?'standalone/':''}admin/${id}`;
   const [data,setData]=useState(null);
   const [error,setError]=useState('');
   const [busy,setBusy]=useState(false);

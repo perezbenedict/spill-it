@@ -9,6 +9,7 @@ import StageAtmosphere from '@/components/room/StageAtmosphere';
 import StageCursor from '@/components/room/StageCursor';
 import StagePresentation from '@/components/platform/StagePresentation';
 import VotingStage from '@/components/voting/VotingStage';
+import AudienceActivities from '@/components/director/AudienceActivities';
 import '@/app/stage.css';
 import './standalone-stage.css';
 
@@ -30,10 +31,10 @@ export default function StandaloneStageDisplay({ code, initialItem = null, initi
   const overlay = item?.stage?.overlay || null;
   const expiry = overlay?.endsAt ? Date.parse(overlay.endsAt) : NaN;
   const seconds = Number.isFinite(expiry) && clock !== null ? Math.max(0, Math.ceil((expiry - clock) / 1000)) : null;
-  const standalone = overlay?.kind === 'announcement' || overlay?.kind === 'voting';
+  const standalone = ['announcement','voting','activity','blackout'].includes(overlay?.kind);
   const mode = connection === 'missing' ? 'unavailable' : overlay?.kind || (item?.stage?.cleared ? 'cleared' : 'idle');
   const chapter = !standalone && connection !== 'missing' ? item?.stage?.activeChapter : null;
-  const identity = JSON.stringify([overlay?.kind, overlay?.text, overlay?.heading, overlay?.subtitle, overlay?.style, overlay?.eventCode]);
+  const identity = JSON.stringify([overlay?.kind, overlay?.text, overlay?.heading, overlay?.subtitle, overlay?.style, overlay?.eventCode, overlay?.activityId]);
 
   useEffect(() => { if (contentRef.current) contentRef.current.scrollTop = 0; }, [identity]);
   useEffect(() => {
@@ -105,6 +106,14 @@ export default function StandaloneStageDisplay({ code, initialItem = null, initi
     };
   }, [code]);
 
+  useEffect(()=>{
+    if(!isAdmin || !item || connection!=='connected')return;
+    const send=()=>fetch(`/api/director/standalone/public/${code}/heartbeat`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({revision:item.revision,visible:!document.hidden}),signal:AbortSignal.timeout(8000)}).catch(()=>{});
+    const frame=requestAnimationFrame(send),timer=setInterval(send,10000);
+    document.addEventListener('visibilitychange',send);window.addEventListener('online',send);
+    return()=>{cancelAnimationFrame(frame);clearInterval(timer);document.removeEventListener('visibilitychange',send);window.removeEventListener('online',send);};
+  },[code,isAdmin,item,connection]);
+
   const toggleFullscreen = useCallback(async () => {
     setFullscreenMessage('');
     try {
@@ -129,6 +138,7 @@ export default function StandaloneStageDisplay({ code, initialItem = null, initi
   }, [toggleFullscreen]);
 
   return <div ref={screenRef} className="spill-stage standalone-projector" data-atmosphere={item?.stage?.atmosphere || 'midnight'} data-overlay={overlay?.kind || ''} data-stage-mode={mode} data-ambient-quality={quality} data-stage-revision={item?.revision}>
+    {overlay?.kind==='blackout' && <div data-emergency-blackout aria-label="Projection temporarily hidden" className="fixed inset-0 z-[99999] bg-black"/>}
     <div className="stage-lightfield" aria-hidden="true" />
     <div className="stage-contour" aria-hidden="true" />
     <div className="stage-horizon" aria-hidden="true" />
@@ -144,6 +154,7 @@ export default function StandaloneStageDisplay({ code, initialItem = null, initi
       {chapter && <motion.div key={`${chapter.id}:${chapter.title}`} className="standalone-projector-chapter" data-active-chapter={chapter.id} initial={reduceMotion ? false : { opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: reduceMotion ? 0 : .45 }}><span>In conversation</span><p>{chapter.title}</p></motion.div>}
       <AnimatePresence mode="wait" initial={false}><motion.div key={connection === 'missing' ? 'unavailable' : overlay?.kind === 'voting' ? 'voting' : overlay ? 'message' : mode} className="standalone-projector-scene" initial={reduceMotion ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: reduceMotion ? 0 : -6 }} transition={{ duration: reduceMotion ? 0 : .2, ease: [.16, 1, .3, 1] }}>
       {connection === 'missing' ? <div className="standalone-projector-idle"><h1>Stage unavailable</h1><p>This stage link is no longer available.</p></div> :
+        overlay?.kind === 'activity' ? <AudienceActivities standalone code={code} stageId={overlay.activityId}/> :
         overlay?.kind === 'voting' && overlay.eventCode ? <div className="standalone-projector-voting"><VotingStage code={overlay.eventCode} embedded /></div> :
         overlay && ['announcement', 'prompt', 'reflection'].includes(overlay.kind) ? <StagePresentation overlay={overlay} seconds={seconds} /> :
         <div className="standalone-projector-idle"><p className="stage-eyebrow">{mode === 'cleared' ? 'A pause between perspectives.' : 'A little space. A new perspective.'}</p><h1>{mode === 'cleared' ? <>Space for<br /> what’s next</> : <>Ready for the<br className="standalone-idle-break" /> next moment</>}</h1><span className="standalone-projector-idle-rule" aria-hidden="true" /></div>}
@@ -151,7 +162,7 @@ export default function StandaloneStageDisplay({ code, initialItem = null, initi
     </main>
     <footer className="standalone-projector-footer">
       <div className="standalone-projector-connection" role="status">
-        {connection === 'reconnecting' && <span>Reconnecting…</span>}
+        {connection === 'reconnecting' && <><span>Reconnecting…</span><span>Showing the last confirmed screen. <button type="button" className="min-h-11 px-3 underline" onClick={()=>window.location.reload()}>Recover projection</button></span></>}
         {isAdmin && connection === 'reconnecting' && lastSuccess && <span>Last updated {new Date(lastSuccess).toLocaleTimeString()} · display may be stale</span>}
       </div>
       <div className="standalone-projector-controls">

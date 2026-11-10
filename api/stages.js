@@ -44,7 +44,7 @@ function publicCode() {
   return code;
 }
 
-async function eligibleOverlay(env, overlay, now) {
+async function eligibleOverlay(env, overlay, now, stageId) {
   const candidate = active(overlay, now);
   if (!candidate) return null;
   const validated = validateStage({ ...emptyStage(), overlay: candidate }, now)?.overlay;
@@ -53,21 +53,25 @@ async function eligibleOverlay(env, overlay, now) {
     const event = await env.DB.prepare("SELECT id FROM voting_events WHERE public_code=? AND status IN ('open','closed')").bind(validated.eventCode).first();
     if (!event) return null;
   }
+  if (validated.kind === 'activity') {
+    const activity=await env.DB.prepare("SELECT id FROM stage_audience_activities WHERE id=? AND stage_id=? AND status IN ('open','closed')").bind(validated.activityId,stageId).first();
+    if(!activity)return null;
+  }
   return validated;
 }
 
-async function readStage(env, row, now = Date.now()) {
+export async function readStandaloneStage(env, row, now = Date.now()) {
   let stored;
   try { stored = JSON.parse(row.stage_config); } catch { stored = emptyStage(); }
   if (!object(stored)) stored = emptyStage();
-  const overlay = await eligibleOverlay(env, stored.overlay, now);
-  const resume = await eligibleOverlay(env, stored.returnOverlay, now);
+  const overlay = await eligibleOverlay(env, stored.overlay, now, row.id);
+  const resume = await eligibleOverlay(env, stored.returnOverlay, now, row.id);
   const stage = validateStage({ ...emptyStage(), ...stored, overlay: overlay || resume }, now) || emptyStage();
   return { ...stage, cleared: stored.presentationCleared === true && !stage.overlay, resumeOverlay: overlay && interrupts(overlay) ? resume : null };
 }
 
 async function stageItem(env, row, publicRead = false) {
-  const stage = await readStage(env, row);
+  const stage = await readStandaloneStage(env, row);
   if (publicRead) {
     const selected = stage.chapters.find(chapter => chapter.id === stage.activeChapterId);
     return { title: row.title, code: row.public_code, revision: row.revision, stage: { atmosphere: stage.atmosphere, activeChapter: selected ? { id: selected.id, title: selected.title } : null, overlay: stage.overlay, cleared: stage.cleared } };
@@ -159,7 +163,7 @@ export async function handleStandaloneStages(request, env, admin, identifier, pu
     } catch { return fail('Could not delete this stage. Refresh and try again.', 409); }
   }
   const now = Date.now();
-  const previous = await readStage(env, row, now);
+  const previous = await readStandaloneStage(env, row, now);
   let stage;
   let returnOverlay = null;
   if (body.action === 'clearStage') {
@@ -175,6 +179,7 @@ export async function handleStandaloneStages(request, env, admin, identifier, pu
     stage = validateStage(candidate, now);
     if (!stage) return fail('Use a valid stage configuration. Timed messages must end within 24 hours.');
     if (stage.overlay?.kind === 'voting' && !await eligibleOverlay(env, stage.overlay, now)) return fail('Open a valid voting event before projecting it.');
+    if (stage.overlay?.kind === 'activity' && !await eligibleOverlay(env,stage.overlay,now,row.id)) return fail('Choose an open or closed activity belonging to this stage.');
     if (interrupts(stage.overlay)) returnOverlay = previous.overlay?.kind === stage.overlay.kind ? previous.resumeOverlay : previous.overlay;
     if (!stage.overlay && interrupts(previous.overlay)) stage.overlay = previous.resumeOverlay;
   }
@@ -184,7 +189,7 @@ export async function handleStandaloneStages(request, env, admin, identifier, pu
   delete stage.cleared;
   try {
     const results = await env.DB.batch([
-      env.DB.prepare('UPDATE standalone_stages SET stage_config=?,title=?,revision=revision+1,mutation_id=?,updated_at=? WHERE id=? AND revision=? AND (? IS NULL OR EXISTS(SELECT 1 FROM voting_events WHERE public_code=? AND status IN (\'open\',\'closed\'))) AND (? IS NULL OR EXISTS(SELECT 1 FROM voting_events WHERE public_code=? AND status IN (\'open\',\'closed\'))) RETURNING revision').bind(JSON.stringify({ ...stage, returnOverlay, presentationCleared }), body.title === undefined ? row.title : body.title.trim(), mutationId, timestamp, identifier, body.expectedRevision, stage.overlay?.kind === 'voting' ? stage.overlay.eventCode : null, stage.overlay?.kind === 'voting' ? stage.overlay.eventCode : null, returnOverlay?.kind === 'voting' ? returnOverlay.eventCode : null, returnOverlay?.kind === 'voting' ? returnOverlay.eventCode : null),
+      env.DB.prepare('UPDATE standalone_stages SET stage_config=?,title=?,revision=revision+1,mutation_id=?,updated_at=? WHERE id=? AND revision=? AND (? IS NULL OR EXISTS(SELECT 1 FROM voting_events WHERE public_code=? AND status IN (\'open\',\'closed\'))) AND (? IS NULL OR EXISTS(SELECT 1 FROM voting_events WHERE public_code=? AND status IN (\'open\',\'closed\'))) AND (? IS NULL OR EXISTS(SELECT 1 FROM stage_audience_activities WHERE id=? AND stage_id=? AND status IN (\'open\',\'closed\'))) AND (? IS NULL OR EXISTS(SELECT 1 FROM stage_audience_activities WHERE id=? AND stage_id=? AND status IN (\'open\',\'closed\'))) RETURNING revision').bind(JSON.stringify({ ...stage, returnOverlay, presentationCleared }), body.title === undefined ? row.title : body.title.trim(), mutationId, timestamp, identifier, body.expectedRevision, stage.overlay?.kind === 'voting' ? stage.overlay.eventCode : null, stage.overlay?.kind === 'voting' ? stage.overlay.eventCode : null, returnOverlay?.kind === 'voting' ? returnOverlay.eventCode : null, returnOverlay?.kind === 'voting' ? returnOverlay.eventCode : null, stage.overlay?.kind === 'activity' ? stage.overlay.activityId : null, stage.overlay?.kind === 'activity' ? stage.overlay.activityId : null, identifier, returnOverlay?.kind === 'activity' ? returnOverlay.activityId : null, returnOverlay?.kind === 'activity' ? returnOverlay.activityId : null, identifier),
       env.DB.prepare('INSERT INTO admin_activity(id,session_id,actor_id,action,target_id,created_at) SELECT ?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM standalone_stages WHERE id=? AND mutation_id=?)').bind(crypto.randomUUID(), identifier, admin.user.id, body.action === 'clearStage' ? 'standalone_clear' : 'standalone_configure', identifier, timestamp, identifier, mutationId),
     ]);
     if (!results[0].results?.length) return conflict();

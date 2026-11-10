@@ -10,6 +10,7 @@ import { handleVotingCollection, handleVotingAdmin, handleVotingPublic } from '.
 import { handleActivity } from './activity.js';
 import { handleStandaloneStages } from './stages.js';
 import { handleDirector, handleDirectorPublic } from './director.js';
+import { handleStageDirector, handleStageDirectorPublic } from './stage-director.js';
 
 const KNOWN_CATEGORIES = ['question', 'opinion', 'challenge', 'twocents'];
 const SESSION_STATUSES = ['draft', 'live', 'paused', 'closed'];
@@ -1645,6 +1646,11 @@ const worker = {
       const standalonePublicMatch = path.match(/^\/stages\/([^/]+)$/);
       if (standalonePublicMatch) return await handleStandaloneStages(request, env, null, standalonePublicMatch[1], true);
 
+      const stageDirectorPublic = path.match(/^\/stage-director\/([^/]+)(?:\/(respond|heartbeat))?$/);
+      if(stageDirectorPublic){
+        if(stageDirectorPublic[2]==='heartbeat' && !await requireAdminUser(request,env))return json({error:'unauthorized'},401);
+        return await handleStageDirectorPublic(request,env,stageDirectorPublic[1].toUpperCase(),stageDirectorPublic[2]);
+      }
       const directorPublicMatch = path.match(/^\/director\/([^/]+)(?:\/(respond|heartbeat))?$/);
       if (directorPublicMatch) {
         if(directorPublicMatch[2]==='heartbeat' && !await requireAdminUser(request,env)) return json({error:'unauthorized'},401);
@@ -1660,6 +1666,8 @@ const worker = {
       const admin = await requireAdminUser(request, env);
       if (!admin) return json({ error: 'unauthorized' }, 401);
 
+      const stageDirectorAdmin = path.match(/^\/admin\/stage-director\/([^/]+)$/);
+      if(stageDirectorAdmin && isUuid(stageDirectorAdmin[1]))return await handleStageDirector(request,env,admin,stageDirectorAdmin[1]);
       const directorAdminMatch = path.match(/^\/admin\/director\/([^/]+)$/);
       if (directorAdminMatch && isUuid(directorAdminMatch[1])) return await handleDirector(request, env, admin, directorAdminMatch[1]);
 

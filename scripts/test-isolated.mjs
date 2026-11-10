@@ -229,6 +229,28 @@ try {
     const standaloneAdmin = await fetch(`${previewURL}/admin/stage?mode=standalone&stage=${standalone.id}`, { headers: stageHeaders });
     if (!standaloneProjector.ok || !standaloneAdmin.ok) throw new Error('Compiled standalone projector or admin route failed.');
     summary.previewStandalone = { created: stageCreate.status, publicRead: standaloneRead.status, projector: standaloneProjector.status, admin: standaloneAdmin.status, savedContentPrivate: true };
+    const standaloneDirectorURL=`${previewURL}/api/director/standalone/admin/${standalone.id}`;
+    const standaloneDirectorRead=async()=>{const r=await fetch(standaloneDirectorURL,{headers:stageHeaders});if(!r.ok)throw Error('Compiled standalone Director read failed.');return r.json();};
+    const standaloneDirectorChange=async fields=>{const current=await standaloneDirectorRead();const r=await fetch(standaloneDirectorURL,{method:'POST',headers:stageHeaders,body:JSON.stringify({requestId:crypto.randomUUID(),expectedRevision:current.revision,expectedPlatformRevision:current.platformRevision,...fields})});if(!r.ok)throw Error('Compiled standalone Director mutation failed.');return r.json();};
+    const standalonePublic=async()=>{const r=await fetch(`${previewURL}/api/stages/public/${standalone.code}`);return r.json();};
+    const originalStandalone=await standalonePublic();
+    await standaloneDirectorChange({action:'preview',cue:{id:'standalone-compiled',label:'Private standalone cue',kind:'announcement',text:'Compiled standalone Director ready'}});
+    if(JSON.stringify(await standalonePublic())!==JSON.stringify(originalStandalone))throw Error('Private standalone Preview changed Live.');
+    await standaloneDirectorChange({action:'take'});
+    if((await standalonePublic()).item.stage.overlay.text!=='Compiled standalone Director ready')throw Error('Standalone Take failed.');
+    await standaloneDirectorChange({action:'hide'});if((await standalonePublic()).item.stage.overlay.kind!=='blackout')throw Error('Standalone hide failed.');
+    await standaloneDirectorChange({action:'restore'});if((await standalonePublic()).item.stage.overlay.text!=='Compiled standalone Director ready')throw Error('Standalone restore failed.');
+    await standaloneDirectorChange({action:'clearLive'});if((await standalonePublic()).item.stage.overlay!==null)throw Error('Standalone clear failed.');
+    await standaloneDirectorChange({action:'sendLive',cue:{id:'standalone-direct',label:'Direct standalone cue',kind:'prompt',text:'Compiled direct send ready'}});
+    if((await standalonePublic()).item.stage.overlay.text!=='Compiled direct send ready' || (await standaloneDirectorRead()).preview.text!=='Compiled standalone Director ready')throw Error('Compiled direct send changed private Preview.');
+    await standaloneDirectorChange({action:'clearLive'});
+    const draftActivity=await standaloneDirectorChange({action:'createActivity',kind:'scale',prompt:'Compiled standalone audience'});
+    await standaloneDirectorChange({action:'openActivity',activityId:draftActivity.activities[0].id});
+    const standaloneResponse=await fetch(`${previewURL}/api/director/standalone/public/${standalone.code}/respond`,{method:'POST',headers:{Origin:previewURL,'Content-Type':'application/json'},body:JSON.stringify({activityId:draftActivity.activities[0].id,item:'3'})});
+    if(!standaloneResponse.ok || !standaloneResponse.headers.getSetCookie().some(c=>c.includes('spill_p_STANDALONE-') && /HttpOnly/i.test(c)))throw Error('Standalone audience identity failed.');
+    const joinPage=await fetch(`${previewURL}/stage/${standalone.code}/join`);if(!joinPage.ok)throw Error('Compiled standalone join page failed.');
+    summary.previewStandaloneDirector={privatePreview:true,take:true,hide:true,restore:true,clear:true,directSend:true,previewPreserved:true,independentAudience:true,protectedIdentity:true,joinPage:joinPage.status};
+
     await votingCall(`/admin/voting/${event.id}`, { action: 'delete', expectedRevision: event.revision, password });
     const directorURL=`${previewURL}/api/director/admin/${liveId}`;
     const directorHeaders={Cookie:`spill_admin_session=${adminToken}`,Origin:previewURL,'Content-Type':'application/json'};

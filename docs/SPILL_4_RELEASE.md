@@ -1,5 +1,7 @@
 # Spill It 4.0 release
 
+For the subsequent standalone Director, branding, named voting picker, Clear Live and direct-send update, see `STANDALONE_DIRECTOR_RELEASE.md`. The original deployment record follows below.
+
 Status: deployed and verified on 10 November 2026 at **https://spill-it-4rw.pages.dev**. Runtime commit `b2685403748e69a1caf92dcf21546ee631b26eb1`. The owner explicitly requested deployment after the initial hold. The additive migration, API and frontend are live; all pre-existing database rows and values, open event statuses and presentation settings were preserved. See `SPILL_4_PRODUCTION.md` and `artifacts/spill4/production.json` for deployment and rollback references.
 
 ## What changed
@@ -69,4 +71,4 @@ The release branch is committed with Cloudflare's supported `[CF-Pages-Skip]` pr
 
 ## Limits
 
-Polling is near-real-time, not instant broadcast or a guaranteed physical-screen acknowledgement. All displays share the latest event acknowledgement. Browser identity cannot guarantee one physical person across devices or cleared cookies. Rehearsal is local to this desk. New audience activities are discussion-scoped; existing independent voting events and standalone stages retain their own controls. Debate is binary and scale is fixed 1–5. Rundowns hold up to 50 cues, activity listings the latest 30 activities, word review up to 100 records with pending items first, and question choices up to 50 approved visible questions. There is no automated semantic word merging, toxicity classifier or automatic retention deletion. Local load results do not certify distributed production capacity.
+Polling is near-real-time, not instant broadcast or a guaranteed physical-screen acknowledgement. All displays share the latest event acknowledgement. Browser identity cannot guarantee one physical person across devices or cleared cookies. Rehearsal is local to this desk. Audience activities now support independent standalone stages too; standalone question priorities use moderator-prepared choices. Discussion contributions and polls retain their discussion ownership; dedicated voting retains its own controls. Debate is binary and scale is fixed 1–5. Rundowns hold up to 50 cues, activity listings the latest 30 activities, word review up to 100 records with pending items first, and question choices up to 50 approved visible questions. There is no automated semantic word merging, toxicity classifier or automatic retention deletion. Local load results do not certify distributed production capacity.

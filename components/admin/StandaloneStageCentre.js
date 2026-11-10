@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import StageControls from '@/components/platform/StageControls';
+import LiveDirector from '@/components/director/LiveDirector';
 import StagePresentation from '@/components/platform/StagePresentation';
 import StageFeedback from '@/components/platform/StageFeedback';
 import { VotingAdministration } from '@/components/voting/AdminVoting';
@@ -15,7 +16,7 @@ import BulkDeleteSelection from '@/components/admin/BulkDeleteSelection';
 import '@/app/stage.css';
 
 const ATMOSPHERES = { midnight: 'Midnight Violet', electric: 'Electric Aura', reflection: 'Soft Reflection', royal: 'Royal Amethyst', celestial: 'Celestial Night', velvet: 'Velvet Glow', aurora: 'Aurora Violet' };
-const MODES = { prompt: 'Spotlight prompt', announcement: 'Stage announcement', reflection: 'Reflection moment', voting: 'Voting event', cleared: 'Stage cleared' };
+const MODES = { prompt: 'Spotlight prompt', announcement: 'Stage announcement', reflection: 'Reflection moment', voting: 'Voting event', activity: 'Audience activity', blackout: 'Emergency hide active', cleared: 'Stage cleared' };
 
 async function request(path, options = {}) {
   const response = await fetch(path, { cache: 'no-store', signal: AbortSignal.timeout(15000), ...options });
@@ -120,6 +121,7 @@ function SelectedStage({ stageId }) {
   const mode = overlay?.kind || (stage?.cleared ? 'cleared' : 'waiting');
   return <div className="space-y-6" data-standalone-stage={stageId}>
     <StageFeedback message={actionSuccess} error={actionError} onMessageDismiss={() => setActionSuccess('')} onDismiss={() => setActionError('')}/>
+    {item && <LiveDirector key={item.id} standalone session={{id:item.id,public_code:item.code,title:item.title}}/>}
     <section aria-label="Standalone stage preview" data-atmosphere={stage?.atmosphere || 'midnight'} className="spill-stage relative isolate overflow-hidden rounded-card border border-white/15 p-5 sm:p-7">
       <div className="stage-lightfield" aria-hidden="true"/><div className="stage-contour" aria-hidden="true"/>
       <div className="relative space-y-4">

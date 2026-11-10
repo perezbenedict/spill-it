@@ -62,7 +62,7 @@ test('standalone editorial modes fit mobile through 4K and retain readable long 
       await expect(page.locator('[data-active-chapter]')).toHaveCount(mode === 'announcement' ? 0 : 1);
       expect(await page.locator('.stage-emblem-watermark').evaluate(node => getComputedStyle(node).animationName)).toBe('none');
       expect(await page.locator('.standalone-projector-frame span').first().evaluate(node => getComputedStyle(node).animationName)).toBe('none');
-      await info.attach(`standalone-${mode}-${width}x${height}.png`, { body: await page.screenshot(), contentType: 'image/png' });
+      const capture=info.outputPath(`standalone-${mode}-${width}x${height}.png`);await page.screenshot({path:capture});await info.attach(`standalone-${mode}-${width}x${height}.png`, {path:capture,contentType:'image/png'});
       if (width === 390 || width === 1920) {
         const report = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze();
         expect(report.violations.map(rule => rule.id)).toEqual([]);
@@ -117,7 +117,7 @@ test('voting suppresses the chapter and deletion removes live content through po
   await expect(page.getByRole('heading', { name: 'Which perspective resonates?' })).toBeVisible();
   await expect(page.locator('[data-active-chapter]')).toHaveCount(0);
   await assertLayout(page);
-  await info.attach('standalone-voting.png', { body: await page.screenshot(), contentType: 'image/png' });
+  const capture=info.outputPath('standalone-voting.png');await page.screenshot({path:capture});await info.attach('standalone-voting.png',{path:capture,contentType:'image/png'});
   const current = (await api(`/admin/stages/${item.id}`)).item;
   await api(`/admin/stages/${item.id}`, { action: 'delete', expectedRevision: current.revision, confirmed: true, password: E2E.adminPassword });
   await expect(page.getByRole('heading', { name: 'Stage unavailable' })).toBeVisible({ timeout: 12000 });

@@ -67,7 +67,7 @@ async function snapshot(env, id) {
   const receiver = await env.DB.prepare('SELECT seen_at AS seenAt,revision,visible FROM projector_health WHERE session_id=?').bind(id).first();
   const wordPending = await env.DB.prepare("SELECT COUNT(*) AS count FROM audience_responses r JOIN audience_activities a ON a.id=r.activity_id WHERE a.session_id=? AND r.moderation='pending'").bind(id).first();
   const current = projected?.current_submission_id ? await env.DB.prepare("SELECT id,content FROM submissions WHERE id=? AND session_id=? AND moderation_status='approved' AND hidden_from_presentation=0").bind(projected.current_submission_id,id).first() : null;
-  return { revision: state.revision, rundown: parse(state.rundown,[]), preview: parse(state.preview,null), canRestore: !!state.recovery, live: { stage: platform.stage, contribution: current, poll: platform.polls.find(p=>p.id===platform.projectedPollId) || null }, platformRevision: platform.revision, polls: platform.polls, health: { serverTime: Date.now(), sessionStatus: platform.sessionStatus, pending: platform.insights.pending || 0, wordPending: wordPending.count, queued: platform.queue.length, receiver, projectorFresh: !!receiver && Date.now()-receiver.seenAt < 30000, synchronized: !!receiver && receiver.revision === platform.revision }, activities: await activities(env,id,true) };
+  return { revision: state.revision, rundown: parse(state.rundown,[]), preview: parse(state.preview,null), canRestore: !!state.recovery && platform.stage.overlay?.kind==='blackout', live: { stage: platform.stage, contribution: current, poll: platform.polls.find(p=>p.id===platform.projectedPollId) || null }, platformRevision: platform.revision, polls: platform.polls, votingEvents: await list(env,"SELECT public_code AS code,title,status FROM voting_events WHERE status IN ('open','closed') ORDER BY (status='open') DESC,updated_at DESC,id DESC LIMIT 50"), health: { serverTime: Date.now(), sessionStatus: platform.sessionStatus, pending: platform.insights.pending || 0, wordPending: wordPending.count, queued: platform.queue.length, receiver, projectorFresh: !!receiver && Date.now()-receiver.seenAt < 30000, synchronized: !!receiver && receiver.revision === platform.revision }, activities: await activities(env,id,true) };
 }
 
 async function eligible(env,id,cue) {
@@ -115,18 +115,21 @@ export async function handleDirector(request,env,admin,id) {
     const cue = validateCue(body.cue);
     if (!cue || !await eligible(env,id,cue)) return reply({error:'Choose approved, visible and available content.'},400);
     statements.push(guarded(`UPDATE director_state SET preview=? WHERE session_id=? AND ${guard}`,JSON.stringify(cue),id));
-  } else if (['take','hide','restore'].includes(body.action)) {
+  } else if (['take','sendLive','hide','restore','clearLive'].includes(body.action)) {
     liveChange = true;
     const actualStage={...platform.stage,...parse(storedPlatform.stage_config,{})};
     delete actualStage.resumeOverlay;
     stage = {...actualStage, overlay:null,returnOverlay:null};
-    if (body.action === 'hide') {
+    if (body.action === 'clearLive') {
+      statements.push(guarded(`UPDATE director_state SET recovery=NULL WHERE session_id=? AND ${guard}`,id));
+    } else if (body.action === 'hide') {
       if (platform.stage.overlay?.kind !== 'blackout') {
         const recovery = {stage:actualStage,submission:platform.currentSubmissionId,poll:platform.projectedPollId};
         statements.push(guarded(`UPDATE director_state SET recovery=? WHERE session_id=? AND ${guard}`,JSON.stringify(recovery),id));
       }
       stage.overlay = {kind:'blackout',text:'',endsAt:null};
     } else if (body.action === 'restore') {
+      if(platform.stage.overlay?.kind!=='blackout')return reply({error:'Emergency hide is no longer active. Review Live before restoring.'},409);
       const recovery = parse(state.recovery,null);
       if (!recovery) return reply({error:'No previous live screen to restore.'},400);
       if (recovery.submission && !await eligible(env,id,{kind:'contribution',target:recovery.submission})) return reply({error:'The previous contribution is no longer approved. Preview a safe cue instead.'},409);
@@ -138,8 +141,8 @@ export async function handleDirector(request,env,admin,id) {
       stage = recovery.stage; submission = recovery.submission; poll = recovery.poll;
       statements.push(guarded(`UPDATE director_state SET recovery=NULL WHERE session_id=? AND ${guard}`,id));
     } else {
-      const cue = parse(state.preview,null);
-      if (!cue || !await eligible(env,id,cue)) return reply({error:'Preview content is no longer eligible. Select a safe cue.'},409);
+      const cue = body.action==='sendLive' ? validateCue(body.cue) : parse(state.preview,null);
+      if (!cue || !await eligible(env,id,cue)) return reply({error:'This cue is no longer eligible. Select approved, available content.'},409);
       if (cue.kind === 'contribution') submission = cue.target;
       else if (cue.kind === 'poll') poll = cue.target;
       else if (cue.kind === 'voting') stage.overlay = {kind:'voting',eventCode:cue.target,text:'Voting',endsAt:null};

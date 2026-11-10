@@ -5,8 +5,9 @@ import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import ActivityResults from './ActivityResults';
 
-export default function AudienceActivities({code,stageId}) {
-  const {data,error,refresh}=usePlatform(`/api/director/public/${code}`, {allowLowBandwidth:!stageId});
+export default function AudienceActivities({code,stageId,standalone=false}) {
+  const base=`/api/director/${standalone?'standalone/':''}public/${code}`;
+  const {data,error,refresh}=usePlatform(base, {allowLowBandwidth:!stageId});
   const activity=stageId ? data?.activities?.find(a=>a.id===stageId) : data?.activities?.find(a=>a.status==='open');
   const [item,setItem]=useState(''),[feedback,setFeedback]=useState(''),[sent,setSent]=useState(false),[busy,setBusy]=useState(false);
   const lock=useRef(false);
@@ -14,7 +15,7 @@ export default function AudienceActivities({code,stageId}) {
   async function respond(event) {
     event.preventDefault();if(lock.current || !activity || sent)return;lock.current=true;setBusy(true);setFeedback('');
     try {
-      const response=await fetch(`/api/director/public/${code}/respond`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({activityId:activity.id,item}),signal:AbortSignal.timeout(15000)});
+      const response=await fetch(`${base}/respond`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({activityId:activity.id,item}),signal:AbortSignal.timeout(15000)});
       const body=await response.json();if(!response.ok)throw Error(body.error || 'Please retry.');
       setSent(true);setFeedback(activity.kind==='wordcloud'?'Your word is with the moderator.':'Your response is received.');await refresh();
     }catch(failure){setFeedback(failure.message || 'Response unconfirmed. Retry the same answer safely.');}
