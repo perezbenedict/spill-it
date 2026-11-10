@@ -39,6 +39,9 @@
   },
   "integrity": "ok",
   "foreignKeys": "ok",
-  "productionMigrated": false,
-  "createdAt": "2026-11-10T16:51:07.910367+00:00"
+  "productionMigrated": true,
+  "createdAt": "2026-11-10T16:51:07.910367+00:00",
+  "productionLedgerConfirmed": true,
+  "postReleaseIntegrity": "ok",
+  "postReleaseForeignKeys": "ok"
 }

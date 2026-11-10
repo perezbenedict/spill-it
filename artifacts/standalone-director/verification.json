@@ -1,6 +1,6 @@
 {
   "verifiedAt": "2026-11-10T16:52:09.426534+00:00",
-  "status": "Verified release candidate; production deployment pending",
+  "status": "Deployed and production verified",
   "unitTests": {
     "passed": 102,
     "files": 15
@@ -250,5 +250,21 @@
     "Firefox UI verification remains unavailable because installed Firefox cannot start",
     "BrowserOS neo tools not exposed; isolated Chromium and WebKit used",
     "Rehearsal is local; acknowledgements do not prove physical projector output"
-  ]
+  ],
+  "production": {
+    "runtimeCommit": "d82c0ec2bad4958453a4fa006993f2ea1d3b12d3",
+    "pages": {
+      "id": "8014a573-7e0f-461c-b35d-54b217bc99ec",
+      "url": "https://8014a573.spill-it-4rw.pages.dev",
+      "production": "https://spill-it-4rw.pages.dev",
+      "commit": "d82c0ec2bad4958453a4fa006993f2ea1d3b12d3",
+      "status": "success"
+    },
+    "apiVersion": "659175d6-c2ce-44d6-a262-0c76bb063ab1",
+    "apiDeployment": "0f5b1718-3efc-4356-9a34-f18174de7e9f",
+    "allPreviousEventDataPreserved": true,
+    "browserErrors": 0,
+    "browserWrites": 0,
+    "record": "artifacts/standalone-director/production.json"
+  }
 }

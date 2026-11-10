@@ -1,6 +1,6 @@
 # Standalone Live Director and stage controls
 
-Status: implemented and verified; production deployment record follows after release.
+Status: deployed and verified on 10 November 2026 at **https://spill-it-4rw.pages.dev**. Runtime commit `d82c0ec2bad4958453a4fa006993f2ea1d3b12d3`. Existing discussion and standalone data, votes, credentials and presentation settings were preserved.
 
 ## What changed
 
@@ -38,3 +38,15 @@ The compiled Cloudflare Pages preview verified standalone private Preview, Take,
 Firefox UI verification remains blocked by the installed browser startup failure; BrowserOS neo tools were unavailable. Chromium and WebKit were verified. Rehearsal is local, participation is per browser, and projector acknowledgements do not prove physical output. Polling cannot instantly hide an offline projector. Rundowns allow 50 cues; activity lists show the latest 30; word review returns up to 100 records with pending items first; the voting picker prioritizes open events in a bounded 50-event list. Standalone question priorities use prepared choices; free-form discussion submissions remain in the discussion workflow.
 
 Rollback the application versions if needed and leave the additive tables intact. Never reset or restore an older whole database just to roll back code; preserve later event data and reconcile only reviewed affected rows.
+
+
+## Production release record
+
+- Pages deployment: `8014a573-7e0f-461c-b35d-54b217bc99ec`; immutable URL: https://8014a573.spill-it-4rw.pages.dev.
+- API version: `659175d6-c2ce-44d6-a262-0c76bb063ab1`, serving 100%; API deployment: `0f5b1718-3efc-4356-9a34-f18174de7e9f`.
+- Migration `011_standalone_director` is recorded once and all five standalone-owned tables are present. An interrupted CLI import was checked and confirmed unapplied before the reviewed SQL was successfully executed through the Cloudflare D1 API; all nine statements succeeded.
+- Protected backup: `/Users/perezbenedict/Library/Application Support/SPILL/backups/standalone-director-20261110T165102Z/before.sql`; 127,949 bytes; SHA-256 `cd267ac604a0454b85289884dd0882f3303c547aa9d7bfe2d2b7390f01b3f9de`. Restoration and double migration rehearsal passed. The after export restored successfully with integrity/FK checks, and every pre-existing event-data row/value remained intact. Normal projector-health and rate-limit records changed through ongoing client activity and were checked separately.
+- Preserved five discussions, 26 contributions, 32 nickname reservations, seven discussion-poll votes, one dedicated voting event/round/vote, two standalone stages, 24 existing Director receipts and the existing audience activity/response. No event status, cue, response, ballot or public screen was changed to test the production release.
+- Production Chromium verified all three existing Director views (one discussion and two standalone), both branded monitors, named voting selection, Clear Live/direct-send controls and private rehearsal direct sending. All 13 page checks returned 200; 14 emitted assets returned 200; four private-build paths returned 404; anonymous Director access returned 401; standalone aggregate export returned 200. Zero browser errors, zero browser write requests, zero production test contributions and ballots.
+- Previous rollback targets: Pages `a8b596a0-c73c-4609-b689-34f5fd02a238`, API version `4108c478-0d40-4a16-b994-0a2feb885a12`. Roll back application deployments only and retain additive tables. SQL backups and authentication context remain owner-only outside the repository.
+- Git `main` remains unchanged. The feature-branch runtime is explicitly deployed, and release-record commits skip automatic Pages builds.

@@ -1,0 +1,335 @@
+{
+  "backup": {
+    "folder": "/Users/perezbenedict/Library/Application Support/SPILL/backups/standalone-director-20261110T165102Z",
+    "backupBytes": 127949,
+    "backupSha256": "cd267ac604a0454b85289884dd0882f3303c547aa9d7bfe2d2b7390f01b3f9de",
+    "migrationSha256": "8dc84a6fbca75b8e7135151e6f8b2fbdd9e8e11993169a3f05d28dd5fc004075",
+    "appliedTwice": true,
+    "allPreviousValuesPreserved": true,
+    "existingCounts": {
+      "discussion_sessions": 5,
+      "submissions": 26,
+      "presentation_state": 5,
+      "admin_users": 1,
+      "admin_sessions": 4,
+      "nickname_reservations": 32,
+      "platform_state": 5,
+      "projection_queue": 0,
+      "polls": 1,
+      "poll_options": 3,
+      "poll_votes": 7,
+      "reaction_events": 1,
+      "admin_activity": 196,
+      "auth_rate_limits": 1,
+      "nickname_backfills": 2,
+      "legacy_nickname_claims": 0,
+      "spill_schema_migrations": 7,
+      "voting_events": 1,
+      "voting_questions": 1,
+      "voting_options": 2,
+      "voting_rounds": 1,
+      "voting_votes": 1,
+      "activity_history_batches": 0,
+      "activity_archives": 0,
+      "standalone_stages": 2,
+      "director_state": 1,
+      "director_receipts": 24,
+      "projector_health": 1,
+      "audience_activities": 1,
+      "audience_responses": 1
+    },
+    "integrity": "ok",
+    "foreignKeys": "ok",
+    "productionMigrated": false,
+    "createdAt": "2026-11-10T16:51:07.910367+00:00"
+  },
+  "preparedAt": "2026-11-10T16:52:24.149259+00:00",
+  "baselineRoutes": 13,
+  "rollback": {
+    "pages": "a8b596a0-c73c-4609-b689-34f5fd02a238",
+    "apiVersion": "4108c478-0d40-4a16-b994-0a2feb885a12",
+    "apiDeployment": "f8ac13dd-3fe8-487d-8fa4-19bb311e294e"
+  },
+  "bundleSha256": "47e119d06b8ec6b7200d7eb97e0fe5751754f4fd81a19a25094bdcb230fc93a4",
+  "runtimeCommit": "d82c0ec2bad4958453a4fa006993f2ea1d3b12d3",
+  "migration": {
+    "version": "011_standalone_director",
+    "method": "Cloudflare D1 API after interrupted CLI request was verified not to have applied",
+    "allNineStatementsSucceeded": true,
+    "ledgerConfirmed": true,
+    "newTablesConfirmed": 5
+  },
+  "apiSmoke": {
+    "existingReadStatesPreserved": true,
+    "routes": 13,
+    "standaloneDirectors": 2,
+    "unauthorizedProtected": true,
+    "eventMutations": 0
+  },
+  "apiVersion": "659175d6-c2ce-44d6-a262-0c76bb063ab1",
+  "apiDeployment": "0f5b1718-3efc-4356-9a34-f18174de7e9f",
+  "pages": {
+    "id": "8014a573-7e0f-461c-b35d-54b217bc99ec",
+    "url": "https://8014a573.spill-it-4rw.pages.dev",
+    "production": "https://spill-it-4rw.pages.dev",
+    "commit": "d82c0ec2bad4958453a4fa006993f2ea1d3b12d3",
+    "status": "success"
+  },
+  "preservation": {
+    "allPreviousEventDataPreserved": true,
+    "integrity": "ok",
+    "foreignKeys": "ok",
+    "migrationRecordedOnce": true,
+    "dataTables": {
+      "discussion_sessions": {
+        "before": 5,
+        "after": 5,
+        "originalRowsPreserved": true
+      },
+      "submissions": {
+        "before": 26,
+        "after": 26,
+        "originalRowsPreserved": true
+      },
+      "presentation_state": {
+        "before": 5,
+        "after": 5,
+        "originalRowsPreserved": true
+      },
+      "admin_users": {
+        "before": 1,
+        "after": 1,
+        "originalRowsPreserved": true
+      },
+      "admin_sessions": {
+        "before": 4,
+        "after": 4,
+        "originalRowsPreserved": true
+      },
+      "nickname_reservations": {
+        "before": 32,
+        "after": 32,
+        "originalRowsPreserved": true
+      },
+      "platform_state": {
+        "before": 5,
+        "after": 5,
+        "originalRowsPreserved": true
+      },
+      "projection_queue": {
+        "before": 0,
+        "after": 0,
+        "originalRowsPreserved": true
+      },
+      "polls": {
+        "before": 1,
+        "after": 1,
+        "originalRowsPreserved": true
+      },
+      "poll_options": {
+        "before": 3,
+        "after": 3,
+        "originalRowsPreserved": true
+      },
+      "poll_votes": {
+        "before": 7,
+        "after": 7,
+        "originalRowsPreserved": true
+      },
+      "reaction_events": {
+        "before": 1,
+        "after": 1,
+        "originalRowsPreserved": true
+      },
+      "admin_activity": {
+        "before": 196,
+        "after": 196,
+        "originalRowsPreserved": true
+      },
+      "nickname_backfills": {
+        "before": 2,
+        "after": 2,
+        "originalRowsPreserved": true
+      },
+      "legacy_nickname_claims": {
+        "before": 0,
+        "after": 0,
+        "originalRowsPreserved": true
+      },
+      "voting_events": {
+        "before": 1,
+        "after": 1,
+        "originalRowsPreserved": true
+      },
+      "voting_questions": {
+        "before": 1,
+        "after": 1,
+        "originalRowsPreserved": true
+      },
+      "voting_options": {
+        "before": 2,
+        "after": 2,
+        "originalRowsPreserved": true
+      },
+      "voting_rounds": {
+        "before": 1,
+        "after": 1,
+        "originalRowsPreserved": true
+      },
+      "voting_votes": {
+        "before": 1,
+        "after": 1,
+        "originalRowsPreserved": true
+      },
+      "activity_history_batches": {
+        "before": 0,
+        "after": 0,
+        "originalRowsPreserved": true
+      },
+      "activity_archives": {
+        "before": 0,
+        "after": 0,
+        "originalRowsPreserved": true
+      },
+      "standalone_stages": {
+        "before": 2,
+        "after": 2,
+        "originalRowsPreserved": true
+      },
+      "director_state": {
+        "before": 1,
+        "after": 1,
+        "originalRowsPreserved": true
+      },
+      "director_receipts": {
+        "before": 24,
+        "after": 24,
+        "originalRowsPreserved": true
+      },
+      "audience_activities": {
+        "before": 1,
+        "after": 1,
+        "originalRowsPreserved": true
+      },
+      "audience_responses": {
+        "before": 1,
+        "after": 1,
+        "originalRowsPreserved": true
+      }
+    },
+    "operationalHealthAndRateLimits": {
+      "auth_rate_limits": {
+        "before": 1,
+        "after": 1,
+        "originalRowsPreserved": false
+      },
+      "projector_health": {
+        "before": 1,
+        "after": 1,
+        "originalRowsPreserved": false
+      }
+    },
+    "postBackupSha256": "ddb104997956f87ce52355e97bc3f890a6a28f2143ba6c02b212db1c0257907e"
+  },
+  "status": "Deployed and production verified",
+  "verifiedAt": "2026-11-10T17:04:47.868443+00:00",
+  "productionSmoke": {
+    "verifiedAt": "2026-11-10T17:02:21.078Z",
+    "pages": [
+      {
+        "route": "discussion Live Director",
+        "status": 200,
+        "brandedMonitors": 2,
+        "namedVotingPicker": true,
+        "clearLive": true,
+        "directSendButton": true,
+        "privateRehearsalDirectSend": true
+      },
+      {
+        "route": "standalone Live Director",
+        "status": 200,
+        "brandedMonitors": 2,
+        "namedVotingPicker": true,
+        "clearLive": true,
+        "directSendButton": true,
+        "privateRehearsalDirectSend": true
+      },
+      {
+        "route": "standalone Live Director",
+        "status": 200,
+        "brandedMonitors": 2,
+        "namedVotingPicker": true,
+        "clearLive": true,
+        "directSendButton": true,
+        "privateRehearsalDirectSend": true
+      },
+      {
+        "route": "/",
+        "status": 200
+      },
+      {
+        "route": "/admin/login",
+        "status": 200
+      },
+      {
+        "route": "/join/[code]",
+        "status": 200
+      },
+      {
+        "route": "/room/[code]",
+        "status": 200
+      },
+      {
+        "route": "/stage/[code]",
+        "status": 200
+      },
+      {
+        "route": "/stage/[code]/join",
+        "status": 200
+      },
+      {
+        "route": "/stage/[code]",
+        "status": 200
+      },
+      {
+        "route": "/stage/[code]/join",
+        "status": 200
+      },
+      {
+        "route": "/vote/[code]",
+        "status": 200
+      },
+      {
+        "route": "/vote/[code]/stage",
+        "status": 200
+      }
+    ],
+    "emittedAssets": 14,
+    "privateArtifacts": [
+      {
+        "path": "/cloudflare/next-env.mjs",
+        "status": 404
+      },
+      {
+        "path": "/server-functions/default/index.mjs",
+        "status": 404
+      },
+      {
+        "path": "/worker.js",
+        "status": 404
+      },
+      {
+        "path": "/_worker.js",
+        "status": 404
+      }
+    ],
+    "unauthorizedDirector": 401,
+    "standaloneAggregateExport": 200,
+    "browserErrors": 0,
+    "browserWrites": 0,
+    "productionTestContributions": 0,
+    "productionTestVotes": 0,
+    "browser": "Chromium; BrowserOS neo unavailable"
+  },
+  "productionTestWrites": 0
+}
