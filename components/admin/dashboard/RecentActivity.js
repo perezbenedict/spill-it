@@ -5,6 +5,7 @@ import { Radio } from "lucide-react";
 import { cn } from "@/lib/cn";
 import Badge from "@/components/ui/Badge";
 import EmptyState from "@/components/ui/EmptyState";
+import { moderationTimestamp } from "@/lib/moderation-time";
 
 const MODERATION_LABELS = {
   pending: "Pending",
@@ -34,6 +35,8 @@ function relativeTime(iso) {
 
 export default function RecentActivity({ sessionId, initialItems = [] }) {
   const [items, setItems] = useState(initialItems);
+  const [mounted,setMounted]=useState(false);
+  useEffect(()=>setMounted(true),[]);
   const [connection, setConnection] = useState("reconnecting");
   const inFlightRef = useRef(false);
 
@@ -139,10 +142,10 @@ export default function RecentActivity({ sessionId, initialItems = [] }) {
                 </span>
                 <time
                   dateTime={item.created_at}
-                  title={new Date(item.created_at).toLocaleString()}
+                  title={moderationTimestamp(item.created_at)}
                   className="text-xs text-muted"
                 >
-                  {relativeTime(item.created_at)}
+                  {mounted ? relativeTime(item.created_at) : moderationTimestamp(item.created_at)}
                 </time>
               </div>
               <p className="mt-2 line-clamp-3 whitespace-pre-wrap break-words text-sm text-ink">

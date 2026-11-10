@@ -41,6 +41,8 @@ execute("UPDATE voting_events SET status='closed' WHERE id='vote-a';");
 assert.throws(() => execute("INSERT INTO voting_votes(event_id,question_id,participant_id,option_id,created_at,round_number) VALUES('vote-a','question-a','browser-b','option-a',7,2);"));
 execute(readFileSync('api/migrations/008_activity.sql', 'utf8'));
 execute(readFileSync('api/migrations/009_standalone_stages.sql', 'utf8'));
+execute(readFileSync('api/migrations/010_director.sql','utf8'));
+execute(readFileSync('api/migrations/010_director.sql','utf8'));
 execute("INSERT INTO standalone_stages(id,public_code,created_at,updated_at) VALUES('stage-a','EFGHJKMN','2026-11-08','2026-11-08');");
 assert.equal(execute("SELECT title||':'||revision FROM standalone_stages WHERE id='stage-a';"), ':0');
 assert.equal(execute('SELECT COUNT(*) FROM discussion_sessions;'), '2');
@@ -63,4 +65,4 @@ assert.equal(execute("SELECT current_submission_id IS NULL FROM presentation_sta
 assert.throws(() => execute("UPDATE presentation_state SET current_submission_id='contribution-a' WHERE session_id='session-a';"));
 execute("DELETE FROM discussion_sessions WHERE id='session-a';");
 assert.equal(execute("SELECT COUNT(*) FROM admin_activity WHERE action='delete_session';"), '1');
-console.log(JSON.stringify({ migrations: ['004_platform','005_stage','006_voting','007_voting_rounds','008_activity','009_standalone_stages'], independentStageCreated: true, preservedSessions: 2, preservedContributions: 1, preservedProjection: true, crossSessionQueueRejected: true, hiddenProjectionRejected: true, duplicateVoteRejected: true, closedVoteRejected: true, historicalVotesPreserved: true, distinctRounds: true, securityAuditProtected: true, deletionActivityRetained: true, integrity: 'ok', database }));
+console.log(JSON.stringify({ migrations: ['004_platform','005_stage','006_voting','007_voting_rounds','008_activity','009_standalone_stages','010_director'], independentStageCreated: true, preservedSessions: 2, preservedContributions: 1, preservedProjection: true, crossSessionQueueRejected: true, hiddenProjectionRejected: true, duplicateVoteRejected: true, closedVoteRejected: true, historicalVotesPreserved: true, distinctRounds: true, securityAuditProtected: true, deletionActivityRetained: true, integrity: 'ok', database }));

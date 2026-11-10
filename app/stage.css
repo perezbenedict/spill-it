@@ -147,3 +147,11 @@
   .stage-cursor { display: none; }
   .stage-cursor, .stage-cursor-setting, .stage-cursor-flame { transition: none; }
 }
+
+/* Low-bandwidth participant preference leaves projector atmospheres untouched. */
+html[data-low-bandwidth="true"] body :is(.animate-sheen,.animate-pulse,.animate-spin){animation:none!important;}
+html[data-low-bandwidth="true"] body .participant-shell :is(.motion-safe\:animate-pulse,.animated-background){animation:none!important;}
+
+html[data-low-bandwidth="true"] :is(.ab-ambient,.ab-svg-orbit){animation:none!important;will-change:auto!important;}
+html[data-low-bandwidth="true"] :is(.ab-pointer,.ab-grain){display:none;}
+[data-live-director] { scroll-margin-top: 10rem; }

@@ -11,7 +11,7 @@ function announcementType(text, compact) {
 
 export default function StagePresentation({ overlay, seconds, compact = false }) {
   const reduceMotion = useReducedMotion();
-  if (!overlay || overlay.kind === 'voting') return null;
+  if (!overlay || ['voting','activity','blackout'].includes(overlay.kind)) return null;
   const isAnnouncement = overlay.kind === 'announcement';
   const isReflection = overlay.kind === 'reflection';
   const style = overlay.style || 'statement';
@@ -38,7 +38,7 @@ export default function StagePresentation({ overlay, seconds, compact = false })
       {overlay.subtitle && <motion.p initial={reduceMotion ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: reduceMotion ? 0 : .35, delay: reduceMotion ? 0 : .18 }} className="stage-announcement-subtitle mt-7 max-w-[58ch] whitespace-pre-wrap text-muted [overflow-wrap:anywhere]">{overlay.subtitle}</motion.p>}
     </> : <>
       <p className="stage-eyebrow">{isReflection ? 'A moment to reflect' : 'In the spotlight'}</p>
-      <h1 className="stage-prompt mt-6 font-display [overflow-wrap:anywhere]">{overlay.text}</h1>
+      <h1 className="stage-prompt mt-6 font-display [overflow-wrap:anywhere]" style={compact ? {fontSize:"clamp(1.125rem,2vw,2rem)"} : undefined}>{overlay.text}</h1>
     </>}
     {seconds !== null && seconds !== undefined && <p role="timer" aria-live="off" className="mt-8 inline-flex min-w-24 justify-center rounded-full border border-gold/15 bg-midnight/20 px-5 py-2 text-xl tabular-nums text-gold-light" aria-label={isAnnouncement ? 'Announcement time remaining' : 'Reflection time remaining'}>{Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, '0')}</p>}
   </motion.section></AnimatePresence>;

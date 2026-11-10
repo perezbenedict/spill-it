@@ -28,16 +28,19 @@ export function validateStage(value, now = Date.now()) {
   let overlay = null;
   if (value.overlay !== null) {
     const candidate = value.overlay;
-    if (!record(candidate) || !['prompt', 'reflection', 'announcement', 'voting'].includes(candidate.kind)) return null;
+    if (!record(candidate) || !['prompt', 'reflection', 'announcement', 'voting', 'activity', 'blackout'].includes(candidate.kind)) return null;
     if (['prompt', 'reflection'].includes(candidate.kind) && !stageText(candidate.text, 500)) return null;
     if (candidate.kind === 'announcement' && !announcement(candidate)) return null;
     if (candidate.kind === 'voting' && (typeof candidate.eventCode !== 'string' || !/^[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{8}$/.test(candidate.eventCode))) return null;
+    if (candidate.kind === 'activity' && !stageId(candidate.activityId)) return null;
     if (candidate.endsAt !== null) {
       if (!['reflection', 'announcement'].includes(candidate.kind) || typeof candidate.endsAt !== 'string') return null;
       const end = Date.parse(candidate.endsAt);
       if (!Number.isFinite(end) || end <= now || end > now + 86400000) return null;
     }
-    overlay = candidate.kind === 'announcement'
+    overlay = candidate.kind === 'blackout' ? { kind: 'blackout', text: '', endsAt: null }
+      : candidate.kind === 'activity' ? { kind: 'activity', activityId: candidate.activityId, text: 'Audience activity', endsAt: null }
+      : candidate.kind === 'announcement'
       ? { kind: 'announcement', ...announcement(candidate), endsAt: candidate.endsAt === null ? null : new Date(candidate.endsAt).toISOString() }
       : candidate.kind === 'voting'
         ? { kind: 'voting', eventCode: candidate.eventCode, text: 'Voting', endsAt: null }
@@ -67,7 +70,13 @@ function publicStage(state) {
   return { ...stage, chapters: stage.chapters.filter(item => item.id === stage.activeChapterId), prompts: [], announcements: [] };
 }
 
+export async function publicProjectionStage(env, state) { return eligibleStage(env, publicStage(state || {})); }
+
 async function eligibleStage(env, stage) {
+  if (stage.overlay?.kind === 'activity') {
+    const activity = await env.DB.prepare("SELECT id FROM audience_activities WHERE id=? AND status IN ('open','closed')").bind(stage.overlay.activityId).first();
+    if (!activity) stage.overlay=null;
+  }
   for (const key of ['overlay', 'resumeOverlay']) {
     if (stage[key]?.kind !== 'voting') continue;
     const event = await env.DB.prepare("SELECT id FROM voting_events WHERE public_code=? AND status IN ('open','closed')").bind(stage[key].eventCode).first();
@@ -250,7 +259,8 @@ export async function handleEngagement(request, env, code, action) {
     const projectedPoll = polls.find(item => item.id === state.projected_poll_id) || null;
     const reactions = state.reactions_enabled ? await rows(env.DB, 'SELECT reaction,COUNT(*) AS count FROM reaction_events WHERE session_id=? AND created_at>? GROUP BY reaction', session.id, Date.now() - 15000) : [];
     const stage = await eligibleStage(env, publicStage(state));
-    return reply({ stage, poll, projectedPoll, presentationPoll: projectedPoll, reactionsEnabled: !!state.reactions_enabled, reactions });
+    const presentation = await env.DB.prepare('SELECT current_submission_id FROM presentation_state WHERE session_id=?').bind(session.id).first();
+    return reply({ revision: state.revision, currentSubmissionId: presentation?.current_submission_id ?? null, stage, poll, projectedPoll, presentationPoll: projectedPoll, reactionsEnabled: !!state.reactions_enabled, reactions });
   }
   const body = await request.json().catch(() => null);
   if (!body || typeof body.participant_id !== 'string' || !/^[A-Za-z0-9_-]{16,100}$/.test(body.participant_id)) return reply({ error: 'Rejoin this discussion before participating.' }, 400);

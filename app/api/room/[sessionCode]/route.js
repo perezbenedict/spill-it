@@ -25,6 +25,8 @@ export async function GET(request, { params }) {
   }
 
   return NextResponse.json({
+    stage: result.body.stage,
+    stageRevision: result.body.stageRevision,
     currentId: result.body.currentId,
     submission: result.body.currentSubmission,
     status: result.body.session?.status ?? null,

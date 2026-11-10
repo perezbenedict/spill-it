@@ -8,6 +8,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import RoomControls from "@/components/room/RoomControls";
 import StageAtmosphere from "@/components/room/StageAtmosphere";
 import StageCursor from "@/components/room/StageCursor";
+import AudienceActivities from '@/components/director/AudienceActivities';
 import VotingStage from "@/components/voting/VotingStage";
 import RoomEngagement from "@/components/platform/RoomEngagement";
 import StagePresentation from "@/components/platform/StagePresentation";
@@ -39,6 +40,9 @@ function quoteStyle(content) {
 
 export default function RoomDisplay({
   session,
+  initialClock = null,
+  initialStage = null,
+  initialStageRevision = 0,
   currentId: initialCurrentId,
   currentSubmission: initialCurrentSubmission,
   isAdmin,
@@ -55,8 +59,11 @@ export default function RoomDisplay({
   }
   const sessionCode = session.public_code;
   const pollUrl = `/api/room/${sessionCode}`;
-  const [stage, setStage] = useState(null);
-  const [clock, setClock] = useState(() => Date.now());
+  const [stage, setStage] = useState(initialStage);
+  const [stageRevision,setStageRevision]=useState(initialStageRevision);
+  const stageRevisionRef=useRef(initialStageRevision);
+  const receiverRef=useRef(null);
+  const [clock, setClock] = useState(() => initialClock ?? Date.now());
   const stageOverlay = stage?.overlay;
   const active = candidate => candidate && (!candidate.endsAt || Date.parse(candidate.endsAt) > clock) ? candidate : null;
   const overlay = active(stageOverlay) || active(stage?.resumeOverlay);
@@ -249,6 +256,7 @@ export default function RoomDisplay({
       }
       inFlight = true;
       controller = new AbortController();
+      const abortTimer=setTimeout(()=>controller?.abort(),12000);
       try {
         const response = await fetch(pollUrl, {
           cache: "no-store",
@@ -256,6 +264,8 @@ export default function RoomDisplay({
         });
         const data = response.ok ? await response.json() : null;
         if (disposed || !data) throw new Error("poll failed");
+        if(Number.isInteger(data.stageRevision) && data.stageRevision < stageRevisionRef.current) return;
+        if(Number.isInteger(data.stageRevision)){stageRevisionRef.current=data.stageRevision;setStageRevision(data.stageRevision);setStage(data.stage || null);}
         setConnection("live");
         if (data.status) setSessionStatus(data.status);
         if (typeof data.topic === "string" && data.topic.trim()) setSessionTopic(data.topic.trim());
@@ -270,6 +280,7 @@ export default function RoomDisplay({
       } catch {
         if (!disposed) setConnection("reconnecting");
       } finally {
+        clearTimeout(abortTimer);
         controller = null;
         inFlight = false;
         schedule();
@@ -315,6 +326,14 @@ export default function RoomDisplay({
         ? "This conversation has been wrapped"
         : null;
 
+  receiverRef.current={revision:stageRevision,ready:!!overlay || !currentId || displayedRow?.id===currentId};
+  useEffect(()=>{
+    if(!isAdmin)return;
+    const send=()=>{const state=receiverRef.current;if(!state?.ready)return;fetch(`/api/director/public/${sessionCode}/heartbeat`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({revision:state.revision,visible:!document.hidden}),signal:AbortSignal.timeout(8000)}).catch(()=>{});};
+    const frame=requestAnimationFrame(send),timer=setInterval(send,10000);
+    window.addEventListener('online',send);document.addEventListener('visibilitychange',send);
+    return()=>{cancelAnimationFrame(frame);clearInterval(timer);window.removeEventListener('online',send);document.removeEventListener('visibilitychange',send);};
+  },[sessionCode,stageRevision,isAdmin]);
   return (
     <div
       ref={screenRef}
@@ -329,6 +348,8 @@ export default function RoomDisplay({
       data-current-contribution-id={displayedRow?.id ?? ""}
       data-server-contribution-id={currentId ?? ""}
     >
+      {overlay?.kind === 'blackout' && <div data-emergency-blackout aria-label="Projection temporarily hidden" className="fixed inset-0 z-[99999] bg-black"/>}
+      {connection==='reconnecting' && <aside role="status" className="fixed bottom-4 left-4 z-[100000] max-w-[calc(100%-2rem)] rounded-control border border-gold/30 bg-midnight p-3 text-xs text-ink">Connection interrupted · showing the last confirmed screen. <button type="button" className="min-h-11 px-3 text-gold-light underline" onClick={()=>window.location.reload()}>Recover projection</button></aside>}
       <div className="stage-lightfield" aria-hidden="true" />
       <div className="stage-contour" aria-hidden="true" />
       <div className="stage-horizon" aria-hidden="true" />
@@ -442,8 +463,8 @@ export default function RoomDisplay({
       </header>
 
       <main ref={contentRef} tabIndex={0} aria-label="Presentation content. Scroll to read long contributions." style={{ marginBottom: isAdmin ? 'var(--room-controls-height, 5rem)' : 0 }} className="relative z-10 flex min-h-0 flex-1 flex-col items-center overflow-y-auto px-5 pb-6 sm:px-8 lg:px-10 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {overlay?.kind === 'voting' ? <div className="relative z-20 my-auto w-full py-6"><VotingStage code={overlay.eventCode} embedded /></div> : overlay && <StagePresentation overlay={overlay} seconds={seconds} />}
-        <div className={overlay ? 'hidden' : 'contents'}><RoomEngagement sessionCode={sessionCode} onPollChange={setPollPresented} onStageChange={setStage} /></div>
+        {overlay?.kind === 'activity' ? <AudienceActivities code={sessionCode} stageId={overlay.activityId}/> : overlay?.kind === 'voting' ? <div className="relative z-20 my-auto w-full py-6"><VotingStage code={overlay.eventCode} embedded /></div> : overlay && <StagePresentation overlay={overlay} seconds={seconds} />}
+        <div className={overlay ? 'hidden' : 'contents'}><RoomEngagement sessionCode={sessionCode} onPollChange={setPollPresented} /></div>
         <div className={pollPresented || overlay ? 'hidden' : 'contents'}>
         <AnimatePresence initial={false}>
           {(presentationPhase === "anticipating" || presentationPhase === "revealing") && !reduceMotion ? (

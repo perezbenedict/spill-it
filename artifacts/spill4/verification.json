@@ -1,0 +1,371 @@
+{
+  "verifiedAt": "2026-11-10T14:52:08.638437+00:00",
+  "releaseStatus": "Implemented release candidate; production deployment and migration held for active events",
+  "lint": "passed",
+  "unitTests": {
+    "files": 14,
+    "passed": 100,
+    "failed": 0
+  },
+  "build": {
+    "next": "passed",
+    "cloudflareOpenNext": "passed",
+    "cloudflarePagesBundle": "passed",
+    "apiWorkerDryRun": "passed; 175.52 KiB / gzip 35.93 KiB"
+  },
+  "fullChromiumRegression": {
+    "specs": 34,
+    "passed": 204,
+    "failed": 1,
+    "skipped": 0,
+    "resolvedFailure": "The stage3 test cleanup attempted to delete an open voting event. Test now closes its disposable event first, preserving product deletion safeguard. All 8 stage3 tests pass in final Chromium and WebKit checks."
+  },
+  "finalFocusedChecks": {
+    "specs": [
+      {
+        "spec": "admin-room-recovery.spec.js",
+        "passed": false,
+        "stats": {
+          "startTime": "2026-11-10T14:46:40.991Z",
+          "duration": 48248.002,
+          "expected": 12,
+          "skipped": 0,
+          "unexpected": 6,
+          "flaky": 0
+        }
+      },
+      {
+        "spec": "spill4.spec.js",
+        "passed": false,
+        "stats": {
+          "startTime": "2026-11-10T14:47:31.597Z",
+          "duration": 83081.666,
+          "expected": 34,
+          "skipped": 0,
+          "unexpected": 5,
+          "flaky": 0
+        }
+      },
+      {
+        "spec": "stage3.spec.js",
+        "passed": false,
+        "stats": {
+          "startTime": "2026-11-10T14:48:57.572Z",
+          "duration": 145276.289,
+          "expected": 17,
+          "skipped": 0,
+          "unexpected": 7,
+          "flaky": 0
+        }
+      }
+    ],
+    "countsByProject": {
+      "chromium": {
+        "passed": 27,
+        "blockedAtLaunch": 0,
+        "failed": 0
+      },
+      "firefox": {
+        "passed": 9,
+        "blockedAtLaunch": 18,
+        "failed": 0
+      },
+      "webkit": {
+        "passed": 27,
+        "blockedAtLaunch": 0,
+        "failed": 0
+      }
+    },
+    "skipped": 0,
+    "applicationFailures": 0,
+    "environmentBlocked": [
+      {
+        "spec": "admin-room-recovery.spec.js",
+        "project": "firefox",
+        "title": "admin session identity, status and moderation feed survive refresh",
+        "reason": "Installed Firefox cannot find its profile folder; fails before opening app."
+      },
+      {
+        "spec": "admin-room-recovery.spec.js",
+        "project": "firefox",
+        "title": "room follows pause and resume from server state without a refresh",
+        "reason": "Installed Firefox cannot find its profile folder; fails before opening app."
+      },
+      {
+        "spec": "admin-room-recovery.spec.js",
+        "project": "firefox",
+        "title": "optional disposable lifecycle supports pause, resume, close and reopen",
+        "reason": "Installed Firefox cannot find its profile folder; fails before opening app."
+      },
+      {
+        "spec": "admin-room-recovery.spec.js",
+        "project": "firefox",
+        "title": "room restores the presented contribution after refresh and reconnects",
+        "reason": "Installed Firefox cannot find its profile folder; fails before opening app."
+      },
+      {
+        "spec": "admin-room-recovery.spec.js",
+        "project": "firefox",
+        "title": "presented text remains readable at mobile and projector dimensions",
+        "reason": "Installed Firefox cannot find its profile folder; fails before opening app."
+      },
+      {
+        "spec": "admin-room-recovery.spec.js",
+        "project": "firefox",
+        "title": "closed-room status stays separate from admin navigation on narrow screens",
+        "reason": "Installed Firefox cannot find its profile folder; fails before opening app."
+      },
+      {
+        "spec": "spill4.spec.js",
+        "project": "firefox",
+        "title": "rehearsal performs no mutation requests and keeps real Live unchanged",
+        "reason": "Installed Firefox cannot find its profile folder; fails before opening app."
+      },
+      {
+        "spec": "spill4.spec.js",
+        "project": "firefox",
+        "title": "director browser Take Live, emergency recovery, screenshots and accessibility",
+        "reason": "Installed Firefox cannot find its profile folder; fails before opening app."
+      },
+      {
+        "spec": "spill4.spec.js",
+        "project": "firefox",
+        "title": "proxy enforces origin and server-owned browser identity; low bandwidth keeps participant usable",
+        "reason": "Installed Firefox cannot find its profile folder; fails before opening app."
+      },
+      {
+        "spec": "spill4.spec.js",
+        "project": "firefox",
+        "title": "lost server acknowledgement retries the identical operation without a second live change",
+        "reason": "Installed Firefox cannot find its profile folder; fails before opening app."
+      },
+      {
+        "spec": "spill4.spec.js",
+        "project": "firefox",
+        "title": "all engagement modes project readable public results and remain usable at 320px",
+        "reason": "Installed Firefox cannot find its profile folder; fails before opening app."
+      },
+      {
+        "spec": "stage3.spec.js",
+        "project": "firefox",
+        "title": "announcement composer privately previews, saves, edits, projects and restores the prior prompt",
+        "reason": "Installed Firefox cannot find its profile folder; fails before opening app."
+      },
+      {
+        "spec": "stage3.spec.js",
+        "project": "firefox",
+        "title": "timed announcement restores a prior prompt on expiry and refresh without changing contribution pointers",
+        "reason": "Installed Firefox cannot find its profile folder; fails before opening app."
+      },
+      {
+        "spec": "stage3.spec.js",
+        "project": "firefox",
+        "title": "seven atmospheres synchronize without remounting or replaying the announcement",
+        "reason": "Installed Firefox cannot find its profile folder; fails before opening app."
+      },
+      {
+        "spec": "stage3.spec.js",
+        "project": "firefox",
+        "title": "standalone announcement and voting hide discussion headers and retain their confirmed state after refresh",
+        "reason": "Installed Firefox cannot find its profile folder; fails before opening app."
+      },
+      {
+        "spec": "stage3.spec.js",
+        "project": "firefox",
+        "title": "long announcement projector frames remain readable and accessible in all five projector sizes",
+        "reason": "Installed Firefox cannot find its profile folder; fails before opening app."
+      },
+      {
+        "spec": "stage3.spec.js",
+        "project": "firefox",
+        "title": "fine-pointer cursor is decorative, idle-hidden, fullscreen-safe and optional with reduced motion",
+        "reason": "Installed Firefox cannot find its profile folder; fails before opening app."
+      },
+      {
+        "spec": "stage3.spec.js",
+        "project": "firefox",
+        "title": "touch interaction leaves cursor decoration hidden and native reading intact",
+        "reason": "Installed Firefox cannot find its profile folder; fails before opening app."
+      }
+    ],
+    "firefoxDiagnostics": "Also failed standalone launch with short /private/tmp and workspace profile paths. No application navigation occurred for blocked checks."
+  },
+  "combinedCoverage": {
+    "chromiumCasesPassedAcrossFullAndFinalRuns": 206,
+    "finalWebKitCasesPassed": 27,
+    "note": "Counts deduplicate the three rerun Chromium specs; full run predates final bounded aggregation, word health and deterministic countdown changes, which are covered by the final focused run."
+  },
+  "localLoads": [
+    {
+      "concurrency": 10,
+      "passed": true,
+      "errors": 0,
+      "p95Ms": 78.4,
+      "exactDatabaseCount": true,
+      "retryExactlyOneRow": true,
+      "projectionCorrect": true
+    },
+    {
+      "concurrency": 25,
+      "passed": true,
+      "errors": 0,
+      "p95Ms": 197.9,
+      "exactDatabaseCount": true,
+      "retryExactlyOneRow": true,
+      "projectionCorrect": true
+    },
+    {
+      "concurrency": 50,
+      "passed": true,
+      "errors": 0,
+      "p95Ms": 343.1,
+      "exactDatabaseCount": true,
+      "retryExactlyOneRow": true,
+      "projectionCorrect": true
+    },
+    {
+      "concurrency": 100,
+      "passed": true,
+      "errors": 0,
+      "p95Ms": 751.7,
+      "exactDatabaseCount": true,
+      "retryExactlyOneRow": true,
+      "projectionCorrect": true
+    }
+  ],
+  "audienceLoad": {
+    "responses": 100,
+    "safeRetries": 100,
+    "exactTotals": true,
+    "scaleAverage": 3,
+    "eachScaleCount": 20,
+    "enginesExecuted": [
+      "chromium",
+      "firefox API-only",
+      "webkit"
+    ]
+  },
+  "compiledPagesPreview": {
+    "previewAssets": 10,
+    "preview": [
+      {
+        "route": "/",
+        "status": 200
+      },
+      {
+        "route": "/admin/login",
+        "status": 200
+      },
+      {
+        "route": "/join/ABCDEFGH",
+        "status": 200
+      },
+      {
+        "route": "/qr/ABCDEFGH",
+        "status": 200
+      },
+      {
+        "route": "/room/ABCDEFGH",
+        "status": 200
+      }
+    ],
+    "privateArtifacts": [
+      {
+        "route": "/cloudflare/next-env.mjs",
+        "status": 404
+      },
+      {
+        "route": "/server-functions/default/index.mjs",
+        "status": 404
+      },
+      {
+        "route": "/worker.js",
+        "status": 404
+      },
+      {
+        "route": "/_worker.js",
+        "status": 404
+      }
+    ],
+    "previewStandalone": {
+      "created": 201,
+      "publicRead": 200,
+      "projector": 200,
+      "admin": 200,
+      "savedContentPrivate": true
+    },
+    "previewDirector": {
+      "privatePreview": true,
+      "idempotentTake": true,
+      "emergencyHide": true,
+      "restore": true,
+      "aggregateExport": true
+    },
+    "previewVoting": {
+      "publicRead": 200,
+      "adminRead": 200,
+      "vote": 200,
+      "protectedCookie": true,
+      "duplicateRetry": true,
+      "voterPage": 200,
+      "projectorPage": 200,
+      "reopenPreservedVotes": true,
+      "roundTwoAccepted": 200,
+      "staleRound": 409,
+      "historyPreserved": true,
+      "activity": 200,
+      "stageCentre": 200
+    }
+  },
+  "productionSafety": {
+    "checkedAt": "2026-11-10T14:50Z",
+    "liveDiscussions": 1,
+    "openVotingEvents": 1,
+    "productionMigrations": [
+      "004_platform",
+      "005_stage",
+      "006_voting",
+      "007_voting_rounds",
+      "008_activity",
+      "009_standalone_stages"
+    ],
+    "upgradeProductionWrites": false,
+    "deployment": false,
+    "backup": "Protected owner-only SQL export outside repository; migration rehearsed twice on restored copy"
+  },
+  "visualReview": {
+    "screens": "artifacts/spill4/screens",
+    "darkAndLightDirector": [
+      390,
+      1440
+    ],
+    "audienceModes": [
+      "wordcloud",
+      "debate",
+      "questions",
+      "scale"
+    ],
+    "stageWidths": [
+      320,
+      1920,
+      3840
+    ],
+    "automatedAccessibility": "Director and new participant scale flow: zero WCAG 2 A/AA axe violations",
+    "manuallyInspected": [
+      "Chromium desktop dark Director",
+      "Chromium mobile participant",
+      "Chromium light mobile Director",
+      "Chromium word cloud",
+      "WebKit scale projector",
+      "WebKit light mobile Director"
+    ],
+    "neo": "BrowserOS neo tools unavailable despite connection request; isolated local automated browser verification used."
+  },
+  "limitations": [
+    "Firefox UI checks blocked by installed browser launch failure.",
+    "Projector acknowledgements report a browser revision, not physical output; polling is not instantaneous.",
+    "Rehearsal is private client-only; audience participation is per browser, not proof of one physical person.",
+    "New activity modes are discussion-scoped.",
+    "Local load results do not certify distributed production capacity."
+  ]
+}

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Emblem from '@/components/Emblem';
 import AdminPlatform from '@/components/platform/AdminPlatform';
+import LiveDirector from '@/components/director/LiveDirector';
 import usePlatform from '@/components/platform/usePlatform';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
@@ -71,6 +72,7 @@ function SelectedStage({ session, approved, contributionError }) {
     target.scrollIntoView({ block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
   }
   return <div className="space-y-6" data-stage-session={session.id}>
+    <LiveDirector session={session} approved={approved}/>
     <section aria-label="Selected stage preview" className="spill-stage relative isolate overflow-hidden rounded-card border border-white/15 p-5 sm:p-7" data-atmosphere={stage?.atmosphere || 'midnight'}>
       <div className="stage-lightfield" aria-hidden="true"/>
       <div className="stage-contour" aria-hidden="true"/>

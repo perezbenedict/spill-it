@@ -230,6 +230,29 @@ try {
     if (!standaloneProjector.ok || !standaloneAdmin.ok) throw new Error('Compiled standalone projector or admin route failed.');
     summary.previewStandalone = { created: stageCreate.status, publicRead: standaloneRead.status, projector: standaloneProjector.status, admin: standaloneAdmin.status, savedContentPrivate: true };
     await votingCall(`/admin/voting/${event.id}`, { action: 'delete', expectedRevision: event.revision, password });
+    const directorURL=`${previewURL}/api/director/admin/${liveId}`;
+    const directorHeaders={Cookie:`spill_admin_session=${adminToken}`,Origin:previewURL,'Content-Type':'application/json'};
+    async function directorChange(fields,retry) {
+      const current=await (await fetch(directorURL,{headers:directorHeaders})).json();
+      const payload=retry || {requestId:randomUUID(),expectedRevision:current.revision,expectedPlatformRevision:current.platformRevision,...fields};
+      const response=await fetch(directorURL,{method:'POST',headers:directorHeaders,body:JSON.stringify(payload)});
+      if(!response.ok)throw Error('Compiled Live Director mutation failed.');
+      return {data:await response.json(),payload};
+    }
+    const beforeDirector=await (await fetch(`${previewURL}/api/platform/public/${codes[0]}`)).json();
+    await directorChange({action:'preview',cue:{id:'compiled-cue',label:'Compiled private cue',kind:'announcement',text:'Compiled private cue text'}});
+    const preparedDirector=await (await fetch(`${previewURL}/api/platform/public/${codes[0]}`)).json();
+    if(JSON.stringify(beforeDirector)!==JSON.stringify(preparedDirector))throw Error('Compiled private Preview changed public Live.');
+    const taken=await directorChange({action:'take'});
+    const duplicate=await directorChange(null,taken.payload);
+    if(!duplicate.data.duplicate || duplicate.data.platformRevision!==taken.data.platformRevision)throw Error('Compiled director retry was not idempotent.');
+    await directorChange({action:'hide'});
+    const hiddenRoom=await (await fetch(`${previewURL}/api/room/${codes[0]}`)).json();
+    if(hiddenRoom.stage?.overlay?.kind!=='blackout' || hiddenRoom.currentId)throw Error(`Compiled emergency hide failed: overlay=${hiddenRoom.stage?.overlay?.kind || 'none'}, pointer=${!!hiddenRoom.currentId}`);
+    await directorChange({action:'restore'});
+    const aggregate=await fetch(`${directorURL}?export=aggregate`,{headers:directorHeaders});
+    if(!aggregate.ok || (await aggregate.json()).format!=='spill-aggregate-v1')throw Error('Compiled aggregate export failed.');
+    summary.previewDirector={privatePreview:true,idempotentTake:true,emergencyHide:true,restore:true,aggregateExport:true};
     summary.previewVoting = { publicRead: publicRead.status, adminRead: privateRead.status, vote: voteResponse.status, protectedCookie: true, duplicateRetry: true, voterPage: pages[0].status, projectorPage: pages[1].status, reopenPreservedVotes: true, roundTwoAccepted: freshRound.status, staleRound: staleRound.status, historyPreserved: true, activity: activity.status, stageCentre: stageCentre.status };
     console.log(JSON.stringify({ cloudflarePreview: routes, assets: summary.previewAssets }));
   }

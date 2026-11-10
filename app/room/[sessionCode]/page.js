@@ -48,6 +48,9 @@ export default async function RoomPage({ params }) {
         status: body.session.status,
         public_code: body.session.public_code,
       }}
+      initialClock={Date.now()}
+      initialStage={body.stage ?? null}
+      initialStageRevision={body.stageRevision ?? 0}
       currentId={body.currentId ?? null}
       currentSubmission={body.currentSubmission ?? null}
       isAdmin={Boolean(adminContext)}

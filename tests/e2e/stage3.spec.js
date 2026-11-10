@@ -172,7 +172,8 @@ test('standalone announcement and voting hide discussion headers and retain thei
     expect((await publicStage()).overlay.eventCode).toBe(event.code);
   } finally {
     await configure({ overlay: null });
-    const current = (await api(`/admin/voting/${event.id}`)).body.event;
+    let current = (await api(`/admin/voting/${event.id}`)).body.event;
+    if(current.status==='open')current=(await api(`/admin/voting/${event.id}`,{action:'close',expectedRevision:current.revision})).body.event;
     expect((await api(`/admin/voting/${event.id}`, { action: 'delete', expectedRevision: current.revision, password: E2E.adminPassword })).status).toBe(200);
   }
 });

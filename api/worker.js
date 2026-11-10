@@ -5,10 +5,11 @@
    row. Fixed friendly error messages only — SQL, ids and stacks never leave
    this process. */
 
-import { handlePlatform, handleEngagement, exportSession, credentialVersion, authAdmission, clearAuthAdmission } from './platform.js';
+import { handlePlatform, handleEngagement, publicProjectionStage, exportSession, credentialVersion, authAdmission, clearAuthAdmission } from './platform.js';
 import { handleVotingCollection, handleVotingAdmin, handleVotingPublic } from './voting.js';
 import { handleActivity } from './activity.js';
 import { handleStandaloneStages } from './stages.js';
+import { handleDirector, handleDirectorPublic } from './director.js';
 
 const KNOWN_CATEGORIES = ['question', 'opinion', 'challenge', 'twocents'];
 const SESSION_STATUSES = ['draft', 'live', 'paused', 'closed'];
@@ -469,21 +470,15 @@ async function handleGetRoomByCode(env, code) {
     .first();
   if (!session) return json({ error: 'This discussion could not be found.' }, 404);
 
-  const { results } = await env.DB.prepare(
-    'SELECT id, nickname, category, content, moderation_status, is_pinned, ' +
-      'hidden_from_presentation, created_at ' +
-    'FROM submissions WHERE session_id = ? AND moderation_status = ? ' +
-      'AND hidden_from_presentation=0 AND id=(SELECT current_submission_id FROM presentation_state WHERE session_id=?) LIMIT 1'
-  )
-    .bind(session.id, 'approved', session.id)
-    .all();
+  // Pointer, visibility and stage configuration share one D1 read transaction.
+  const [targetResult, stateResult] = await env.DB.batch([
+    env.DB.prepare("SELECT id,nickname,category,content,moderation_status,is_pinned,hidden_from_presentation,created_at FROM submissions WHERE session_id=? AND moderation_status='approved' AND hidden_from_presentation=0 AND id=(SELECT current_submission_id FROM presentation_state WHERE session_id=?) LIMIT 1").bind(session.id,session.id),
+    env.DB.prepare('SELECT p.current_submission_id,s.stage_config,s.revision FROM presentation_state p LEFT JOIN platform_state s ON s.session_id=p.session_id WHERE p.session_id=?').bind(session.id),
+  ]);
+  const submissions = targetResult.results.map(serializeSubmission);
+  const pointerRow = stateResult.results[0];
+  const stage = await publicProjectionStage(env,pointerRow);
 
-  const submissions = results.map(serializeSubmission);
-  const pointerRow = await env.DB.prepare(
-    'SELECT current_submission_id FROM presentation_state WHERE session_id = ?'
-  )
-    .bind(session.id)
-    .first();
   const currentId = pointerRow?.current_submission_id ?? null;
   // An unapproved or screen-hidden contribution never reaches the display,
   // even when the pointer still names it.
@@ -496,6 +491,8 @@ async function handleGetRoomByCode(env, code) {
     submissions,
     currentId: currentSubmission ? currentId : null,
     currentSubmission,
+    stage,
+    stageRevision: pointerRow?.revision ?? 0,
   });
 }
 
@@ -1648,6 +1645,12 @@ const worker = {
       const standalonePublicMatch = path.match(/^\/stages\/([^/]+)$/);
       if (standalonePublicMatch) return await handleStandaloneStages(request, env, null, standalonePublicMatch[1], true);
 
+      const directorPublicMatch = path.match(/^\/director\/([^/]+)(?:\/(respond|heartbeat))?$/);
+      if (directorPublicMatch) {
+        if(directorPublicMatch[2]==='heartbeat' && !await requireAdminUser(request,env)) return json({error:'unauthorized'},401);
+        return await handleDirectorPublic(request, env, directorPublicMatch[1].toUpperCase(), directorPublicMatch[2]);
+      }
+
       // ----- admin -----
 
       if (path === '/admin/auth/login' && method === 'POST') {
@@ -1656,6 +1659,9 @@ const worker = {
 
       const admin = await requireAdminUser(request, env);
       if (!admin) return json({ error: 'unauthorized' }, 401);
+
+      const directorAdminMatch = path.match(/^\/admin\/director\/([^/]+)$/);
+      if (directorAdminMatch && isUuid(directorAdminMatch[1])) return await handleDirector(request, env, admin, directorAdminMatch[1]);
 
       if (path === '/admin/voting') return await handleVotingCollection(request, env, admin, verifyDestructiveAdminPassword);
       const votingAdminMatch = path.match(/^\/admin\/voting\/([^/]+)$/);
