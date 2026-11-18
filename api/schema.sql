@@ -238,7 +238,15 @@ CREATE TABLE IF NOT EXISTS voting_events (
  created_at TEXT NOT NULL,
  updated_at TEXT NOT NULL,
  closed_at TEXT,
- current_round INTEGER NOT NULL DEFAULT 1 CHECK(current_round > 0)
+ current_round INTEGER NOT NULL DEFAULT 1 CHECK(current_round > 0),
+ -- Pre-Sunday topic voting: the Worker enforces these on every read and
+ -- ballot because the deployment has no cron trigger.
+ scheduled_open_at TEXT,
+ deadline_at TEXT,
+ instructions TEXT NOT NULL DEFAULT '',
+ confirmed_option_id TEXT,
+ confirmed_at TEXT,
+ confirmed_by TEXT
 );
 CREATE INDEX IF NOT EXISTS voting_events_created ON voting_events(created_at DESC);
 CREATE INDEX IF NOT EXISTS voting_events_session ON voting_events(session_id);
@@ -257,8 +265,26 @@ CREATE TABLE IF NOT EXISTS voting_options (
  question_id TEXT NOT NULL REFERENCES voting_questions(id) ON DELETE CASCADE,
  label TEXT NOT NULL CHECK(length(trim(label)) BETWEEN 1 AND 120),
  position INTEGER NOT NULL,
+ description TEXT NOT NULL DEFAULT '',
  UNIQUE(id,question_id)
 );
+
+-- Moderation undo: auditable status transitions. Content is never rewritten.
+CREATE TABLE IF NOT EXISTS moderation_history (
+ id TEXT PRIMARY KEY,
+ submission_id TEXT NOT NULL,
+ session_id TEXT NOT NULL,
+ actor_id TEXT,
+ from_status TEXT,
+ to_status TEXT NOT NULL CHECK(to_status IN ('pending','approved','hidden')),
+ action TEXT NOT NULL CHECK(action IN ('approve','hide','restore')),
+ note TEXT NOT NULL DEFAULT '',
+ created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS moderation_history_submission
+ ON moderation_history(submission_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS moderation_history_session
+ ON moderation_history(session_id, created_at DESC);
 CREATE TABLE IF NOT EXISTS voting_rounds (
  event_id TEXT NOT NULL REFERENCES voting_events(id) ON DELETE CASCADE,
  round_number INTEGER NOT NULL CHECK(round_number > 0),

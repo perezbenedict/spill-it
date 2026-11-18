@@ -45,6 +45,18 @@ execute(readFileSync('api/migrations/010_director.sql','utf8'));
 execute(readFileSync('api/migrations/010_director.sql','utf8'));
 execute(readFileSync('api/migrations/011_standalone_director.sql','utf8'));
 execute(readFileSync('api/migrations/011_standalone_director.sql','utf8'));
+execute(readFileSync('api/migrations/012_topic_voting_moderation.sql','utf8'));
+assert.equal(execute("SELECT version FROM spill_schema_migrations WHERE version='012_topic_voting_moderation';"), '012_topic_voting_moderation');
+// Pre-Sunday topic voting: deadlines are additive with constant defaults so
+// existing events stay readable and writable by older API code.
+assert.equal(execute("SELECT COALESCE(scheduled_open_at,'NULL')||'|'||COALESCE(deadline_at,'NULL')||'|'||instructions||'|'||COALESCE(confirmed_option_id,'NULL') FROM voting_events WHERE id='vote-a';"), 'NULL|NULL||NULL');
+assert.equal(execute("SELECT description FROM voting_options WHERE id='option-a';"), '');
+assert.throws(() => execute("ALTER TABLE voting_events ADD COLUMN deadline_at TEXT;"));
+// Moderation undo: restore lands on pending and every transition is recorded.
+execute("INSERT INTO moderation_history(id,submission_id,session_id,actor_id,from_status,to_status,action,created_at) VALUES('history-a','contribution-a','session-a','admin-a','approved','hidden','hide','2026-11-14'); INSERT INTO moderation_history(id,submission_id,session_id,actor_id,from_status,to_status,action,created_at) VALUES('history-b','contribution-a','session-a','admin-a','hidden','pending','restore','2026-11-14');");
+assert.equal(execute("SELECT to_status FROM moderation_history WHERE id='history-b';"), 'pending');
+assert.throws(() => execute("INSERT INTO moderation_history(id,submission_id,session_id,to_status,action,created_at) VALUES('history-c','contribution-a','session-a','archived','hide','2026-11-14');"));
+assert.throws(() => execute("INSERT INTO moderation_history(id,submission_id,session_id,to_status,action,created_at) VALUES('history-d','contribution-a','session-a','pending','erase','2026-11-14');"));
 execute("INSERT INTO standalone_stages(id,public_code,created_at,updated_at) VALUES('stage-a','EFGHJKMN','2026-11-08','2026-11-08');");
 assert.equal(execute("SELECT title||':'||revision FROM standalone_stages WHERE id='stage-a';"), ':0');
 assert.equal(execute('SELECT COUNT(*) FROM discussion_sessions;'), '2');
@@ -77,4 +89,4 @@ assert.equal(execute('SELECT COUNT(*) FROM stage_director_state;'),'0');
 assert.equal(execute('SELECT COUNT(*) FROM stage_audience_responses;'),'0');
 assert.equal(execute('PRAGMA foreign_key_check;'),'');
 assert.equal(execute('PRAGMA integrity_check;'),'ok');
-console.log(JSON.stringify({ migrations: ['004_platform','005_stage','006_voting','007_voting_rounds','008_activity','009_standalone_stages','010_director','011_standalone_director'], independentStageCreated: true, preservedSessions: 2, preservedContributions: 1, preservedProjection: true, crossSessionQueueRejected: true, hiddenProjectionRejected: true, duplicateVoteRejected: true, closedVoteRejected: true, historicalVotesPreserved: true, distinctRounds: true, securityAuditProtected: true, deletionActivityRetained: true, integrity: 'ok', database }));
+console.log(JSON.stringify({ migrations: ['004_platform','005_stage','006_voting','007_voting_rounds','008_activity','009_standalone_stages','010_director','011_standalone_director','012_topic_voting_moderation'], independentStageCreated: true, preservedSessions: 2, preservedContributions: 1, preservedProjection: true, crossSessionQueueRejected: true, hiddenProjectionRejected: true, duplicateVoteRejected: true, closedVoteRejected: true, historicalVotesPreserved: true, distinctRounds: true, topicVotingDeadlines: true, moderationHistory: true, securityAuditProtected: true, deletionActivityRetained: true, integrity: 'ok', database }));
