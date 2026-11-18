@@ -1,3 +1,4 @@
+import {handleScripture} from './scripture.js';
 /* SPILL API — single-file Cloudflare Worker, no dependencies, no build step.
    Binds a D1 database as env.DB (see wrangler.toml). Every route except
    /health requires `Authorization: Bearer <SPILL_API_SECRET>`; admin routes
@@ -1294,7 +1295,15 @@ async function listAdminSubmissions(env, url) {
 async function handleGetAdminSubmission(env, id) {
   const row = await env.DB.prepare('SELECT * FROM submissions WHERE id = ?').bind(id).first();
   if (!row) return json({ error: MSG_INVALID }, 404);
-  return json({ row: serializeSubmission(row) });
+  // The moderation trail (approve/hide/restore) travels with the row so the
+  // feed can show who changed what without a second endpoint.
+  const { results: history } = await env.DB.prepare(
+    'SELECT id, actor_id, from_status, to_status, action, created_at FROM moderation_history ' +
+      'WHERE submission_id = ? ORDER BY created_at DESC, id DESC LIMIT 20'
+  )
+    .bind(id)
+    .all();
+  return json({ row: serializeSubmission(row), history });
 }
 
 async function handlePatchAdminSubmission(request, env, admin, id) {
@@ -1355,6 +1364,29 @@ async function handlePatchAdminSubmission(request, env, admin, id) {
         ', updated_at = ?, revision = revision + 1 WHERE id = ? AND revision = ? RETURNING id'
     ).bind(...columns.map((c) => updates[c]), now, id, body.expectedRevision),
   ];
+  // Moderation undo trail: every status transition lands in moderation_history
+  // inside the same batch. The insert is keyed to the post-update revision, so
+  // if a concurrent change makes the update a no-op no history row is written.
+  const MODERATION_ACTION_BY_STATUS = { approved: 'approve', hidden: 'hide', pending: 'restore' };
+  if (updates.moderation_status && updates.moderation_status !== current.moderation_status) {
+    statements.push(
+      env.DB.prepare(
+        'INSERT INTO moderation_history(id, submission_id, session_id, actor_id, from_status, to_status, action, created_at) ' +
+          'SELECT ?, id, session_id, ?, ?, ?, ?, ? FROM submissions ' +
+          'WHERE id = ? AND revision = ? AND moderation_status = ?'
+      ).bind(
+        crypto.randomUUID(),
+        admin.user.id,
+        current.moderation_status,
+        updates.moderation_status,
+        MODERATION_ACTION_BY_STATUS[updates.moderation_status],
+        now,
+        id,
+        body.expectedRevision + 1,
+        updates.moderation_status
+      )
+    );
+  }
   if (mustClearPointer) {
     statements.push(
       env.DB.prepare(
@@ -1671,6 +1703,7 @@ const worker = {
       const directorAdminMatch = path.match(/^\/admin\/director\/([^/]+)$/);
       if (directorAdminMatch && isUuid(directorAdminMatch[1])) return await handleDirector(request, env, admin, directorAdminMatch[1]);
 
+      if(path==='/admin/scripture')return await handleScripture(request,env);
       if (path === '/admin/voting') return await handleVotingCollection(request, env, admin, verifyDestructiveAdminPassword);
       const votingAdminMatch = path.match(/^\/admin\/voting\/([^/]+)$/);
       if (votingAdminMatch) return await handleVotingAdmin(request, env, admin, votingAdminMatch[1], verifyDestructiveAdminPassword);

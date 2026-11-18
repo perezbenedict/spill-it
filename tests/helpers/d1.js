@@ -36,6 +36,41 @@ CREATE TABLE admin_activity (
  id TEXT PRIMARY KEY, session_id TEXT NOT NULL, actor_id TEXT, action TEXT NOT NULL,
  target_id TEXT, created_at TEXT NOT NULL
 );
+CREATE TABLE admin_users (
+ id TEXT PRIMARY KEY, email TEXT NOT NULL UNIQUE, password_hash TEXT NOT NULL,
+ role TEXT NOT NULL DEFAULT 'moderator' CHECK (role IN ('admin','moderator')),
+ created_at TEXT NOT NULL
+);
+CREATE TABLE admin_sessions (
+ token TEXT PRIMARY KEY, credential_version TEXT,
+ user_id TEXT NOT NULL REFERENCES admin_users(id) ON DELETE CASCADE,
+ created_at TEXT NOT NULL, expires_at TEXT NOT NULL
+);
+CREATE TABLE submissions (
+ id TEXT PRIMARY KEY, revision INTEGER NOT NULL DEFAULT 0,
+ session_id TEXT NOT NULL REFERENCES discussion_sessions(id) ON DELETE CASCADE,
+ participant_id TEXT NOT NULL, request_id TEXT, nickname TEXT NOT NULL,
+ category TEXT NOT NULL CHECK (category IN ('question','opinion','challenge','twocents')),
+ content TEXT NOT NULL,
+ moderation_status TEXT NOT NULL DEFAULT 'pending'
+   CHECK (moderation_status IN ('pending','approved','hidden')),
+ is_pinned INTEGER NOT NULL DEFAULT 0 CHECK (is_pinned IN (0,1)),
+ hidden_from_presentation INTEGER NOT NULL DEFAULT 0 CHECK (hidden_from_presentation IN (0,1)),
+ discussed_at TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+);
+CREATE TABLE presentation_state (
+ session_id TEXT PRIMARY KEY REFERENCES discussion_sessions(id) ON DELETE CASCADE,
+ revision INTEGER NOT NULL DEFAULT 0,
+ current_submission_id TEXT REFERENCES submissions(id) ON DELETE SET NULL,
+ updated_at TEXT NOT NULL, updated_by TEXT
+);
+CREATE TABLE moderation_history (
+ id TEXT PRIMARY KEY, submission_id TEXT NOT NULL, session_id TEXT NOT NULL,
+ actor_id TEXT, from_status TEXT,
+ to_status TEXT NOT NULL CHECK (to_status IN ('pending','approved','hidden')),
+ action TEXT NOT NULL CHECK (action IN ('approve','hide','restore')),
+ note TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL
+);
 CREATE TABLE auth_rate_limits (bucket TEXT PRIMARY KEY, count INTEGER NOT NULL, expires_at INTEGER NOT NULL);
 CREATE TABLE spill_schema_migrations (version TEXT PRIMARY KEY);
 INSERT INTO spill_schema_migrations(version) VALUES('006_voting');
