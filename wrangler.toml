@@ -6,5 +6,5 @@ pages_build_output_dir = ".open-next"
 
 [[d1_databases]]
 binding = "DB"
-database_name = "spill"
-database_id = "7ad0a548-84e5-440e-8ce7-65ebe09742f2"
+database_name = "spill-preview"
+database_id = "6426b661-2bc4-457d-b902-7943e84be788"
