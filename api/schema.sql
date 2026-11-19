@@ -246,7 +246,8 @@ CREATE TABLE IF NOT EXISTS voting_events (
  instructions TEXT NOT NULL DEFAULT '',
  confirmed_option_id TEXT,
  confirmed_at TEXT,
- confirmed_by TEXT
+ confirmed_by TEXT,
+ invitation_post_id TEXT
 );
 CREATE INDEX IF NOT EXISTS voting_events_created ON voting_events(created_at DESC);
 CREATE INDEX IF NOT EXISTS voting_events_session ON voting_events(session_id);
@@ -372,7 +373,11 @@ CREATE TABLE IF NOT EXISTS standalone_stages (
  revision INTEGER NOT NULL DEFAULT 0,
  mutation_id TEXT,
  created_at TEXT NOT NULL,
- updated_at TEXT NOT NULL
+ updated_at TEXT NOT NULL,
+ -- Voting invitation post: links a standalone stage to the voting event it
+ -- visualises. Optional — ordinary stages have no voting context.
+ voting_event_code TEXT,
+ voting_event_id TEXT
 );
 CREATE INDEX IF NOT EXISTS standalone_stages_updated ON standalone_stages(updated_at DESC,id DESC);
 INSERT OR IGNORE INTO spill_schema_migrations(version) VALUES('009_standalone_stages');
@@ -472,3 +477,8 @@ WHEN NOT EXISTS(SELECT 1 FROM stage_audience_activities a WHERE a.id=NEW.activit
  (a.kind='questions' AND NEW.moderation='approved' AND EXISTS(SELECT 1 FROM json_each(a.questions) q WHERE json_extract(q.value,'$.id')=NEW.item))
 )) BEGIN SELECT RAISE(ABORT,'stage_activity_closed_or_invalid'); END;
 INSERT OR IGNORE INTO spill_schema_migrations(version) VALUES('011_standalone_director');
+
+-- Voting invitation post: links a voting event to a standalone stage created as
+-- its visual invitation. Additive only: every column has a constant default so
+-- existing voting events and stages stay valid and readable by older code.
+INSERT OR IGNORE INTO spill_schema_migrations(version) VALUES('013_voting_invitation_post');

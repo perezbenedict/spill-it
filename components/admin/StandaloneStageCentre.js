@@ -2,12 +2,14 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { canRefresh, refreshDelay } from '@/lib/polling';
 import Link from 'next/link';
 import StageControls from '@/components/platform/StageControls';
 import LiveDirector from '@/components/director/LiveDirector';
 import StagePresentation from '@/components/platform/StagePresentation';
 import StageFeedback from '@/components/platform/StageFeedback';
 import { VotingAdministration } from '@/components/voting/AdminVoting';
+import {signalPublicRefresh} from '@/lib/public-refresh';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import Input from '@/components/ui/Input';
@@ -64,8 +66,8 @@ function SelectedStage({ stageId }) {
     alive.current = true;
     let timer;
     async function poll() {
-      if (!document.hidden && !locked.current) await refresh();
-      if (alive.current) timer = setTimeout(poll, 4000);
+      if (canRefresh() && !locked.current) await refresh();
+      if (alive.current) timer = setTimeout(poll, refreshDelay(4000, { admin: true }));
     }
     poll();
     return () => { alive.current = false; generation.current += 1; clearTimeout(timer); };
@@ -84,8 +86,8 @@ function SelectedStage({ stageId }) {
     let stopped = false;
     let timer;
     async function poll() {
-      if (!document.hidden) await loadVoting();
-      if (!stopped) timer = setTimeout(poll, 6000);
+      if (canRefresh()) await loadVoting();
+      if (!stopped) timer = setTimeout(poll, refreshDelay(6000, { admin: true }));
     }
     poll();
     return () => { stopped = true; clearTimeout(timer); };
@@ -99,6 +101,7 @@ function SelectedStage({ stageId }) {
     setActionSuccess('');
     try {
       const result = await request(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ expectedRevision: state.current.revision, ...payload }) });
+      signalPublicRefresh();
       accept(result.item);
       setSyncError('');
       if (payload.action === 'clearStage') setActionSuccess('Stage cleared.');
@@ -136,7 +139,7 @@ function SelectedStage({ stageId }) {
         <p className="text-xs text-muted">Clear stage removes the current screen and previous screen history. Saved prompts, announcements and atmosphere stay available.</p>
       </div>
     </section>
-    {stage && <StageControls stage={stage} revision={item.revision} busy={busy} run={payload => run(payload, true)}/>}
+    {stage && <StageControls directorOwner={{id:item.id,standalone:true}} stage={stage} revision={item.revision} busy={busy} run={payload => run(payload, true)}/>}
     <Card className="space-y-4"><h2 className="font-display text-2xl">Project an existing voting event</h2><p className="text-sm text-muted">The stage follows the event’s current authorized presentation. Use its existing controls to select a question, project QR or results, and reveal final results. Hidden results remain private.</p>
       {votingError && <div><p role="alert" className="text-sm">{votingError}</p><Button variant="ghost" onClick={loadVoting}>Retry voting events</Button></div>}
       <label className="block text-sm">Voting event<select value={eventId} onChange={e => { setEventId(e.target.value); setVotingControlsOpen(false); }} className="mt-2 min-h-11 w-full rounded-control border border-white/20 bg-midnight p-3"><option value="">Choose an event</option>{events.map(row => <option key={row.id} value={row.id}>{row.title} · {row.status}</option>)}</select></label>
@@ -222,7 +225,7 @@ export default function StandaloneStageCentre({ stageId, canDelete = false }) {
     } finally { deletingRef.current = false; setDeleting(false); }
   }
   return <div className="space-y-6"><header><p className="text-xs uppercase tracking-[.18em] text-gold-light">Spill It · live operations</p><h1 className="mt-2 font-display text-4xl">Standalone Stage</h1><p className="mt-3 text-sm text-muted">Prepare a persistent projector stage without creating a discussion. Saved content stays with this stage.</p></header>
-    <Card className="space-y-4"><form onSubmit={create} className="flex flex-col gap-3 sm:flex-row sm:items-end"><label className="min-w-0 flex-1 text-sm">Stage title (optional)<Input className="mt-2" maxLength={200} value={title} onChange={e => setTitle(e.target.value)}/></label><Button type="submit" disabled={creating}>Create standalone stage</Button></form>{error && <div><p role="alert" className="text-sm">{error}</p><Button variant="ghost" onClick={load}>Reload stages</Button></div>}<h2 className="font-display text-xl">Saved standalone stages</h2>{canDelete && <BulkDeleteSelection records={items} resource="standalone stages" endpoint="/api/stages/admin" selected={selected} setSelected={setSelected} onDeleted={ids => { ids.forEach(id => deletedIds.current.add(id)); setItems(previous => previous.filter(row => !ids.includes(row.id))); if (ids.includes(stageId)) router.replace('/admin/stage?mode=standalone'); }}/>}{items.length ? <ul className="flex flex-wrap gap-3">{items.map(row => <li key={row.id} className="flex flex-wrap items-center gap-1">{canDelete && <input type="checkbox" aria-label={`Select stage ${row.title || 'Untitled stage'} · ${row.code}`} checked={Boolean(selected[row.id])} onChange={event => setSelected(previous => { const next = { ...previous }; if (event.target.checked && Object.keys(next).length < 50) next[row.id] = row; else delete next[row.id]; return next; })} className="h-5 w-5 accent-violet-500"/>}<Link href={`/admin/stage?mode=standalone&stage=${row.id}`} aria-current={stageId === row.id ? 'page' : undefined} className="inline-flex min-h-11 items-center rounded-control border border-white/20 px-3 py-2 text-sm text-gold-light">{row.title || 'Untitled stage'} · {row.code}</Link>{canDelete && <Button variant="ghost" size="sm" aria-label={`Delete ${row.title || 'Untitled stage'} · ${row.code}`} onClick={() => openDelete(row)}>Delete</Button>}</li>)}</ul> : <p className="text-sm text-muted">Create a stage above, or reload to revisit saved stages.</p>}{nextCursor && <Button variant="secondary" loading={loadingMore} onClick={loadMore}>Load more stages</Button>}</Card>
+    <Card className="space-y-4"><form onSubmit={create} className="flex flex-col gap-3 sm:flex-row sm:items-end"><label className="min-w-0 flex-1 text-sm">Stage title (optional)<Input className="mt-2" maxLength={200} value={title} onChange={e => setTitle(e.target.value)}/></label><Button type="submit" disabled={creating}>Create standalone stage</Button></form>{error && <div><p role="alert" className="text-sm">{error}</p><Button variant="ghost" onClick={load}>Reload stages</Button></div>}<h2 className="font-display text-xl">Saved standalone stages</h2>{canDelete && <BulkDeleteSelection records={items} resource="standalone stages" endpoint="/api/stages/admin" selected={selected} setSelected={setSelected} onDeleted={ids => { ids.forEach(id => deletedIds.current.add(id)); setItems(previous => previous.filter(row => !ids.includes(row.id))); if (ids.includes(stageId)) router.replace('/admin/stage?mode=standalone'); }}/>}{items.length ? <ul className="flex flex-wrap gap-3">{items.map(row => <li key={row.id} className="flex flex-wrap items-center gap-1">{row.stageType === 'voting_invitation' && <span className="inline-flex items-center rounded-full bg-violet-500/15 px-2 py-0.5 text-xs font-medium text-violet-300" title="Voting invitation post">Voting</span>}{canDelete && <input type="checkbox" aria-label={`Select stage ${row.title || 'Untitled stage'} · ${row.code}`} checked={Boolean(selected[row.id])} onChange={event => setSelected(previous => { const next = { ...previous }; if (event.target.checked && Object.keys(next).length < 50) next[row.id] = row; else delete next[row.id]; return next; })} className="h-5 w-5 accent-violet-500"/>}<Link href={`/admin/stage?mode=standalone&stage=${row.id}`} aria-current={stageId === row.id ? 'page' : undefined} className="inline-flex min-h-11 items-center rounded-control border border-white/20 px-3 py-2 text-sm text-gold-light">{row.title || 'Untitled stage'} · {row.code}</Link>{canDelete && <Button variant="ghost" size="sm" aria-label={`Delete ${row.title || 'Untitled stage'} · ${row.code}`} onClick={() => openDelete(row)}>Delete</Button>}</li>)}</ul> : <p className="text-sm text-muted">Create a stage above, or reload to revisit saved stages.</p>}{nextCursor && <Button variant="secondary" loading={loadingMore} onClick={loadMore}>Load more stages</Button>}</Card>
     <StageFeedback message={success} onDismiss={() => setSuccess('')}/>
     <Dialog open={!!deletion} onClose={closeDelete} title="Delete standalone stage?" description="This permanently deletes this stage’s saved announcements, prompts, configuration and public link.">
       {deletion && <form onSubmit={removeStage} className="space-y-4">

@@ -228,7 +228,7 @@ function serialize(data, admin = false) {
   const selected = data.questions.find(question => question.id === presentation.questionId);
   const schedule = scheduleOf(row);
   return {
-    ...(admin ? { id: row.id, sessionId: row.session_id, rounds: data.rounds || [], history: data.history ? { ...data.history, questions: data.history.questions.map(resultQuestion) } : null } : {}),
+    ...(admin ? { id: row.id, sessionId: row.session_id, rounds: data.rounds || [], history: data.history ? { ...data.history, questions: data.history.questions.map(resultQuestion) } : null, invitationPostId: row.invitation_post_id || null } : {}),
     code: row.public_code, title: row.title, status: row.status,
     currentRound: row.current_round || 1,
     revision: row.revision,
@@ -322,7 +322,7 @@ export async function handleVotingAdmin(request, env, admin, id, verifyPassword)
   const body = input.body;
   if (!Number.isInteger(body.expectedRevision) || body.expectedRevision < 0) return fail('Refresh before changing this voting event.');
   if (body.expectedRevision !== data.event.revision) return conflict();
-  const actions = ['edit', 'open', 'reopen', 'newRound', 'close', 'archive', 'delete', 'settings', 'present', 'schedule', 'confirm'];
+  const actions = ['edit', 'open', 'reopen', 'newRound', 'close', 'archive', 'delete', 'settings', 'present', 'schedule', 'confirm', 'createInvitation'];
   if (!actions.includes(body.action)) return fail('Unknown voting operation.');
   if (data.event.status === 'archived' && body.action !== 'delete') return fail('Archived voting events are read-only.', 409);
   if (body.action === 'delete') {
@@ -349,6 +349,13 @@ export async function handleVotingAdmin(request, env, admin, id, verifyPassword)
     statements.push(guarded(`UPDATE voting_events SET title=?,session_id=?,presentation=? WHERE id=? AND ${guard}`, draft.title, draft.sessionId, JSON.stringify(presentation), id));
     statements.push(guarded(`DELETE FROM voting_questions WHERE event_id=? AND ${guard}`, id));
     statements.push(...questionStatements(env, id, draft.questions, guard, guardParams));
+  } else if (body.action === 'createInvitation') {
+    // Generate/associate visual Post Studio invitation stage for this event
+    const stageId = uuid();
+    const publicUrl = `https://spill.app/vote/${data.event.publicCode}`;
+    const stageConfig = { eventCode: data.event.publicCode, eventId: id, publicUrl };
+    statements.push(guarded(`INSERT INTO standalone_stages(id,title,stage_type,stage_config,voting_event_code,voting_event_id,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?)`, stageId, `Invitation: ${data.event.title}`, 'voting_invitation', JSON.stringify(stageConfig), data.event.publicCode, id, now(), now()));
+    statements.push(guarded(`UPDATE voting_events SET invitation_post_id=? WHERE id=? AND ${guard}`, stageId, id));
   } else if (body.action === 'open') {
     if (data.event.status !== 'draft') return fail('Use Reopen Voting for a closed event.', 409);
     statements.push(guarded(`UPDATE voting_events SET status='open' WHERE id=? AND status='draft' AND ${guard}`, id));
