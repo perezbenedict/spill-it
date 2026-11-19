@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { moderationTimestamp } from "@/lib/moderation-time";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Check, EyeOff, Monitor, Pin, Radio, Trash2 } from "lucide-react";
@@ -19,6 +20,7 @@ import {
   bulkDeleteSubmissions,
   hide,
   removeSubmission,
+  restoreToPending,
   toggleDiscussed,
   togglePin,
   togglePresentationHidden,
@@ -349,6 +351,7 @@ export default function SubmissionFeed({
       if (nextRow) updateRows((prev) => new Map(prev).set(id, nextRow));
       if (actionKey === "approve") showConfirmation("Approved.");
       else if (actionKey === "hide") showConfirmation("Rejected and hidden.");
+      else if (actionKey === "restore") showConfirmation("Restored to Pending Review.");
       else if (actionKey === "pin")
         showConfirmation(nextRow?.is_pinned ? "Pinned." : "Unpinned.");
       else if (actionKey === "discussed")
@@ -381,6 +384,16 @@ export default function SubmissionFeed({
       patch: { moderation_status: "hidden" },
       clearCurrent: currentIdRef.current === id,
       action: hide,
+    });
+
+  // Undo a rejection: back to Pending Review. The row is not published -
+  // it re-enters the review queue and still needs an explicit approval.
+  const handleRestore = (id) =>
+    perform({
+      id,
+      actionKey: "restore",
+      patch: { moderation_status: "pending" },
+      action: restoreToPending,
     });
 
   const handleDelete = (id, password) =>
@@ -691,6 +704,7 @@ export default function SubmissionFeed({
           ) : null}
 
           <div className="mt-4 flex flex-wrap gap-2">
+            {row.moderation_status === 'approved' && !row.hidden_from_presentation && <Link href={`/admin/posts?session=${sessionId}&post=${row.id}`} className="inline-flex min-h-10 items-center rounded-control border border-white/15 px-3 py-2 text-sm font-medium text-ink hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold">Create social post</Link>}
             {row.moderation_status === "pending" ? (
               <Button
                 size="sm"
@@ -716,6 +730,20 @@ export default function SubmissionFeed({
                 aria-label="Reject submission"
               >
                 Reject
+              </Button>
+            ) : null}
+            {row.moderation_status === "hidden" ? (
+              <Button
+                size="sm"
+                variant="secondary"
+                className={cardActionClassName}
+                loading={isBusy(row.id, "restore")}
+                disabled={busy}
+                onClick={() => handleRestore(row.id)}
+                title="Undo this rejection; the contribution returns to Pending Review and is not published until approved"
+                aria-label="Undo rejection and restore to pending review"
+              >
+                Undo rejection
               </Button>
             ) : null}
             {row.moderation_status === "approved" && !row.hidden_from_presentation && !onScreen ? (

@@ -238,7 +238,16 @@ CREATE TABLE IF NOT EXISTS voting_events (
  created_at TEXT NOT NULL,
  updated_at TEXT NOT NULL,
  closed_at TEXT,
- current_round INTEGER NOT NULL DEFAULT 1 CHECK(current_round > 0)
+ current_round INTEGER NOT NULL DEFAULT 1 CHECK(current_round > 0),
+ -- Pre-Sunday topic voting: the Worker enforces these on every read and
+ -- ballot because the deployment has no cron trigger.
+ scheduled_open_at TEXT,
+ deadline_at TEXT,
+ instructions TEXT NOT NULL DEFAULT '',
+ confirmed_option_id TEXT,
+ confirmed_at TEXT,
+ confirmed_by TEXT,
+ invitation_post_id TEXT
 );
 CREATE INDEX IF NOT EXISTS voting_events_created ON voting_events(created_at DESC);
 CREATE INDEX IF NOT EXISTS voting_events_session ON voting_events(session_id);
@@ -257,8 +266,26 @@ CREATE TABLE IF NOT EXISTS voting_options (
  question_id TEXT NOT NULL REFERENCES voting_questions(id) ON DELETE CASCADE,
  label TEXT NOT NULL CHECK(length(trim(label)) BETWEEN 1 AND 120),
  position INTEGER NOT NULL,
+ description TEXT NOT NULL DEFAULT '',
  UNIQUE(id,question_id)
 );
+
+-- Moderation undo: auditable status transitions. Content is never rewritten.
+CREATE TABLE IF NOT EXISTS moderation_history (
+ id TEXT PRIMARY KEY,
+ submission_id TEXT NOT NULL,
+ session_id TEXT NOT NULL,
+ actor_id TEXT,
+ from_status TEXT,
+ to_status TEXT NOT NULL CHECK(to_status IN ('pending','approved','hidden')),
+ action TEXT NOT NULL CHECK(action IN ('approve','hide','restore')),
+ note TEXT NOT NULL DEFAULT '',
+ created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS moderation_history_submission
+ ON moderation_history(submission_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS moderation_history_session
+ ON moderation_history(session_id, created_at DESC);
 CREATE TABLE IF NOT EXISTS voting_rounds (
  event_id TEXT NOT NULL REFERENCES voting_events(id) ON DELETE CASCADE,
  round_number INTEGER NOT NULL CHECK(round_number > 0),
@@ -346,7 +373,11 @@ CREATE TABLE IF NOT EXISTS standalone_stages (
  revision INTEGER NOT NULL DEFAULT 0,
  mutation_id TEXT,
  created_at TEXT NOT NULL,
- updated_at TEXT NOT NULL
+ updated_at TEXT NOT NULL,
+ -- Voting invitation post: links a standalone stage to the voting event it
+ -- visualises. Optional — ordinary stages have no voting context.
+ voting_event_code TEXT,
+ voting_event_id TEXT
 );
 CREATE INDEX IF NOT EXISTS standalone_stages_updated ON standalone_stages(updated_at DESC,id DESC);
 INSERT OR IGNORE INTO spill_schema_migrations(version) VALUES('009_standalone_stages');
@@ -446,3 +477,8 @@ WHEN NOT EXISTS(SELECT 1 FROM stage_audience_activities a WHERE a.id=NEW.activit
  (a.kind='questions' AND NEW.moderation='approved' AND EXISTS(SELECT 1 FROM json_each(a.questions) q WHERE json_extract(q.value,'$.id')=NEW.item))
 )) BEGIN SELECT RAISE(ABORT,'stage_activity_closed_or_invalid'); END;
 INSERT OR IGNORE INTO spill_schema_migrations(version) VALUES('011_standalone_director');
+
+-- Voting invitation post: links a voting event to a standalone stage created as
+-- its visual invitation. Additive only: every column has a constant default so
+-- existing voting events and stages stay valid and readable by older code.
+INSERT OR IGNORE INTO spill_schema_migrations(version) VALUES('013_voting_invitation_post');

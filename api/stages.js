@@ -1,4 +1,6 @@
 import { validateStage } from './platform.js';
+import {scriptureStorageJson} from '../lib/scripture.js';
+import {resolveScripture,scriptureEligible} from './api-bible.js';
 
 const reply = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
 const fail = (error, status = 400) => reply({ error }, status);
@@ -6,10 +8,10 @@ const conflict = () => reply({ error: 'This stage changed. Refresh and try again
 const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const isUuid = value => typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
 const isCode = value => typeof value === 'string' && /^[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{8}$/.test(value);
-const emptyStage = () => ({ atmosphere: 'midnight', chapters: [], activeChapterId: null, prompts: [], announcements: [], overlay: null });
+const emptyStage = () => ({ atmosphere: 'midnight', chapters: [], activeChapterId: null, prompts: [], announcements: [], scriptures: [], overlay: null });
 const titleInput = value => value === undefined || (typeof value === 'string' && value.trim().length <= 200);
 const active = (overlay, now) => object(overlay) && (overlay.endsAt === null || (typeof overlay.endsAt === 'string' && Date.parse(overlay.endsAt) > now)) ? overlay : null;
-const interrupts = overlay => overlay && ['reflection', 'announcement', 'voting'].includes(overlay.kind);
+const interrupts = overlay => overlay && ['reflection', 'announcement', 'voting','scripture'].includes(overlay.kind);
 
 async function jsonBody(request) {
   if (Number(request.headers.get('content-length')) > 100000) return { response: fail('Request too large.', 413) };
@@ -49,6 +51,7 @@ async function eligibleOverlay(env, overlay, now, stageId) {
   if (!candidate) return null;
   const validated = validateStage({ ...emptyStage(), overlay: candidate }, now)?.overlay;
   if (!validated) return null;
+  if(validated.kind==='scripture' && validated.apiBible){try{return await resolveScripture(env,validated);}catch{return null;}}
   if (validated.kind === 'voting') {
     const event = await env.DB.prepare("SELECT id FROM voting_events WHERE public_code=? AND status IN ('open','closed')").bind(validated.eventCode).first();
     if (!event) return null;
@@ -76,7 +79,7 @@ async function stageItem(env, row, publicRead = false) {
     const selected = stage.chapters.find(chapter => chapter.id === stage.activeChapterId);
     return { title: row.title, code: row.public_code, revision: row.revision, stage: { atmosphere: stage.atmosphere, activeChapter: selected ? { id: selected.id, title: selected.title } : null, overlay: stage.overlay, cleared: stage.cleared } };
   }
-  return { id: row.id, code: row.public_code, title: row.title, revision: row.revision, stage, createdAt: row.created_at, updatedAt: row.updated_at };
+  return { id: row.id, code: row.public_code, title: row.title, revision: row.revision, stage, createdAt: row.created_at, updatedAt: row.updated_at, stageType: row.stage_type || null, votingEventCode: row.voting_event_code || null, votingEventId: row.voting_event_id || null, invitationPostId: row.invitation_post_id || null };
 }
 
 // Voting settings, question/QR publication and results stay owned by /admin/voting.
@@ -129,7 +132,7 @@ export async function handleStandaloneStages(request, env, admin, identifier, pu
       const timestamp = new Date().toISOString();
       try {
         await env.DB.batch([
-          env.DB.prepare('INSERT INTO standalone_stages(id,public_code,title,stage_config,created_at,updated_at) VALUES(?,?,?,?,?,?)').bind(id, code, (body.title || '').trim(), JSON.stringify(emptyStage()), timestamp, timestamp),
+          env.DB.prepare('INSERT INTO standalone_stages(id,public_code,title,stage_type,stage_config,created_at,updated_at) VALUES(?,?,?,?,?,?,?)').bind(id, code, (body.title || '').trim(), 'discussion', JSON.stringify(emptyStage()), timestamp, timestamp),
           env.DB.prepare("INSERT INTO admin_activity(id,session_id,actor_id,action,target_id,created_at) VALUES(?,?,?,'standalone_create',?,?)").bind(crypto.randomUUID(), id, admin.user.id, id, timestamp),
         ]);
         const row = await env.DB.prepare('SELECT * FROM standalone_stages WHERE id=?').bind(id).first();
@@ -169,10 +172,12 @@ export async function handleStandaloneStages(request, env, admin, identifier, pu
   if (body.action === 'clearStage') {
     stage = { ...previous, overlay: null };
     delete stage.resumeOverlay;
+    if(body.stage?.scriptures===undefined)stage.scriptures=previous.scriptures || [];
   } else {
     // Expired timers from a previously fetched complete config resolve before
     // validation; newly supplied expired timers still fail validation.
     let candidate = body.stage;
+    if(object(candidate) && candidate.scriptures===undefined)candidate={...candidate,scriptures:previous.scriptures || []};
     let stored;
     try { stored = JSON.parse(row.stage_config); } catch { stored = {}; }
     if (object(candidate) && candidate.overlay && !active(candidate.overlay, now) && JSON.stringify(candidate.overlay) === JSON.stringify(stored.overlay)) candidate = { ...candidate, overlay: previous.overlay };
@@ -184,12 +189,13 @@ export async function handleStandaloneStages(request, env, admin, identifier, pu
     if (!stage.overlay && interrupts(previous.overlay)) stage.overlay = previous.resumeOverlay;
   }
   const timestamp = new Date(now).toISOString();
+  if(stage.overlay?.kind==='scripture' && !await scriptureEligible(env,stage.overlay))return fail('This Bible passage is unavailable. Look it up again or paste the passage before projecting.',409);
   const mutationId = crypto.randomUUID();
   const presentationCleared = body.action === 'clearStage' || (!stage.overlay && (previous.cleared || Boolean(previous.overlay)));
   delete stage.cleared;
   try {
     const results = await env.DB.batch([
-      env.DB.prepare('UPDATE standalone_stages SET stage_config=?,title=?,revision=revision+1,mutation_id=?,updated_at=? WHERE id=? AND revision=? AND (? IS NULL OR EXISTS(SELECT 1 FROM voting_events WHERE public_code=? AND status IN (\'open\',\'closed\'))) AND (? IS NULL OR EXISTS(SELECT 1 FROM voting_events WHERE public_code=? AND status IN (\'open\',\'closed\'))) AND (? IS NULL OR EXISTS(SELECT 1 FROM stage_audience_activities WHERE id=? AND stage_id=? AND status IN (\'open\',\'closed\'))) AND (? IS NULL OR EXISTS(SELECT 1 FROM stage_audience_activities WHERE id=? AND stage_id=? AND status IN (\'open\',\'closed\'))) RETURNING revision').bind(JSON.stringify({ ...stage, returnOverlay, presentationCleared }), body.title === undefined ? row.title : body.title.trim(), mutationId, timestamp, identifier, body.expectedRevision, stage.overlay?.kind === 'voting' ? stage.overlay.eventCode : null, stage.overlay?.kind === 'voting' ? stage.overlay.eventCode : null, returnOverlay?.kind === 'voting' ? returnOverlay.eventCode : null, returnOverlay?.kind === 'voting' ? returnOverlay.eventCode : null, stage.overlay?.kind === 'activity' ? stage.overlay.activityId : null, stage.overlay?.kind === 'activity' ? stage.overlay.activityId : null, identifier, returnOverlay?.kind === 'activity' ? returnOverlay.activityId : null, returnOverlay?.kind === 'activity' ? returnOverlay.activityId : null, identifier),
+      env.DB.prepare('UPDATE standalone_stages SET stage_config=?,title=?,revision=revision+1,mutation_id=?,updated_at=? WHERE id=? AND revision=? AND (? IS NULL OR EXISTS(SELECT 1 FROM voting_events WHERE public_code=? AND status IN (\'open\',\'closed\'))) AND (? IS NULL OR EXISTS(SELECT 1 FROM voting_events WHERE public_code=? AND status IN (\'open\',\'closed\'))) AND (? IS NULL OR EXISTS(SELECT 1 FROM stage_audience_activities WHERE id=? AND stage_id=? AND status IN (\'open\',\'closed\'))) AND (? IS NULL OR EXISTS(SELECT 1 FROM stage_audience_activities WHERE id=? AND stage_id=? AND status IN (\'open\',\'closed\'))) RETURNING revision').bind(scriptureStorageJson({ ...stage, returnOverlay, presentationCleared }), body.title === undefined ? row.title : body.title.trim(), mutationId, timestamp, identifier, body.expectedRevision, stage.overlay?.kind === 'voting' ? stage.overlay.eventCode : null, stage.overlay?.kind === 'voting' ? stage.overlay.eventCode : null, returnOverlay?.kind === 'voting' ? returnOverlay.eventCode : null, returnOverlay?.kind === 'voting' ? returnOverlay.eventCode : null, stage.overlay?.kind === 'activity' ? stage.overlay.activityId : null, stage.overlay?.kind === 'activity' ? stage.overlay.activityId : null, identifier, returnOverlay?.kind === 'activity' ? returnOverlay.activityId : null, returnOverlay?.kind === 'activity' ? returnOverlay.activityId : null, identifier),
       env.DB.prepare('INSERT INTO admin_activity(id,session_id,actor_id,action,target_id,created_at) SELECT ?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM standalone_stages WHERE id=? AND mutation_id=?)').bind(crypto.randomUUID(), identifier, admin.user.id, body.action === 'clearStage' ? 'standalone_clear' : 'standalone_configure', identifier, timestamp, identifier, mutationId),
     ]);
     if (!results[0].results?.length) return conflict();

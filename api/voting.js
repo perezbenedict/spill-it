@@ -9,9 +9,54 @@ const isUuid = value => typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[
 const isCode = value => typeof value === 'string' && /^[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{8}$/.test(value);
 const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const parse = (value, fallback) => { try { return JSON.parse(value); } catch { return fallback; } };
+const MAX_INSTRUCTIONS = 500;
+const MAX_DESCRIPTION = 300;
 const DEFAULT_SETTINGS = { resultsMode: 'hidden', visualization: 'bars', showTotal: true, showCounts: true, showPercentages: true, highlightLeader: true, animations: true, participantResults: false, atmosphere: 'midnight' };
 const SETTINGS_ENUMS = { resultsMode: ['live', 'hidden'], visualization: ['bars', 'rows', 'donut', 'comparison'], atmosphere: ['midnight', 'electric', 'reflection', 'royal', 'celestial', 'velvet', 'aurora'] };
 const settingsOf = row => ({ ...DEFAULT_SETTINGS, ...parse(row.settings, {}) });
+const scheduleOf = row => ({
+  scheduledOpenAt: row.scheduled_open_at || null,
+  deadlineAt: row.deadline_at || null,
+  instructions: typeof row.instructions === 'string' ? row.instructions : '',
+  confirmedOptionId: row.confirmed_option_id || null,
+  confirmedAt: row.confirmed_at || null,
+});
+
+// The deployment has no cron trigger, so the deadline is enforced lazily but
+// authoritatively: every read and ballot closes an expired open event inside
+// the same statement that would otherwise admit a vote. This runs before any
+// status decision, so the interface can never keep voting alive.
+function deadlineExpired(row, at = Date.now()) {
+  return row.status === 'open' && !!row.deadline_at && at >= Date.parse(row.deadline_at);
+}
+
+async function enforceDeadline(env, row) {
+  if (!deadlineExpired(row)) return row;
+  const closedAt = new Date().toISOString();
+  const updated = await env.DB.batch([
+    env.DB.prepare(`UPDATE voting_events SET status='closed',closed_at=?,revision=revision+1,updated_at=? WHERE id=? AND status='open' AND deadline_at=? RETURNING *`).bind(closedAt, closedAt, row.id, row.deadline_at),
+    env.DB.prepare(`UPDATE voting_rounds SET closed_at=? WHERE event_id=? AND round_number=? AND closed_at IS NULL`).bind(closedAt, row.id, row.current_round),
+    env.DB.prepare(`INSERT INTO admin_activity(id,session_id,actor_id,action,target_id,created_at) VALUES(?,?,?,?,?,?)`).bind(uuid(), row.session_id || row.id, null, 'voting_deadline_close', row.id, closedAt),
+  ]);
+  return updated[0].results?.[0] || { ...row, status: 'closed', closed_at: closedAt };
+}
+
+// Without a cron trigger the start time is materialized the same lazy way:
+// the first read or ballot after the scheduled opening flips draft to open.
+// Manual opening still wins, because a moderator who opens early wants votes.
+async function syncSchedule(env, row) {
+  const at = Date.now();
+  if (row.status === 'draft' && row.scheduled_open_at && at >= Date.parse(row.scheduled_open_at)) {
+    const openedAt = new Date(at).toISOString();
+    const updated = await env.DB.batch([
+      env.DB.prepare(`UPDATE voting_events SET status='open',revision=revision+1,updated_at=? WHERE id=? AND status='draft' RETURNING *`).bind(openedAt, row.id),
+      env.DB.prepare(`UPDATE voting_rounds SET opened_at=COALESCE(opened_at,?),last_opened_at=? WHERE event_id=? AND round_number=?`).bind(openedAt, openedAt, row.id, row.current_round),
+      env.DB.prepare(`INSERT INTO admin_activity(id,session_id,actor_id,action,target_id,created_at) VALUES(?,?,?,?,?,?)`).bind(uuid(), row.session_id || row.id, null, 'voting_schedule_open', row.id, openedAt),
+    ]);
+    row = updated[0].results?.[0] || row;
+  }
+  return deadlineExpired(row, at) ? enforceDeadline(env, row) : row;
+}
 
 function settingsInput(value, previous = DEFAULT_SETTINGS) {
   if (!object(value)) return null;
@@ -24,15 +69,45 @@ function settingsInput(value, previous = DEFAULT_SETTINGS) {
   return result;
 }
 
+function scheduleValue(value) {
+  if (value === null || value === undefined || value === '') return { ok: true, value: null };
+  if (typeof value !== 'string' || value.length > 40 || !Number.isFinite(Date.parse(value))) return { ok: false };
+  return { ok: true, value: new Date(value).toISOString() };
+}
+
+// Scheduling input is optional: absent keys leave the stored values untouched
+// so an older client (or a partial edit) cannot silently clear a deadline.
+function scheduleInput(body) {
+  const provided = ['scheduledOpenAt', 'deadlineAt', 'instructions'].filter(key => Object.hasOwn(body, key));
+  if (!provided.length) return { ok: true, provided: false };
+  const result = { ok: true, provided: true };
+  if (Object.hasOwn(body, 'instructions')) {
+    if (typeof body.instructions !== 'string' || body.instructions.length > MAX_INSTRUCTIONS) return { ok: false };
+    result.instructions = body.instructions.trim();
+  }
+  for (const key of ['scheduledOpenAt', 'deadlineAt']) {
+    if (!Object.hasOwn(body, key)) continue;
+    const parsed = scheduleValue(body[key]);
+    if (!parsed.ok) return { ok: false };
+    result[key] = parsed.value;
+  }
+  return result;
+}
+
 function draftInput(body) {
   if (typeof body.title !== 'string' || !body.title.trim() || body.title.trim().length > 200 || !Array.isArray(body.questions) || body.questions.length < 1 || body.questions.length > 10) return null;
   if (body.sessionId !== undefined && body.sessionId !== null && !isUuid(body.sessionId)) return null;
   const questions = [];
   for (const question of body.questions) {
     if (!object(question) || typeof question.text !== 'string' || !question.text.trim() || question.text.trim().length > 300 || !Array.isArray(question.options) || question.options.length < 2 || question.options.length > 8) return null;
-    const labels = question.options.map(label => typeof label === 'string' ? label.trim() : '');
+    const labels = question.options.map(option => typeof option === 'string' ? option.trim() : object(option) && typeof option.label === 'string' ? option.label.trim() : '');
     if (labels.some(label => !label || label.length > 120) || new Set(labels.map(label => label.toLowerCase())).size !== labels.length) return null;
-    questions.push({ id: uuid(), text: question.text.trim(), options: labels.map(label => ({ id: uuid(), label })) });
+    const descriptions = question.options.map(option => {
+      const value = object(option) && typeof option.description === 'string' ? option.description.trim() : '';
+      return value.length > MAX_DESCRIPTION ? null : value;
+    });
+    if (descriptions.some(value => value === null)) return null;
+    questions.push({ id: uuid(), text: question.text.trim(), options: labels.map((label, index) => ({ id: uuid(), label, description: descriptions[index] })) });
   }
   return { title: body.title.trim(), sessionId: body.sessionId || null, questions };
 }
@@ -68,7 +143,7 @@ export function votingPercentages(counts) {
   return rounded;
 }
 
-const aggregateSql = `SELECT q.id AS question_id,q.event_id,q.text,q.ballot_type,q.position AS question_position,q.revealed,o.id AS option_id,o.label,o.position AS option_position,COUNT(v.option_id) AS votes
+const aggregateSql = `SELECT q.id AS question_id,q.event_id,q.text,q.ballot_type,q.position AS question_position,q.revealed,o.id AS option_id,o.label,o.description,o.position AS option_position,COUNT(v.option_id) AS votes
  FROM voting_questions q JOIN voting_options o ON o.question_id=q.id
  LEFT JOIN voting_votes v ON v.question_id=q.id AND v.option_id=o.id AND v.round_number=%ROUND%
  WHERE q.event_id=(SELECT id FROM voting_events WHERE %FILTER%)
@@ -83,12 +158,12 @@ function questionsFromRows(rows) {
       question = { id: row.question_id, text: row.text, ballotType: row.ballot_type, revealed: !!row.revealed, options: [] };
       grouped.set(question.id, question); questions.push(question);
     }
-    question.options.push({ id: row.option_id, label: row.label, votes: Number(row.votes) });
+    question.options.push({ id: row.option_id, label: row.label, description: typeof row.description === 'string' ? row.description : '', votes: Number(row.votes) });
   }
   return questions;
 }
 
-async function snapshot(env, value, byCode = false, historyRound = null) {
+async function snapshot(env, value, byCode = false, historyRound = null, participant = null) {
   const filter = byCode ? 'public_code=?' : 'id=?';
   // D1 batch reads share one transactional snapshot, including the version and
   // aggregates, rather than pairing newer counts with an older response version.
@@ -97,11 +172,26 @@ async function snapshot(env, value, byCode = false, historyRound = null) {
     env.DB.prepare(aggregateSql.replace('%FILTER%', filter).replace('%ROUND%', '(SELECT current_round FROM voting_events WHERE id=q.event_id)')).bind(value),
     ...(!byCode ? [env.DB.prepare(`SELECT r.round_number AS roundNumber,r.created_at AS createdAt,r.opened_at AS openedAt,r.last_opened_at AS lastOpenedAt,r.closed_at AS closedAt,r.reopen_count AS reopenCount,r.ever_public AS previouslyPublic,COUNT(v.option_id) AS totalVotes FROM voting_rounds r LEFT JOIN voting_votes v ON v.event_id=r.event_id AND v.round_number=r.round_number WHERE r.event_id=? GROUP BY r.round_number ORDER BY r.round_number DESC LIMIT 50`).bind(value)] : []),
     ...(!byCode && historyRound ? [env.DB.prepare(aggregateSql.replace('%FILTER%', filter).replace('%ROUND%', '?')).bind(historyRound, value), env.DB.prepare('SELECT round_number AS roundNumber,created_at AS createdAt,closed_at AS closedAt,reopen_count AS reopenCount,ever_public AS previouslyPublic FROM voting_rounds WHERE event_id=? AND round_number=?').bind(value, historyRound)] : []),
+    ...(byCode && isUuid(participant) ? [env.DB.prepare('SELECT v.question_id FROM voting_votes v JOIN voting_events e ON e.id=v.event_id WHERE e.public_code=? AND v.participant_id=? AND v.round_number=e.current_round LIMIT 100').bind(value,participant)] : []),
   ]);
-  const event = result[0].results[0];
+  let event = result[0].results[0];
   if (!event) return null;
+  // Materialize the schedule first (auto-open, then auto-close), then re-read
+  // so the returned aggregates, status and version all describe one state.
+  const synced = await syncSchedule(env, event);
+  if (synced !== event) {
+    event = synced;
+    const refreshed = await env.DB.batch([
+      env.DB.prepare(`SELECT e.*,(SELECT ever_public FROM voting_rounds r WHERE r.event_id=e.id AND r.round_number=e.current_round) AS round_ever_public FROM voting_events e WHERE ${filter}`).bind(value),
+      env.DB.prepare(aggregateSql.replace('%FILTER%', filter).replace('%ROUND%', '(SELECT current_round FROM voting_events WHERE id=q.event_id)')).bind(value),
+    ]);
+    if (!refreshed[0].results[0]) return null;
+    event = refreshed[0].results[0];
+    const history = historyRound && result[4]?.results[0] ? { ...result[4].results[0], questions: questionsFromRows(result[3].results) } : null;
+    return { event, questions: questionsFromRows(refreshed[1].results), rounds: byCode?[]:result[2]?.results || [], history, answeredQuestionIds:byCode && isUuid(participant)?result[2].results.map(row=>row.question_id):[] };
+  }
   const history = historyRound && result[4]?.results[0] ? { ...result[4].results[0], questions: questionsFromRows(result[3].results) } : null;
-  return { event, questions: questionsFromRows(result[1].results), rounds: result[2]?.results || [], history };
+  return { event, questions: questionsFromRows(result[1].results), rounds: byCode?[]:result[2]?.results || [], history, answeredQuestionIds:byCode && isUuid(participant)?result[2].results.map(row=>row.question_id):[] };
 }
 
 function resultQuestion(question) {
@@ -128,7 +218,7 @@ function serialize(data, admin = false) {
   let visibleVotes = 0;
   const questions = data.questions.map(question => {
     const visible = admin || projectionAllowed(question) || (finalized && settings.participantResults);
-    const base = { id: question.id, text: question.text, ballotType: question.ballotType, resultsVisible: visible, options: question.options.map(option => ({ id: option.id, label: option.label })) };
+    const base = { id: question.id, text: question.text, ballotType: question.ballotType, resultsVisible: visible, options: question.options.map(option => ({ id: option.id, label: option.label, description: option.description || '' })) };
     if (admin) base.revealed = question.revealed;
     if (!visible) return base;
     const result = resultQuestion(question);
@@ -136,11 +226,16 @@ function serialize(data, admin = false) {
     return { ...base, ...result };
   });
   const selected = data.questions.find(question => question.id === presentation.questionId);
+  const schedule = scheduleOf(row);
   return {
-    ...(admin ? { id: row.id, sessionId: row.session_id, rounds: data.rounds || [], history: data.history ? { ...data.history, questions: data.history.questions.map(resultQuestion) } : null } : {}),
+    ...(admin ? { id: row.id, sessionId: row.session_id, rounds: data.rounds || [], history: data.history ? { ...data.history, questions: data.history.questions.map(resultQuestion) } : null, invitationPostId: row.invitation_post_id || null } : {}),
     code: row.public_code, title: row.title, status: row.status,
     currentRound: row.current_round || 1,
     revision: row.revision,
+    // Topic voting schedule. The public view receives the same deadlines the
+    // Worker enforces so participants can show an honest countdown.
+    schedule,
+    deadlinePassed: !!schedule.deadlineAt && Date.now() >= Date.parse(schedule.deadlineAt),
     // Hidden public versions expose configuration changes only. Visible public
     // versions derive exclusively from the counts actually authorized here.
     version: row.revision + (admin ? row.results_version : visibleVotes),
@@ -164,7 +259,7 @@ function questionStatements(env, eventId, questions, guard = '', params = []) {
   const statements = [];
   questions.forEach((question, index) => {
     statements.push(env.DB.prepare(`INSERT INTO voting_questions(id,event_id,text,position) SELECT ?,?,?,? ${guard ? `WHERE ${guard}` : ''}`).bind(question.id, eventId, question.text, index, ...params));
-    question.options.forEach((option, position) => statements.push(env.DB.prepare(`INSERT INTO voting_options(id,question_id,label,position) SELECT ?,?,?,? ${guard ? `WHERE ${guard}` : ''}`).bind(option.id, question.id, option.label, position, ...params)));
+    question.options.forEach((option, position) => statements.push(env.DB.prepare(`INSERT INTO voting_options(id,question_id,label,position,description) SELECT ?,?,?,?,? ${guard ? `WHERE ${guard}` : ''}`).bind(option.id, question.id, option.label, position, option.description || '', ...params)));
   });
   return statements;
 }
@@ -192,7 +287,9 @@ export async function handleVotingCollection(request, env, admin, verifyPassword
   if (input.body.action === 'bulkDelete') return bulkDelete(request, env, admin, input.body, verifyPassword);
   const draft = draftInput(input.body);
   const settings = input.body.settings === undefined ? { ...DEFAULT_SETTINGS } : settingsInput(input.body.settings);
-  if (!draft || !settings || !await sessionExists(env, draft.sessionId)) return fail('Use a title, up to ten questions, two to eight distinct choices each, and an existing optional discussion.');
+  const schedule = scheduleInput(input.body);
+  if (!draft || !settings || !schedule.ok || !await sessionExists(env, draft.sessionId)) return fail('Use a title, up to ten questions, two to eight distinct choices each, and an existing optional discussion.');
+  if (schedule.scheduledOpenAt && schedule.deadlineAt && Date.parse(schedule.deadlineAt) <= Date.parse(schedule.scheduledOpenAt)) return fail('The deadline must be after the voting opening time.');
   const id = uuid();
   for (let attempt = 0; attempt < 5; attempt++) {
     const code = publicCode();
@@ -200,7 +297,7 @@ export async function handleVotingCollection(request, env, admin, verifyPassword
     const presentation = { questionId: draft.questions[0].id, content: 'hidden', revealId: null };
     try {
       await env.DB.batch([
-        env.DB.prepare('INSERT INTO voting_events(id,public_code,title,session_id,settings,presentation,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?)').bind(id, code, draft.title, draft.sessionId, JSON.stringify(settings), JSON.stringify(presentation), timestamp, timestamp),
+        env.DB.prepare('INSERT INTO voting_events(id,public_code,title,session_id,settings,presentation,scheduled_open_at,deadline_at,instructions,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?)').bind(id, code, draft.title, draft.sessionId, JSON.stringify(settings), JSON.stringify(presentation), schedule.scheduledOpenAt ?? null, schedule.deadlineAt ?? null, schedule.instructions ?? '', timestamp, timestamp),
         ...questionStatements(env, id, draft.questions),
         activity(env, admin, { id, session_id: draft.sessionId }, 'create'),
       ]);
@@ -225,7 +322,7 @@ export async function handleVotingAdmin(request, env, admin, id, verifyPassword)
   const body = input.body;
   if (!Number.isInteger(body.expectedRevision) || body.expectedRevision < 0) return fail('Refresh before changing this voting event.');
   if (body.expectedRevision !== data.event.revision) return conflict();
-  const actions = ['edit', 'open', 'reopen', 'newRound', 'close', 'archive', 'delete', 'settings', 'present'];
+  const actions = ['edit', 'open', 'reopen', 'newRound', 'close', 'archive', 'delete', 'settings', 'present', 'schedule', 'confirm', 'createInvitation'];
   if (!actions.includes(body.action)) return fail('Unknown voting operation.');
   if (data.event.status === 'archived' && body.action !== 'delete') return fail('Archived voting events are read-only.', 409);
   if (body.action === 'delete') {
@@ -252,6 +349,13 @@ export async function handleVotingAdmin(request, env, admin, id, verifyPassword)
     statements.push(guarded(`UPDATE voting_events SET title=?,session_id=?,presentation=? WHERE id=? AND ${guard}`, draft.title, draft.sessionId, JSON.stringify(presentation), id));
     statements.push(guarded(`DELETE FROM voting_questions WHERE event_id=? AND ${guard}`, id));
     statements.push(...questionStatements(env, id, draft.questions, guard, guardParams));
+  } else if (body.action === 'createInvitation') {
+    // Generate/associate visual Post Studio invitation stage for this event
+    const stageId = uuid();
+    const publicUrl = `https://spill.app/vote/${data.event.publicCode}`;
+    const stageConfig = { eventCode: data.event.publicCode, eventId: id, publicUrl };
+    statements.push(guarded(`INSERT INTO standalone_stages(id,title,stage_type,stage_config,voting_event_code,voting_event_id,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?)`, stageId, `Invitation: ${data.event.title}`, 'voting_invitation', JSON.stringify(stageConfig), data.event.publicCode, id, now(), now()));
+    statements.push(guarded(`UPDATE voting_events SET invitation_post_id=? WHERE id=? AND ${guard}`, stageId, id));
   } else if (body.action === 'open') {
     if (data.event.status !== 'draft') return fail('Use Reopen Voting for a closed event.', 409);
     statements.push(guarded(`UPDATE voting_events SET status='open' WHERE id=? AND status='draft' AND ${guard}`, id));
@@ -282,6 +386,39 @@ export async function handleVotingAdmin(request, env, admin, id, verifyPassword)
     if (!nextSettings) return fail('Use valid voting presentation settings.');
     statements.push(guarded(`UPDATE voting_events SET settings=? WHERE id=? AND ${guard}`, JSON.stringify(nextSettings), id));
     if (settings.resultsMode === 'live' && nextSettings.resultsMode === 'hidden') statements.push(guarded(`UPDATE voting_questions SET revealed=0 WHERE event_id=? AND ${guard}`, id));
+  } else if (body.action === 'schedule') {
+    // Topic voting timing: valid on any non-archived event, and clearing a
+    // deadline is allowed so a moderator can extend a vote that already ran.
+    const schedule = scheduleInput(body);
+    if (!schedule.ok || !schedule.provided) return fail('Use a valid opening time, deadline and voting instructions.');
+    if (data.event.status === 'archived') return fail('Archived voting events are read-only.', 409);
+    const current = scheduleOf(data.event);
+    const next = {
+      scheduledOpenAt: Object.hasOwn(schedule, 'scheduledOpenAt') ? schedule.scheduledOpenAt : current.scheduledOpenAt,
+      deadlineAt: Object.hasOwn(schedule, 'deadlineAt') ? schedule.deadlineAt : current.deadlineAt,
+      instructions: Object.hasOwn(schedule, 'instructions') ? schedule.instructions : current.instructions,
+    };
+    if (next.scheduledOpenAt && next.deadlineAt && Date.parse(next.deadlineAt) <= Date.parse(next.scheduledOpenAt)) return fail('The deadline must be after the voting opening time.');
+    // Reopening or extending past a deadline requires moving the deadline in
+    // the same change, otherwise the next read would immediately re-close it.
+    if (data.event.status === 'open' && next.deadlineAt && Date.now() >= Date.parse(next.deadlineAt)) return fail('That deadline has already passed. Choose a future deadline or close voting.');
+    statements.push(guarded(`UPDATE voting_events SET scheduled_open_at=?,deadline_at=?,instructions=? WHERE id=? AND ${guard}`, next.scheduledOpenAt, next.deadlineAt, next.instructions, id));
+  } else if (body.action === 'confirm') {
+    // A moderator confirms the winning topic; nothing here ever rewrites the
+    // active discussion topic on its own.
+    if (data.event.status !== 'closed') return fail('Close voting before confirming the winning topic.', 409);
+    if (body.confirmed === false) {
+      statements.push(guarded(`UPDATE voting_events SET confirmed_option_id=NULL,confirmed_at=NULL,confirmed_by=NULL WHERE id=? AND ${guard}`, id));
+    } else {
+      const option = data.questions.flatMap(question => question.options.map(item => ({ ...item, questionId: question.id }))).find(item => item.id === body.optionId);
+      if (!option) return fail('Choose one of the topics on this ballot.');
+      const tally = data.questions.find(question => question.id === option.questionId);
+      const total = tally.options.reduce((sum, item) => sum + item.votes, 0);
+      if (!total) return fail('This poll has no votes. There is no topic to confirm.');
+      const leaders = tally.options.filter(item => item.votes === Math.max(...tally.options.map(peer => peer.votes)));
+      if (leaders.length > 1 && body.force !== true) return fail('This result is tied. Resolve the tie or confirm your choice explicitly.', 409);
+      statements.push(guarded(`UPDATE voting_events SET confirmed_option_id=?,confirmed_at=?,confirmed_by=? WHERE id=? AND ${guard}`, option.id, now(), admin?.user?.id || null, id));
+    }
   } else if (body.action === 'present') {
     if (!['open', 'closed'].includes(data.event.status)) return fail('Open voting before presenting it.', 409);
     if (!['qr', 'question', 'results', 'hidden'].includes(body.content)) return fail('Choose a valid stage content type.');
@@ -319,17 +456,25 @@ export async function handleVotingAdmin(request, env, admin, id, verifyPassword)
 export async function handleVotingPublic(request, env, code, operation) {
   if (!isCode(code)) return fail('Voting event not found.', 404);
   if (!operation && request.method === 'GET') {
-    const data = await snapshot(env, code, true);
+    const data = await snapshot(env, code, true, null, request.headers.get('X-Spill-Participant'));
     if (!data || ['draft', 'archived'].includes(data.event.status)) return fail('Voting event not found.', 404);
-    return reply({ event: serialize(data) });
+    return reply({ event: serialize(data), ballot:{round:data.event.current_round,answeredQuestionIds:data.answeredQuestionIds} });
   }
   if (operation !== 'vote' || request.method !== 'POST') return fail('Method not allowed.', 405);
   const input = await jsonBody(request);
   if (input.response) return input.response;
   const body = input.body;
   if (!isUuid(body.participant_id) || !isUuid(body.questionId) || !isUuid(body.optionId)) return fail('Choose a valid answer.');
-  const event = await env.DB.prepare('SELECT id,status,current_round FROM voting_events WHERE public_code=?').bind(code).first();
-  if (!event || event.status === 'draft') return fail('Voting event not found.', 404);
+  const fetched = await env.DB.prepare('SELECT id,session_id,status,current_round,deadline_at,scheduled_open_at FROM voting_events WHERE public_code=?').bind(code).first();
+  if (!fetched || fetched.status === 'archived') return fail('Voting event not found.', 404);
+  // The ballot runs the same schedule materialization as a read, so the first
+  // vote after a scheduled opening works and an expired event is closed here
+  // regardless of what the client believed.
+  const event = await syncSchedule(env, fetched);
+  // After materialization an expired event is closed; remember whether the
+  // deadline caused it so the participant sees the real reason.
+  const deadlinePassed = !!(event.deadline_at && Date.now() >= Date.parse(event.deadline_at));
+  if (event.status === 'draft') return event.scheduled_open_at && Date.now() < Date.parse(event.scheduled_open_at) ? fail('Voting has not opened yet.', 409) : fail('Voting event not found.', 404);
   const round = body.round === undefined ? 1 : body.round;
   if (!Number.isInteger(round) || round < 1) return fail('Choose a valid voting round.');
   if (round !== event.current_round) return reply({ error: 'The voting round changed. Review the current question and vote again.', code: 'round_changed' }, 409);
@@ -339,7 +484,7 @@ export async function handleVotingPublic(request, env, code, operation) {
   const existing = await previous();
   if (existing) return existing.option_id === body.optionId ? reply({ ok: true, duplicate: true, round }) : fail('This browser has already voted on this question in this round.', 409);
   if (event.status === 'archived') return fail('Voting event not found.', 404);
-  if (event.status !== 'open') return fail('Voting is closed.', 409);
+  if (event.status !== 'open') return fail(deadlinePassed ? 'Voting closed at the deadline.' : 'Voting is closed.', 409);
   const eventLimited = await authAdmission(env, `ballot-event:${event.id}`, 2400, 60);
   if (eventLimited) return eventLimited;
   const limited = await authAdmission(env, `ballot:${event.id}:${round}:${body.participant_id}`, 10, 60);
